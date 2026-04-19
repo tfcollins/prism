@@ -47,10 +47,13 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "C4", "SIM", "RUF"]
-ignore = ["S101"]  # asserts ok in tests
+ignore = [
+  "S101",  # asserts ok in tests
+  "B008",  # FastAPI requires Depends() in argument defaults
+]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["S105", "S106"]
+"tests/**/*" = ["S105", "S106", "S107"]
 
 [tool.mypy]
 python_version = "3.12"
