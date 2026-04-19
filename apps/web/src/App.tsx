@@ -1,5 +1,21 @@
-import { Heading } from '@chakra-ui/react';
+import { Route, Routes } from 'react-router-dom';
+
+import { LoginPage } from './pages/LoginPage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export function App() {
-  return <Heading p={6}>Prism</Heading>;
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
 }

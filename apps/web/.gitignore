@@ -5,9 +5,8 @@ coverage
 playwright-report
 test-results
 *.tsbuildinfo
-vite.config.js
-vite.config.d.ts
-vitest.config.js
-vitest.config.d.ts
-src/*.js
+*.d.ts
+**/*.js
+!eslint.config.js
+!prettier.config.js
 

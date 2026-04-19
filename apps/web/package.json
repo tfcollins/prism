@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 8080 --host",
     "lint": "eslint . --max-warnings 0",
     "fmt": "prettier --write .",
@@ -35,6 +35,7 @@
     "eslint": "^9.5.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^17.5.0",
     "jsdom": "^24.1.0",
     "prettier": "^3.3.0",
     "typescript": "^5.5.0",
