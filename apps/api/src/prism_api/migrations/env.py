@@ -4,9 +4,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import prism_api.models  # noqa: F401  ensure all models registered
 from prism_api.config import get_settings
 from prism_api.models import Base
-import prism_api.models  # noqa: F401  ensure all models registered
 
 config = context.config
 if config.config_file_name:
