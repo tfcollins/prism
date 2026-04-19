@@ -1,1 +1,36 @@
 .superpowers/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local env
+deploy/.env
+.env
+.env.local
+
+# Docs build
+site/
+
+# Stub recovery file
+.stub
