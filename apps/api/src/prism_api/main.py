@@ -2,11 +2,12 @@
 from fastapi import FastAPI
 
 from prism_api import __version__
+from prism_api.routers import auth as auth_router
 
 app = FastAPI(title="Prism API", version=__version__)
+app.include_router(auth_router.router)
 
 
 @app.get("/api/v1/health")
 def health() -> dict[str, str]:
-    """Liveness probe."""
     return {"status": "ok", "version": __version__}
