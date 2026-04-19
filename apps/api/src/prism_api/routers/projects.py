@@ -29,7 +29,9 @@ def create_project(
     session: Session = Depends(session_dep),
 ) -> ProjectOut:
     try:
-        p = ProjectRepo(session).create(slug=body.slug, name=body.name, description=body.description)
+        p = ProjectRepo(session).create(
+            slug=body.slug, name=body.name, description=body.description
+        )
         session.flush()
     except IntegrityError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, "slug already exists") from exc

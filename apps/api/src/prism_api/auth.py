@@ -26,7 +26,13 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd_ctx.verify(plain, hashed)
 
 
-def create_access_token(*, subject: str, secret: str, ttl: timedelta, algorithm: str = "HS256") -> str:
+def create_access_token(
+    *,
+    subject: str,
+    secret: str,
+    ttl: timedelta,
+    algorithm: str = "HS256",
+) -> str:
     expires_at = datetime.now(UTC) + ttl
     payload = {"sub": subject, "exp": int(expires_at.timestamp())}
     return jwt.encode(payload, secret, algorithm=algorithm)

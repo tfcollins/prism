@@ -31,7 +31,9 @@ def current_user(
     if not token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing session")
     try:
-        claims = decode_access_token(token, secret=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+        claims = decode_access_token(
+            token, secret=settings.jwt_secret, algorithm=settings.jwt_algorithm
+        )
     except InvalidTokenError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
     user = UserRepo(session).get_by_id(claims.subject)
