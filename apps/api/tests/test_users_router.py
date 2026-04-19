@@ -29,7 +29,7 @@ def test_create_duplicate_email(client: TestClient, seed_admin: None) -> None:
     _login(client)
     r = client.post(
         "/api/v1/users",
-        json={"email": "admin@x.com", "password": "pw2"},
+        json={"email": "admin@x.com", "password": "longpw2!!"},
     )
     assert r.status_code == 409
 
@@ -38,7 +38,7 @@ def test_delete_user(client: TestClient, seed_admin: None) -> None:
     _login(client)
     new = client.post(
         "/api/v1/users",
-        json={"email": "victim@x.com", "password": "pw"},
+        json={"email": "victim@x.com", "password": "longpw!!!"},
     ).json()
     r = client.delete(f"/api/v1/users/{new['id']}")
     assert r.status_code == 204
