@@ -39,8 +39,17 @@ def create_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
     user_id: str,
-    _: User = Depends(current_user),
+    current: User = Depends(current_user),
     session: Session = Depends(session_dep),
 ) -> Response:
-    UserRepo(session).delete(user_id)
+    repo = UserRepo(session)
+    if current.id == user_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "cannot delete yourself")
+    target = repo.get_by_id(user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "user not found")
+    total = len(repo.list_all())
+    if total <= 1:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "cannot delete the last remaining user")
+    repo.delete(user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

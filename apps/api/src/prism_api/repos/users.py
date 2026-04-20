@@ -24,7 +24,9 @@ class UserRepo:
     def list_all(self) -> list[User]:
         return list(self._session.execute(select(User).order_by(User.created_at)).scalars())
 
-    def delete(self, user_id: str) -> None:
+    def delete(self, user_id: str) -> bool:
         user = self._session.get(User, user_id)
-        if user is not None:
-            self._session.delete(user)
+        if user is None:
+            return False
+        self._session.delete(user)
+        return True
