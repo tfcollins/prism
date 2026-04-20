@@ -1,9 +1,9 @@
-"""Run upload endpoint."""
+"""Run upload + read endpoints."""
 from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,15 @@ from prism_api.models.run import RunStatus
 from prism_api.models.user import User
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
-from prism_api.schemas.run import CreateRunMetadata, RunOut, RunTagOut
+from prism_api.repos.suites import SuiteRepo
+from prism_api.schemas.run import (
+    CreateRunMetadata,
+    RunDetail,
+    RunListItem,
+    RunOut,
+    RunTagOut,
+    SuiteSummary,
+)
 from prism_api.storage import ObjectStorage, build_storage
 from prism_api.worker.tasks import run_ingest
 
@@ -85,4 +93,55 @@ async def upload_run(
         finished_at=run.finished_at,
         junit_artifact_id=run.junit_artifact_id,
         tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
+    )
+
+
+@router.get("", response_model=list[RunListItem])
+def list_runs(
+    project: str = Query(..., description="Project slug"),
+    status_: str | None = Query(default=None, alias="status"),
+    limit: int = Query(default=50, ge=1, le=500),
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> list[RunListItem]:
+    proj = ProjectRepo(session).get_by_slug(project)
+    if proj is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"project '{project}' not found")
+    runs = RunRepo(session)
+    items = runs.list_with_filters(project_id=proj.id, status=status_, limit=limit)
+    result: list[RunListItem] = []
+    for r in items:
+        counts = runs.aggregate_counts_by_run(r.id)
+        tags = runs.tags_for(r.id)
+        result.append(RunListItem(
+            id=r.id, project_id=r.project_id, name=r.name, status=r.status.value,
+            started_at=r.started_at, finished_at=r.finished_at,
+            tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
+            **counts,
+        ))
+    return result
+
+
+@router.get("/{run_id}", response_model=RunDetail)
+def get_run(
+    run_id: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> RunDetail:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    suites = [
+        SuiteSummary(
+            id=s.id, name=s.name, pass_count=s.pass_count, fail_count=s.fail_count,
+            error_count=s.error_count, skip_count=s.skip_count, duration_ms=s.duration_ms,
+        )
+        for s in SuiteRepo(session).list_by_run(run.id)
+    ]
+    tags = [RunTagOut(key=t.key, value=t.value) for t in runs.tags_for(run.id)]
+    return RunDetail(
+        id=run.id, project_id=run.project_id, name=run.name, status=run.status.value,
+        started_at=run.started_at, finished_at=run.finished_at,
+        junit_artifact_id=run.junit_artifact_id, tags=tags, suites=suites,
     )

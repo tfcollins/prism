@@ -1,8 +1,9 @@
 """Run repository."""
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from prism_api.models.run import RunStatus, RunTag, TestRun
+from prism_api.models.suite import TestSuite
 
 
 class RunRepo:
@@ -44,3 +45,32 @@ class RunRepo:
         return list(
             self._session.execute(select(RunTag).where(RunTag.run_id == run_id)).scalars()
         )
+
+    def list_with_filters(
+        self,
+        *,
+        project_id: str,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[TestRun]:
+        stmt = select(TestRun).where(TestRun.project_id == project_id)
+        if status:
+            stmt = stmt.where(TestRun.status == RunStatus(status))
+        stmt = stmt.order_by(TestRun.created_at.desc()).limit(limit)
+        return list(self._session.execute(stmt).scalars())
+
+    def aggregate_counts_by_run(self, run_id: str) -> dict[str, int]:
+        row = self._session.execute(
+            select(
+                func.coalesce(func.sum(TestSuite.pass_count), 0),
+                func.coalesce(func.sum(TestSuite.fail_count), 0),
+                func.coalesce(func.sum(TestSuite.error_count), 0),
+                func.coalesce(func.sum(TestSuite.skip_count), 0),
+            ).where(TestSuite.run_id == run_id)
+        ).one()
+        return {
+            "pass_count": int(row[0]),
+            "fail_count": int(row[1]),
+            "error_count": int(row[2]),
+            "skip_count": int(row[3]),
+        }
