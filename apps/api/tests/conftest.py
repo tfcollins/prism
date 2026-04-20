@@ -60,6 +60,7 @@ def seed_admin(db_session: Session) -> None:
 def patch_ingest(monkeypatch, db_session, storage_fixture):
     """Replace the celery delay with an inline call, and provide the same storage to both sides."""
     from prism_api.routers import runs as runs_module
+    from prism_api.routers import artifacts as artifacts_module
     from prism_api.ingest import IngestInputs, ingest_run
 
     def fake_enqueue(run_id: str, junit_bytes: bytes, archive_bytes: bytes | None, storage) -> None:
@@ -71,6 +72,7 @@ def patch_ingest(monkeypatch, db_session, storage_fixture):
         db_session.commit()
 
     monkeypatch.setattr(runs_module, "enqueue_ingest", fake_enqueue)
+    monkeypatch.setattr(artifacts_module, "build_storage", lambda s: storage_fixture)
     return None
 
 
