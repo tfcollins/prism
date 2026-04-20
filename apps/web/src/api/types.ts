@@ -101,3 +101,24 @@ export interface FFTResponse {
   sample_rate: number;
   params: { window: string; nfft: number; overlap: number };
 }
+
+export interface RunHeader {
+  id: string;
+  name: string;
+  status: RunStatus;
+  pass_count: number;
+  fail_count: number;
+}
+
+export interface CaseDiff {
+  suite_name: string;
+  classname: string;
+  name: string;
+  statuses: (string | null)[];
+}
+
+export interface CompareResponse {
+  runs: RunHeader[];
+  cases: CaseDiff[];
+  pass_rate_delta: number | null;
+}

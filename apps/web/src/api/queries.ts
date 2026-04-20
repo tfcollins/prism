@@ -4,6 +4,7 @@ import { api } from './client';
 import type {
   CaseDetail,
   CaseListItem,
+  CompareResponse,
   FFTResponse,
   Project,
   RunDetail,
@@ -72,5 +73,13 @@ export function useFFT(
     queryFn: async () =>
       (await api.get<FFTResponse>(`/artifacts/${artifactId}/fft`, { params })).data,
     enabled: Boolean(artifactId),
+  });
+}
+
+export function useCompare(runIds: string[]) {
+  return useQuery({
+    queryKey: ['compare', runIds.slice().sort().join(',')],
+    queryFn: async () => (await api.post<CompareResponse>('/compare', { run_ids: runIds })).data,
+    enabled: runIds.length >= 2,
   });
 }

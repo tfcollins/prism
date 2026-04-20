@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 
+import { ComparePage } from './pages/ComparePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProjectDashboardPage } from './pages/ProjectDashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -31,6 +32,14 @@ export function App() {
         element={
           <ProtectedRoute>
             <RunDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/compare"
+        element={
+          <ProtectedRoute>
+            <ComparePage />
           </ProtectedRoute>
         }
       />

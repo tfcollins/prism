@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom';
 const navItems = [
   { to: '/', label: 'Runs' },
   { to: '/projects', label: 'Projects' },
+  { to: '/compare', label: 'Compare' },
 ];
 
 export function Sidebar() {
