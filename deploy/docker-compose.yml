@@ -67,6 +67,26 @@ services:
     restart: unless-stopped
     depends_on: [api]
 
+  worker:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio:    { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      PRISM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PRISM_S3_ENDPOINT: http://minio:9000
+      PRISM_S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      PRISM_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      PRISM_S3_BUCKET: prism
+      PRISM_REDIS_URL: redis://redis:6379/0
+      PRISM_JWT_SECRET: ${JWT_SECRET}
+    entrypoint: []
+    command: ["celery", "-A", "prism_api.worker.celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+
 volumes:
   postgres_data:
   minio_data:
