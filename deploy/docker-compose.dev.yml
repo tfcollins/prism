@@ -33,3 +33,10 @@ services:
     volumes:
       - ../apps/api/src:/app/src
     # Hot reload is manual; restart worker on src change during dev if needed
+
+  docs:
+    image: squidfunk/mkdocs-material:latest
+    volumes:
+      - ../docs:/docs
+    ports: ["${DOCS_HOST_PORT:-8181}:8000"]
+    command: ["serve", "--dev-addr=0.0.0.0:8000"]
