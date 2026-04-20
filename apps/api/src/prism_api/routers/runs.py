@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from prism_api.config import Settings
-from prism_api.deps import current_user, get_settings_dep, session_dep
+from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models.run import RunStatus
 from prism_api.models.user import User
 from prism_api.repos.projects import ProjectRepo
@@ -46,6 +46,7 @@ async def upload_run(
     metadata: str = Form(...),
     archive: UploadFile | None = File(default=None),
     current: User = Depends(current_user),
+    _csrf: None = Depends(csrf_protect),
     settings: Settings = Depends(get_settings_dep),
     session: Session = Depends(session_dep),
 ) -> RunOut:

@@ -1,4 +1,5 @@
 """FastAPI dependencies."""
+import secrets
 from collections.abc import Iterator
 
 from fastapi import Depends, HTTPException, Request, status
@@ -11,6 +12,19 @@ from prism_api.models.user import User
 from prism_api.repos.users import UserRepo
 
 SESSION_COOKIE = "prism_session"
+CSRF_COOKIE = "prism_csrf"
+CSRF_HEADER = "x-prism-csrf"
+
+
+def issue_csrf_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def csrf_protect(request: Request) -> None:
+    cookie_token = request.cookies.get(CSRF_COOKIE)
+    header_token = request.headers.get(CSRF_HEADER)
+    if not cookie_token or not header_token or not secrets.compare_digest(cookie_token, header_token):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "missing or invalid csrf token")
 
 
 def get_settings_dep() -> Settings:

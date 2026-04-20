@@ -44,3 +44,9 @@ def test_logout_cookie_attributes(client: TestClient, seed_admin: None) -> None:
     set_cookie = r.headers.get("set-cookie", "")
     # Deletion cookie should preserve samesite=lax for browser to accept
     assert "samesite=lax" in set_cookie.lower()
+
+
+def test_login_issues_csrf_cookie(client: TestClient, seed_admin: None) -> None:
+    r = client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
+    assert r.status_code == 200
+    assert "prism_csrf" in r.cookies

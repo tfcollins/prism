@@ -6,11 +6,12 @@ import numpy as np
 from fastapi.testclient import TestClient
 
 
-def _login(client: TestClient) -> None:
+def _login(client: TestClient) -> str:
     client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
+    return client.cookies.get("prism_csrf") or ""
 
 
-def _bootstrap_with_waveform(client: TestClient) -> str:
+def _bootstrap_with_waveform(client: TestClient, csrf: str) -> str:
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
     junit = b"""<?xml version="1.0"?><testsuites>
 <testsuite name="dsp" tests="1" failures="0" time="0.1">
@@ -28,6 +29,7 @@ def _bootstrap_with_waveform(client: TestClient) -> str:
         "/api/v1/runs",
         files={"junit": ("j.xml", junit, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
         data={"metadata": json.dumps({"project_slug": "audio", "name": "r1"})},
+        headers={"X-Prism-Csrf": csrf},
     )
     run_id = resp.json()["id"]
     # Find the waveform artifact
@@ -39,8 +41,8 @@ def _bootstrap_with_waveform(client: TestClient) -> str:
 
 
 def test_artifact_metadata(client: TestClient, seed_admin, patch_ingest) -> None:
-    _login(client)
-    art_id = _bootstrap_with_waveform(client)
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
     resp = client.get(f"/api/v1/artifacts/{art_id}")
     assert resp.status_code == 200
     body = resp.json()
@@ -49,8 +51,8 @@ def test_artifact_metadata(client: TestClient, seed_admin, patch_ingest) -> None
 
 
 def test_artifact_waveform_endpoint(client: TestClient, seed_admin, patch_ingest) -> None:
-    _login(client)
-    art_id = _bootstrap_with_waveform(client)
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
     resp = client.get(f"/api/v1/artifacts/{art_id}/waveform?downsample=400")
     assert resp.status_code == 200
     body = resp.json()
@@ -60,8 +62,8 @@ def test_artifact_waveform_endpoint(client: TestClient, seed_admin, patch_ingest
 
 
 def test_artifact_fft_endpoint(client: TestClient, seed_admin, patch_ingest) -> None:
-    _login(client)
-    art_id = _bootstrap_with_waveform(client)
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
     resp = client.get(f"/api/v1/artifacts/{art_id}/fft?window=hann&nfft=1024&overlap=0.5")
     assert resp.status_code == 200
     body = resp.json()
@@ -74,8 +76,8 @@ def test_artifact_fft_endpoint(client: TestClient, seed_admin, patch_ingest) -> 
 
 
 def test_artifact_fft_cached_second_call(client: TestClient, seed_admin, patch_ingest) -> None:
-    _login(client)
-    art_id = _bootstrap_with_waveform(client)
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
     r1 = client.get(f"/api/v1/artifacts/{art_id}/fft?window=hann&nfft=1024&overlap=0.5")
     assert r1.status_code == 200
     r2 = client.get(f"/api/v1/artifacts/{art_id}/fft?window=hann&nfft=1024&overlap=0.5")
