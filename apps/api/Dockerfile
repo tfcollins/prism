@@ -3,8 +3,8 @@ ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 RUN pip install uv
 WORKDIR /app
 COPY pyproject.toml ./
-RUN uv pip install --system --no-cache .
 COPY src ./src
+RUN uv pip install --system --no-cache .
 COPY alembic.ini ./
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh

@@ -1,21 +1,21 @@
 services:
   postgres:
-    ports: ["5432:5432"]
+    ports: ["${POSTGRES_HOST_PORT:-5433}:5432"]
 
   minio:
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_HOST_PORT:-9100}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9101}:9001"
 
   redis:
-    ports: ["6379:6379"]
+    ports: ["${REDIS_HOST_PORT:-6380}:6379"]
 
   api:
     build:
       dockerfile: Dockerfile.dev
     volumes:
       - ../apps/api/src:/app/src
-    ports: ["8000:8000"]
+    ports: ["${API_HOST_PORT:-8000}:8000"]
     command: ["uvicorn", "prism_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   web:
@@ -24,5 +24,5 @@ services:
     volumes:
       - ../apps/web/src:/app/src
       - ../apps/web/index.html:/app/index.html
-    ports: ["8080:5173"]
+    ports: ["${WEB_HOST_PORT:-8180}:5173"]
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
