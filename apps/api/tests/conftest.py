@@ -54,3 +54,16 @@ def client(settings: Settings, db_session: Session) -> Iterator[TestClient]:
 def seed_admin(db_session: Session) -> None:
     UserRepo(db_session).create(email="admin@x.com", password_hash=hash_password("pw"))
     db_session.commit()
+
+
+@pytest.fixture
+def storage_fixture():
+    """In-memory S3 for tests that need a storage instance."""
+    import boto3
+    from moto import mock_aws
+    from prism_api.storage import ObjectStorage
+
+    with mock_aws():
+        client = boto3.client("s3", region_name="us-east-1")
+        client.create_bucket(Bucket="prism")
+        yield ObjectStorage(client=client, bucket="prism")
