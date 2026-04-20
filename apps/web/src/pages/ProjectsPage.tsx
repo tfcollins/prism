@@ -1,9 +1,11 @@
 import { Box, Button, Heading, Input, Stack, Table, Text } from '@chakra-ui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { api } from '../api/client';
 import type { CreateProjectRequest, Project } from '../api/types';
+import { AppShell } from '../components/AppShell';
 
 export function ProjectsPage() {
   const qc = useQueryClient();
@@ -28,6 +30,7 @@ export function ProjectsPage() {
   });
 
   return (
+    <AppShell>
     <Box p={8}>
       <Heading size="xl" mb={6}>
         Projects
@@ -71,7 +74,9 @@ export function ProjectsPage() {
           <Table.Body>
             {projectsQuery.data.map((p) => (
               <Table.Row key={p.id}>
-                <Table.Cell>{p.slug}</Table.Cell>
+                <Table.Cell>
+                  <Link to={`/projects/${p.slug}`} style={{ color: '#63b3ed' }}>{p.slug}</Link>
+                </Table.Cell>
                 <Table.Cell>{p.name}</Table.Cell>
                 <Table.Cell>{p.description}</Table.Cell>
               </Table.Row>
@@ -80,5 +85,6 @@ export function ProjectsPage() {
         </Table.Root>
       )}
     </Box>
+    </AppShell>
   );
 }

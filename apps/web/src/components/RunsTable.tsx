@@ -1,0 +1,68 @@
+import { Box, Table, Text } from '@chakra-ui/react';
+import { Link } from 'react-router-dom';
+
+import type { RunListItem } from '../api/types';
+
+const STATUS_COLOR: Record<string, string> = {
+  pass: '#48bb78',
+  fail: '#f56565',
+  mixed: '#ed8936',
+  error: '#f56565',
+  pending: '#a0aec0',
+};
+
+function statusDot(status: string) {
+  return (
+    <Box
+      display="inline-block"
+      w="8px"
+      h="8px"
+      borderRadius="50%"
+      bg={STATUS_COLOR[status] ?? '#a0aec0'}
+      mr={2}
+    />
+  );
+}
+
+export function RunsTable({ runs }: { runs: RunListItem[] }) {
+  if (runs.length === 0) {
+    return <Text color="gray.500">No runs yet.</Text>;
+  }
+  return (
+    <Table.Root variant="outline" size="sm">
+      <Table.Header>
+        <Table.Row>
+          <Table.ColumnHeader>Status</Table.ColumnHeader>
+          <Table.ColumnHeader>Run</Table.ColumnHeader>
+          <Table.ColumnHeader>Pass</Table.ColumnHeader>
+          <Table.ColumnHeader>Fail</Table.ColumnHeader>
+          <Table.ColumnHeader>Tags</Table.ColumnHeader>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {runs.map((r) => (
+          <Table.Row key={r.id}>
+            <Table.Cell>
+              {statusDot(r.status)}
+              {r.status}
+            </Table.Cell>
+            <Table.Cell>
+              <Link to={`/runs/${r.id}`} style={{ color: '#63b3ed' }}>
+                {r.name}
+              </Link>
+            </Table.Cell>
+            <Table.Cell>{r.pass_count}</Table.Cell>
+            <Table.Cell>{r.fail_count}</Table.Cell>
+            <Table.Cell>
+              {r.tags.map((t) => (
+                <Text as="span" key={`${t.key}:${t.value}`} mr={2} fontFamily="mono" fontSize="xs">
+                  {t.key}={t.value}
+                </Text>
+              ))}
+            </Table.Cell>
+          </Table.Row>
+        ))}
+      </Table.Body>
+    </Table.Root>
+  );
+}
