@@ -5,6 +5,6 @@ import { useAuth } from '../auth/useAuth';
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   if (status === 'loading') return null;
-  if (status === 'anonymous') return <Navigate to="/login" replace />;
+  if (status === 'anonymous' || status === 'unreachable') return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

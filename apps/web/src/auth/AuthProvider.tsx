@@ -1,35 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { createContext, type ReactNode } from 'react';
+import axios from 'axios';
+import { type ReactNode } from 'react';
 
 import { api } from '../api/client';
 import type { User } from '../api/types';
-
-export type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
-
-export interface AuthContextValue {
-  user: User | null;
-  status: AuthStatus;
-  refresh: () => Promise<unknown>;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthStatus } from './AuthContext';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const query = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async () => {
-      try {
-        const res = await api.get<User>('/auth/me');
-        return res.data;
-      } catch {
-        return null;
-      }
+      const res = await api.get<User>('/auth/me');
+      return res.data;
     },
+    retry: false,
     staleTime: 60_000,
   });
 
-  const status: AuthStatus = query.isLoading ? 'loading' : query.data ? 'authenticated' : 'anonymous';
+  let status: AuthStatus;
+  if (query.isLoading) {
+    status = 'loading';
+  } else if (query.data) {
+    status = 'authenticated';
+  } else if (axios.isAxiosError(query.error) && query.error.response?.status === 401) {
+    status = 'anonymous';
+  } else if (query.error) {
+    status = 'unreachable';
+  } else {
+    status = 'anonymous';
+  }
 
   return (
     <AuthContext.Provider value={{ user: query.data ?? null, status, refresh: query.refetch }}>

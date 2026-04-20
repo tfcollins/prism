@@ -1,6 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
+import { AxiosError } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthProvider } from '../src/auth/AuthProvider';
@@ -47,5 +48,25 @@ describe('AuthProvider', () => {
       expect(screen.getByTestId('status').textContent).toBe('authenticated');
     });
     expect(screen.getByTestId('email').textContent).toBe('a@b.com');
+  });
+
+  it('sets status to unreachable on transport error', async () => {
+    const err = new AxiosError('Server error');
+    err.response = { status: 500, data: null, headers: {}, statusText: 'Internal Server Error', config: {} as never };
+    mockGet.mockRejectedValueOnce(err);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <ChakraProvider value={defaultSystem}>
+        <QueryClientProvider client={qc}>
+          <AuthProvider>
+            <Probe />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ChakraProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('status').textContent).toBe('unreachable');
+    });
   });
 });
