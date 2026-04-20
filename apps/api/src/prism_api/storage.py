@@ -5,6 +5,10 @@ import hashlib
 from dataclasses import dataclass
 from typing import IO, TYPE_CHECKING
 
+import boto3
+
+from prism_api.config import Settings
+
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client
 else:
@@ -60,3 +64,15 @@ class ObjectStorage:
         return self.client.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
         )
+
+
+def build_storage(settings: Settings) -> ObjectStorage:
+    """Create an ObjectStorage instance from application settings."""
+    client = boto3.client(
+        "s3",
+        endpoint_url=settings.s3_endpoint,
+        aws_access_key_id=settings.s3_access_key,
+        aws_secret_access_key=settings.s3_secret_key,
+        region_name="us-east-1",
+    )
+    return ObjectStorage(client=client, bucket=settings.s3_bucket)
