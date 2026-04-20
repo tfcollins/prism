@@ -74,4 +74,7 @@ filterwarnings = [
   "ignore::DeprecationWarning:passlib",
   # python-jose emits deprecation warnings in some configurations
   "ignore::DeprecationWarning:jose",
+  # SQLAlchemy model classes TestRun/TestCase/TestSuite are domain names (not test classes);
+  # pytest incorrectly tries to collect them because of the "Test" prefix.
+  "ignore::pytest.PytestCollectionWarning",
 ]
