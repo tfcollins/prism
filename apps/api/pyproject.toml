@@ -35,6 +35,7 @@ dev = [
   "types-passlib",
   "types-python-jose",
   "freezegun>=1.4",
+  "moto[s3]>=5.0",
 ]
 
 [build-system]
