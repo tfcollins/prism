@@ -14,19 +14,22 @@ from prism_api.models.user import User
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.schemas.run import CreateRunMetadata, RunOut, RunTagOut
-from prism_api.storage import build_storage
+from prism_api.storage import ObjectStorage, build_storage
 from prism_api.worker.tasks import run_ingest
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 
 
-def enqueue_ingest(run_id: str, junit_xml: bytes, archive: bytes | None) -> None:
-    """Thin seam so tests can replace the Celery dispatch with an inline call."""
-    # Writing upload bodies to storage happens here so the worker can fetch by key.
-    # For simplicity in v1 we pass bytes directly via a signed-URL or via a
-    # call-site-provided storage. The task signature accepts byte payloads for test
-    # friendliness; in production, consider uploading to S3 first and passing keys.
-    run_ingest.delay(run_id, junit_xml, archive)  # type: ignore[arg-type]
+def enqueue_ingest(
+    run_id: str,
+    junit_bytes: bytes,
+    archive_bytes: bytes | None,
+    storage: ObjectStorage,
+) -> None:
+    """Upload payloads to S3 then dispatch the Celery task with keys (JSON-serializer safe)."""
+    junit_key = storage.put_raw(junit_bytes, filename="junit.xml")
+    archive_key = storage.put_raw(archive_bytes, filename="archive.zip") if archive_bytes else None
+    run_ingest.delay(run_id, junit_key, archive_key)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=RunOut)
@@ -66,7 +69,9 @@ async def upload_run(
     archive_bytes = await archive.read() if archive is not None else None
 
     # 5) Run ingest (inline seam for tests; in prod dispatches to Celery worker)
-    enqueue_ingest(run.id, junit_bytes, archive_bytes)
+    storage = build_storage(settings)
+    storage.ensure_bucket()
+    enqueue_ingest(run.id, junit_bytes, archive_bytes, storage)
 
     # 6) Respond with the current run state (status may be set by synchronous ingest in tests)
     session.refresh(run)

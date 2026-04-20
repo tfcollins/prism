@@ -57,13 +57,20 @@ def seed_admin(db_session: Session) -> None:
 
 
 @pytest.fixture
-def storage_fixture():
-    """In-memory S3 for tests that need a storage instance."""
+def storage_fixture(monkeypatch):
+    """In-memory S3 for tests that need a storage instance.
+
+    Also monkeypatches `runs_module.build_storage` so the router uses the
+    same moto-backed bucket rather than trying to connect to a real S3.
+    """
     import boto3
     from moto import mock_aws
+    from prism_api.routers import runs as runs_module
     from prism_api.storage import ObjectStorage
 
     with mock_aws():
         client = boto3.client("s3", region_name="us-east-1")
         client.create_bucket(Bucket="prism")
-        yield ObjectStorage(client=client, bucket="prism")
+        storage = ObjectStorage(client=client, bucket="prism")
+        monkeypatch.setattr(runs_module, "build_storage", lambda s: storage)
+        yield storage
