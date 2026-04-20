@@ -5,6 +5,7 @@ from prism_api import __version__
 from prism_api.routers import artifacts as artifacts_router
 from prism_api.routers import auth as auth_router
 from prism_api.routers import cases as cases_router
+from prism_api.routers import compare as compare_router
 from prism_api.routers import projects as projects_router
 from prism_api.routers import runs as runs_router
 from prism_api.routers import suites as suites_router
@@ -18,6 +19,7 @@ app.include_router(runs_router.router)
 app.include_router(suites_router.router)
 app.include_router(cases_router.router)
 app.include_router(artifacts_router.router)
+app.include_router(compare_router.router)
 
 
 @app.get("/api/v1/health")
