@@ -11,11 +11,11 @@ def test_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PRISM_S3_SECRET_KEY", "sk")
     monkeypatch.setenv("PRISM_S3_BUCKET", "prism")
     monkeypatch.setenv("PRISM_REDIS_URL", "redis://redis:6379/0")
-    monkeypatch.setenv("PRISM_JWT_SECRET", "topsecret")
+    monkeypatch.setenv("PRISM_JWT_SECRET", "topsecretlongenough")
     s = Settings()
     assert s.database_url.startswith("postgresql+psycopg://")
     assert s.s3_bucket == "prism"
-    assert s.jwt_secret == "topsecret"
+    assert s.jwt_secret == "topsecretlongenough"
 
 
 def test_settings_admin_bootstrap_optional(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -25,7 +25,7 @@ def test_settings_admin_bootstrap_optional(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("PRISM_S3_SECRET_KEY", "sk")
     monkeypatch.setenv("PRISM_S3_BUCKET", "prism")
     monkeypatch.setenv("PRISM_REDIS_URL", "redis://redis:6379/0")
-    monkeypatch.setenv("PRISM_JWT_SECRET", "topsecret")
+    monkeypatch.setenv("PRISM_JWT_SECRET", "topsecretlongenough")
     monkeypatch.delenv("PRISM_ADMIN_EMAIL", raising=False)
     monkeypatch.delenv("PRISM_ADMIN_PASSWORD", raising=False)
     s = Settings()

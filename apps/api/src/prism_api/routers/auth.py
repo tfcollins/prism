@@ -34,8 +34,8 @@ def login(
         key=SESSION_COOKIE,
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,  # dev; prod nginx terminates TLS
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
         max_age=settings.jwt_ttl_minutes * 60,
         path="/",
     )
@@ -43,8 +43,13 @@ def login(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> None:
-    response.delete_cookie(SESSION_COOKIE, path="/")
+def logout(response: Response, settings: Settings = Depends(get_settings_dep)) -> None:
+    response.delete_cookie(
+        SESSION_COOKIE,
+        path="/",
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+    )
 
 
 @router.get("/me")

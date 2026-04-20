@@ -24,7 +24,7 @@ def settings() -> Settings:
         s3_secret_key="x",
         s3_bucket="x",
         redis_url="x",
-        jwt_secret="testsecret",
+        jwt_secret="testsecretlongenough",
     )
 
 

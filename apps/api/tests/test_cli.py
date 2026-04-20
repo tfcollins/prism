@@ -19,7 +19,7 @@ def settings(tmp_path) -> Settings:
         s3_secret_key="x",
         s3_bucket="x",
         redis_url="x",
-        jwt_secret="s",
+        jwt_secret="testsecretlongenough",
         admin_email="boot@x.com",
         admin_password="bootpw",
     )
