@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.vite
+playwright-report
+test-results
+*.tsbuildinfo
+*.d.ts
+**/*.js
+!eslint.config.js
+!prettier.config.js
+

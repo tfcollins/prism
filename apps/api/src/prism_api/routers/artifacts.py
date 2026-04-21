@@ -1,0 +1,123 @@
+"""Artifact endpoints: metadata, download, waveform JSON, FFT JSON."""
+from __future__ import annotations
+
+import io
+
+import numpy as np
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+
+from prism_api.config import Settings
+from prism_api.deps import current_user, get_settings_dep, session_dep
+from prism_api.dsp.downsample import downsample_for_plot
+from prism_api.dsp.fft import FFTParams, compute_fft, params_hash
+from prism_api.models import ArtifactKind, DerivedKind
+from prism_api.models.user import User
+from prism_api.parsers.waveform import load_waveform
+from prism_api.repos.artifacts import ArtifactRepo, DerivedRepo
+from prism_api.schemas.artifact import ArtifactOut, FFTResponse, WaveformResponse
+from prism_api.storage import build_storage
+
+router = APIRouter(prefix="/api/v1/artifacts", tags=["artifacts"])
+
+_WAVEFORM_KINDS = {ArtifactKind.WAVEFORM_CSV, ArtifactKind.WAVEFORM_NPY, ArtifactKind.WAVEFORM_HDF5}
+
+
+def _fetch_artifact_or_404(session: Session, artifact_id: str):
+    a = ArtifactRepo(session).get_by_id(artifact_id)
+    if a is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "artifact not found")
+    return a
+
+
+@router.get("/{artifact_id}", response_model=ArtifactOut)
+def get_artifact(
+    artifact_id: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> ArtifactOut:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    return ArtifactOut(
+        id=a.id, owner_type=a.owner_type, owner_id=a.owner_id, kind=a.kind.value,
+        filename=a.filename, size_bytes=a.size_bytes, content_hash=a.content_hash,
+    )
+
+
+@router.get("/{artifact_id}/download")
+def download_artifact(
+    artifact_id: str,
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> RedirectResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    storage = build_storage(settings)
+    url = storage.presigned_url(a.storage_key, expires_in=300)
+    return RedirectResponse(url, status_code=307)
+
+
+@router.get("/{artifact_id}/waveform", response_model=WaveformResponse)
+def get_waveform(
+    artifact_id: str,
+    downsample: int = Query(default=2000, ge=100, le=50_000),
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> WaveformResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind not in _WAVEFORM_KINDS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform")
+    storage = build_storage(settings)
+    data = storage.get_bytes(a.storage_key)
+    wf = load_waveform(a.kind, data, filename=a.filename)
+    ds = downsample_for_plot(wf.samples, target=downsample)
+    return WaveformResponse(
+        samples=ds.samples.tolist(),
+        sample_rate=wf.sample_rate,
+        stride=ds.stride,
+        total_samples=int(wf.samples.size),
+    )
+
+
+@router.get("/{artifact_id}/fft", response_model=FFTResponse)
+def get_fft(
+    artifact_id: str,
+    window: str = Query(default="hann"),
+    nfft: int = Query(default=1024, ge=64, le=65536),
+    overlap: float = Query(default=0.5, ge=0.0, le=0.9),
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> FFTResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind not in _WAVEFORM_KINDS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform")
+    params = FFTParams(window=window, nfft=nfft, overlap=overlap)  # type: ignore[arg-type]
+    ph = params_hash(params)
+    storage = build_storage(settings)
+    derived_repo = DerivedRepo(session)
+    cached = derived_repo.find(source_artifact_id=a.id, kind=DerivedKind.FFT, params_hash=ph)
+    if cached is not None:
+        payload = storage.get_bytes(cached.storage_key)
+        loaded = np.load(io.BytesIO(payload), allow_pickle=False)
+        freqs, mags = loaded["freqs"], loaded["mags"]
+        sample_rate = float(loaded["fs"][0])
+    else:
+        raw = storage.get_bytes(a.storage_key)
+        wf = load_waveform(a.kind, raw, filename=a.filename)
+        result = compute_fft(wf.samples, sample_rate=wf.sample_rate, params=params)
+        freqs, mags, sample_rate = result.frequencies, result.magnitudes, result.sample_rate
+        # Cache to MinIO
+        buf = io.BytesIO()
+        np.savez_compressed(buf, freqs=freqs, mags=mags, fs=np.array([sample_rate]))
+        key = f"derived/fft/{a.content_hash}-{ph}.npz"
+        storage.put_at(key, buf.getvalue(), content_type="application/octet-stream")
+        derived_repo.create(source_artifact_id=a.id, kind=DerivedKind.FFT, storage_key=key, params_hash=ph)
+        session.commit()
+    return FFTResponse(
+        frequencies=[float(x) for x in freqs],
+        magnitudes=[float(x) for x in mags],
+        sample_rate=float(sample_rate),
+        params={"window": window, "nfft": nfft, "overlap": overlap},
+    )

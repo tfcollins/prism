@@ -1,0 +1,55 @@
+"""Run request/response schemas."""
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+
+class RunTagOut(BaseModel):
+    key: str
+    value: str
+
+
+class RunOut(BaseModel):
+    id: str
+    project_id: str
+    name: str
+    status: str
+    started_at: datetime | None
+    finished_at: datetime | None
+    junit_artifact_id: str | None
+    tags: list[RunTagOut] = Field(default_factory=list)
+
+
+class CreateRunMetadata(BaseModel):
+    project_slug: str
+    name: str
+    tags: dict[str, str] = Field(default_factory=dict)
+    started_at: datetime | None = None
+
+
+class SuiteSummary(BaseModel):
+    id: str
+    name: str
+    pass_count: int
+    fail_count: int
+    error_count: int
+    skip_count: int
+    duration_ms: int
+
+
+class RunDetail(RunOut):
+    suites: list[SuiteSummary] = Field(default_factory=list)
+
+
+class RunListItem(BaseModel):
+    id: str
+    project_id: str
+    name: str
+    status: str
+    started_at: datetime | None
+    finished_at: datetime | None
+    pass_count: int
+    fail_count: int
+    error_count: int
+    skip_count: int
+    tags: list[RunTagOut] = Field(default_factory=list)

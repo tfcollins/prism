@@ -1,0 +1,40 @@
+name: test-backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prism
+          POSTGRES_USER: prism
+          POSTGRES_PASSWORD: prism
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U prism"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - working-directory: apps/api
+        env:
+          PRISM_DATABASE_URL: postgresql+psycopg://prism:prism@localhost:5432/prism
+          PRISM_S3_ENDPOINT: http://x
+          PRISM_S3_ACCESS_KEY: x
+          PRISM_S3_SECRET_KEY: x
+          PRISM_S3_BUCKET: x
+          PRISM_REDIS_URL: redis://localhost:6379/0
+          PRISM_JWT_SECRET: ci-secret
+        run: |
+          uv pip install --system .[dev] || uv sync
+          uv run pytest -v

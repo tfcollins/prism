@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="dsp" tests="3" failures="1" errors="0" skipped="0" time="0.42">
+    <testcase classname="codec" name="sine_sweep_1khz" time="0.12"/>
+    <testcase classname="codec" name="sine_sweep_5khz" time="0.14">
+      <failure message="expected SNR &gt;60dB, got 58.3dB">AssertionError traceback...</failure>
+    </testcase>
+    <testcase classname="latency" name="round_trip" time="0.16"/>
+  </testsuite>
+  <testsuite name="api" tests="1" failures="0" errors="0" skipped="0" time="0.05">
+    <testcase classname="upload" name="happy_path" time="0.05"/>
+  </testsuite>
+</testsuites>

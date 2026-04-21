@@ -1,0 +1,42 @@
+services:
+  postgres:
+    ports: ["${POSTGRES_HOST_PORT:-5433}:5432"]
+
+  minio:
+    ports:
+      - "${MINIO_HOST_PORT:-9100}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9101}:9001"
+
+  redis:
+    ports: ["${REDIS_HOST_PORT:-6380}:6379"]
+
+  api:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../apps/api/src:/app/src
+    ports: ["${API_HOST_PORT:-8000}:8000"]
+    command: ["uvicorn", "prism_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  web:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../apps/web/src:/app/src
+      - ../apps/web/index.html:/app/index.html
+    ports: ["${WEB_HOST_PORT:-8180}:5173"]
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../apps/api/src:/app/src
+    # Hot reload is manual; restart worker on src change during dev if needed
+
+  docs:
+    image: squidfunk/mkdocs-material:latest
+    volumes:
+      - ../docs:/docs
+    ports: ["${DOCS_HOST_PORT:-8181}:8000"]
+    command: ["serve", "--dev-addr=0.0.0.0:8000"]

@@ -1,0 +1,81 @@
+[project]
+name = "prism-api"
+version = "0.1.0"
+description = "Prism API and Celery worker"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "sqlalchemy>=2.0",
+  "psycopg[binary]>=3.1",
+  "alembic>=1.13",
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+  "python-jose[cryptography]>=3.3",
+  "passlib[bcrypt]>=1.7",
+  "bcrypt<5.0",
+  "email-validator>=2",
+  "python-multipart>=0.0.9",
+  "boto3>=1.34",
+  "celery[redis]>=5.3",
+  "junitparser>=3.1",
+  "numpy>=1.26",
+  "scipy>=1.12",
+  "pandas>=2.2",
+  "h5py>=3.10",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+  "httpx>=0.27",
+  "ruff>=0.4",
+  "mypy>=1.10",
+  "types-passlib",
+  "types-python-jose",
+  "freezegun>=1.4",
+  "moto[s3]>=5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/prism_api"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "C4", "SIM", "RUF"]
+ignore = [
+  "S101",  # asserts ok in tests
+  "B008",  # FastAPI requires Depends() in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["S105", "S106", "S107"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = []
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+  "error",
+  # passlib imports the stdlib 'crypt' module which is deprecated in Python 3.12;
+  # this is a passlib internals issue, not our code.
+  "ignore::DeprecationWarning:passlib",
+  # python-jose emits deprecation warnings in some configurations
+  "ignore::DeprecationWarning:jose",
+  # SQLAlchemy model classes TestRun/TestCase/TestSuite are domain names (not test classes);
+  # pytest incorrectly tries to collect them because of the "Test" prefix.
+  "ignore::pytest.PytestCollectionWarning",
+]
