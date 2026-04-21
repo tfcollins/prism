@@ -1,7 +1,8 @@
-import { Box, Heading, Stack, Text } from '@chakra-ui/react';
-import { NavLink, useParams } from 'react-router-dom';
+import { Box, Stack, Text } from '@chakra-ui/react';
+import { Link, NavLink, useParams } from 'react-router-dom';
 
 import { useProjects } from '../api/queries';
+import { Logo } from './Logo';
 
 const PRIMARY_NAV = [
   { to: '/projects', label: 'Projects', end: true },
@@ -33,9 +34,11 @@ export function Sidebar() {
       py={5}
       overflowY="auto"
     >
-      <Heading size="md" color="#63b3ed" mb={6} letterSpacing="tight">
-        Prism
-      </Heading>
+      <Box mb={6} px={1}>
+        <Link to="/projects" aria-label="Prism home">
+          <Logo size="sm" />
+        </Link>
+      </Box>
 
       <Stack gap={1}>
         {PRIMARY_NAV.map((item) => (

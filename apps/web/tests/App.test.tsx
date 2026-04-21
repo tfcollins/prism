@@ -37,7 +37,9 @@ describe('App', () => {
       </ChakraProvider>,
     );
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in to prism/i })).toBeInTheDocument();
+      // After login redesign: heading is just "Prism" with "Sign in to continue" subtitle
+      expect(screen.getByRole('heading', { name: /^prism$/i })).toBeInTheDocument();
+      expect(screen.getByText(/sign in to continue/i)).toBeInTheDocument();
     });
   });
 });

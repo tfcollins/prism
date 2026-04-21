@@ -1,9 +1,10 @@
-import { Box, Button, Heading, Input, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Stack, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import { Logo } from '../components/Logo';
 
 export function LoginPage() {
   const { refresh } = useAuth();
@@ -30,9 +31,15 @@ export function LoginPage() {
 
   return (
     <Box maxW="sm" mx="auto" mt={20} p={6} borderWidth={1} borderRadius="lg">
-      <Heading size="lg" mb={4}>
-        Sign in to Prism
-      </Heading>
+      <Flex direction="column" alignItems="center" mb={6}>
+        <Logo size="lg" showWordmark={false} />
+        <Heading size="lg" mt={4} letterSpacing="0.05em">
+          Prism
+        </Heading>
+        <Text color="gray.500" fontSize="sm" mt={1}>
+          Sign in to continue
+        </Text>
+      </Flex>
       <form onSubmit={handleSubmit}>
         <Stack gap={3}>
           <Input
