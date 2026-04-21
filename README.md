@@ -1,6 +1,13 @@
-# Prism
+<p align="center">
+  <img src="assets/logo.svg" alt="Prism logo" width="96" />
+</p>
 
-A self-hostable web app for managing, browsing, plotting, and cross-analyzing test results — JUnit XML plus measurement artifacts (waveforms, FFTs, logs).
+<h1 align="center">Prism</h1>
+
+<p align="center">
+  A self-hostable web app for managing, browsing, plotting, and cross-analyzing
+  test results — JUnit XML plus measurement artifacts (waveforms, FFTs, logs).
+</p>
 
 ## Quickstart
 
@@ -18,3 +25,5 @@ Default admin login and dev-mode host ports are set in `deploy/.env`. The defaul
 - `apps/web/` — React frontend (Chakra UI v3)
 - `deploy/` — docker-compose orchestration
 - `docs/` — MkDocs Material site
+- `scripts/` — `upload_run.py` (CI uploader), `seed_demo.py` (demo dataset)
+- `assets/` — brand assets (logo)
