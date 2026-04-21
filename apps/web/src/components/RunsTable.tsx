@@ -49,8 +49,12 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
                 <Checkbox.Root
                   checked={selected.has(r.id)}
                   onCheckedChange={() => toggle(r.id)}
+                  aria-label={`Select ${r.name}`}
                 >
-                  <Checkbox.Control />
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
                 </Checkbox.Root>
               </Table.Cell>
               <Table.Cell>
