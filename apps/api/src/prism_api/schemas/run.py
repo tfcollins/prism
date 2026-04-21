@@ -52,4 +52,5 @@ class RunListItem(BaseModel):
     fail_count: int
     error_count: int
     skip_count: int
+    suite_names: list[str] = Field(default_factory=list)
     tags: list[RunTagOut] = Field(default_factory=list)

@@ -49,6 +49,36 @@ def test_list_runs_basic(client: TestClient, seed_admin, patch_ingest) -> None:
     assert [r["name"] for r in runs] == ["r2", "r1"]  # newest first
     assert runs[0]["pass_count"] == 1
     assert runs[0]["fail_count"] == 1
+    # Convention: one JUnit upload == one TestSuiteRun == one <testsuite>
+    assert runs[0]["suite_names"] == ["dsp"]
+
+
+def test_list_runs_exposes_multi_suite_names(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    """When a JUnit happens to contain multiple <testsuite> elements, all of
+    their names are surfaced (existing multi-suite uploads still render)."""
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+
+    junit = b"""<?xml version="1.0"?><testsuites>
+<testsuite name="dsp" tests="1" failures="0" time="0.1">
+<testcase classname="c" name="ok" time="0.05"/>
+</testsuite>
+<testsuite name="api" tests="1" failures="0" time="0.05">
+<testcase classname="c" name="happy" time="0.05"/>
+</testsuite></testsuites>"""
+    resp = client.post(
+        "/api/v1/runs",
+        files={"junit": ("j.xml", junit, "application/xml")},
+        data={"metadata": json.dumps({"project_slug": "audio", "name": "multi"})},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 201, resp.text
+
+    listing = client.get("/api/v1/runs?project=audio").json()
+    assert len(listing) == 1
+    assert sorted(listing[0]["suite_names"]) == ["api", "dsp"]
 
 
 def test_list_runs_filter_status(client: TestClient, seed_admin, patch_ingest) -> None:

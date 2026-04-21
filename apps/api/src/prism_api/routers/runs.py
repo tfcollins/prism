@@ -109,14 +109,17 @@ def list_runs(
     if proj is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"project '{project}' not found")
     runs = RunRepo(session)
+    suites_repo = SuiteRepo(session)
     items = runs.list_with_filters(project_id=proj.id, status=status_, limit=limit)
     result: list[RunListItem] = []
     for r in items:
         counts = runs.aggregate_counts_by_run(r.id)
         tags = runs.tags_for(r.id)
+        suites = suites_repo.list_by_run(r.id)
         result.append(RunListItem(
             id=r.id, project_id=r.project_id, name=r.name, status=r.status.value,
             started_at=r.started_at, finished_at=r.finished_at,
+            suite_names=[s.name for s in suites],
             tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
             **counts,
         ))
