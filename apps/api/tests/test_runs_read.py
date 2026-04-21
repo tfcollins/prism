@@ -51,6 +51,8 @@ def test_list_runs_basic(client: TestClient, seed_admin, patch_ingest) -> None:
     assert runs[0]["fail_count"] == 1
     # Convention: one JUnit upload == one TestSuiteRun == one <testsuite>
     assert runs[0]["suite_names"] == ["dsp"]
+    # created_at is set by TimestampMixin and surfaced for dashboard sorting/display
+    assert isinstance(runs[0]["created_at"], str) and runs[0]["created_at"]
 
 
 def test_list_runs_exposes_multi_suite_names(

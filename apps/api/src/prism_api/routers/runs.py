@@ -119,6 +119,7 @@ def list_runs(
         result.append(RunListItem(
             id=r.id, project_id=r.project_id, name=r.name, status=r.status.value,
             started_at=r.started_at, finished_at=r.finished_at,
+            created_at=r.created_at,
             suite_names=[s.name for s in suites],
             tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
             **counts,

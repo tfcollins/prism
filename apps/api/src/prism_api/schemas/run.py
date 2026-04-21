@@ -48,6 +48,7 @@ class RunListItem(BaseModel):
     status: str
     started_at: datetime | None
     finished_at: datetime | None
+    created_at: datetime
     pass_count: int
     fail_count: int
     error_count: int

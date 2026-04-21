@@ -30,6 +30,7 @@ export interface RunListItem {
   status: RunStatus;
   started_at: string | null;
   finished_at: string | null;
+  created_at: string;
   pass_count: number;
   fail_count: number;
   error_count: number;

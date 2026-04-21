@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { RunListItem } from '../api/types';
+import { absoluteTime, relativeTime } from '../util/relativeTime';
 
 const STATUS_COLOR: Record<string, string> = {
   pass: '#48bb78',
@@ -37,6 +38,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
             <Table.ColumnHeader>Suite</Table.ColumnHeader>
             <Table.ColumnHeader>Pass</Table.ColumnHeader>
             <Table.ColumnHeader>Fail</Table.ColumnHeader>
+            <Table.ColumnHeader>When</Table.ColumnHeader>
             <Table.ColumnHeader>Tags</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -83,6 +85,17 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
               </Table.Cell>
               <Table.Cell>{r.pass_count}</Table.Cell>
               <Table.Cell>{r.fail_count}</Table.Cell>
+              <Table.Cell>
+                <Text
+                  as="span"
+                  fontSize="xs"
+                  color="var(--prism-text-subtle)"
+                  title={absoluteTime(r.created_at)}
+                  whiteSpace="nowrap"
+                >
+                  {relativeTime(r.created_at)}
+                </Text>
+              </Table.Cell>
               <Table.Cell>
                 {r.tags.map((t) => (
                   <Text as="span" key={`${t.key}:${t.value}`} mr={2} fontFamily="mono" fontSize="xs">
