@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ComparePage } from './pages/ComparePage';
 import { LoginPage } from './pages/LoginPage';
@@ -11,8 +11,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/projects" replace />} />
       <Route
-        path="/"
+        path="/projects"
         element={
           <ProtectedRoute>
             <ProjectsPage />

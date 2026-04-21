@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
+import { Breadcrumbs } from './Breadcrumbs';
 
 export function TopBar() {
   const { user, refresh } = useAuth();
@@ -29,7 +30,9 @@ export function TopBar() {
       alignItems="center"
       justifyContent="space-between"
     >
-      <Box />
+      <Box flex="1" minW={0}>
+        <Breadcrumbs />
+      </Box>
       <Flex alignItems="center" gap={3}>
         <Text fontSize="sm" color="#a0aec0">
           {user?.email ?? 'guest'}
