@@ -36,7 +36,7 @@ export function LoginPage() {
         <Heading size="lg" mt={4} letterSpacing="0.05em">
           Prism
         </Heading>
-        <Text color="gray.500" fontSize="sm" mt={1}>
+        <Text color="gray.300" fontSize="sm" mt={1}>
           Sign in to continue
         </Text>
       </Flex>

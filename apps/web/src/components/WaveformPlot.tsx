@@ -32,7 +32,7 @@ export function WaveformPlot({ artifactId }: { artifactId: string }) {
         config={{ displaylogo: false, responsive: true }}
         style={{ width: '100%' }}
       />
-      <Text fontSize="xs" color="gray.500" mt={1}>
+      <Text fontSize="xs" color="gray.300" mt={1}>
         {total_samples.toLocaleString()} samples ({stride}× decimated)
       </Text>
     </Box>

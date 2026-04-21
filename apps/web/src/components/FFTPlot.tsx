@@ -30,7 +30,7 @@ export function FFTPlot({ artifactId }: { artifactId: string }) {
         config={{ displaylogo: false, responsive: true }}
         style={{ width: '100%' }}
       />
-      <Text fontSize="xs" color="gray.500" mt={1}>
+      <Text fontSize="xs" color="gray.300" mt={1}>
         Sample rate: {sample_rate} Hz
       </Text>
     </Box>

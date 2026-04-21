@@ -50,13 +50,13 @@ export function RunDetailPage() {
               />
             </Box>
             <Box borderWidth={1} borderColor="#2d3748" borderRadius="md" p={3} bg="#171923">
-              {!selectedCaseId && <Text color="gray.500">Select a case from the tree</Text>}
+              {!selectedCaseId && <Text color="gray.300">Select a case from the tree</Text>}
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
                 <Stack gap={3}>
                   <Box>
                     <Heading size="sm">{caseQuery.data.name}</Heading>
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="gray.300">
                       {caseQuery.data.classname} · {caseQuery.data.status} · {caseQuery.data.duration_ms} ms
                     </Text>
                   </Box>
@@ -79,7 +79,7 @@ export function RunDetailPage() {
                       </Tabs.Content>
                     </Tabs.Root>
                   ) : (
-                    <Text color="gray.500" fontSize="sm">
+                    <Text color="gray.300" fontSize="sm">
                       No waveform artifact attached to this case.
                     </Text>
                   )}

@@ -32,7 +32,7 @@ export function ComparePage() {
       <Heading size="lg" mb={2}>
         Compare
       </Heading>
-      <Text fontSize="sm" color="gray.500" mb={4}>
+      <Text fontSize="sm" color="gray.300" mb={4}>
         {runIds.length} runs selected
       </Text>
 
@@ -81,17 +81,17 @@ export function ComparePage() {
                         {s ? (
                           <Badge colorPalette={s === 'pass' ? 'green' : s === 'skip' ? 'gray' : 'red'}>{s}</Badge>
                         ) : (
-                          <Text fontSize="xs" color="gray.500">absent</Text>
+                          <Text fontSize="xs" color="gray.300">absent</Text>
                         )}
                       </Table.Cell>
                     ))}
                     <Table.Cell>
                       {hasAnyWaveform ? (
-                        <Text fontSize="xs" color={isSelected ? 'blue.300' : 'gray.500'}>
+                        <Text fontSize="xs" color={isSelected ? 'blue.300' : 'gray.300'}>
                           {isSelected ? '▾ shown below' : 'click to overlay'}
                         </Text>
                       ) : (
-                        <Text fontSize="xs" color="gray.600">no waveform</Text>
+                        <Text fontSize="xs" color="gray.400">no waveform</Text>
                       )}
                     </Table.Cell>
                   </Table.Row>
@@ -105,7 +105,7 @@ export function ComparePage() {
               <Heading size="sm" mb={3}>
                 {selected.suite_name} · {selected.name}
               </Heading>
-              <Text fontSize="xs" color="gray.500" mb={3}>
+              <Text fontSize="xs" color="gray.300" mb={3}>
                 Overlaying waveforms from {overlayTraces.length} of {runIds.length} runs
                 {overlayTraces.length < runIds.length &&
                   ` (others have no waveform attached: ${selected.waveform_artifact_ids

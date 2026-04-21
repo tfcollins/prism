@@ -23,7 +23,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
   }
 
   if (runs.length === 0) {
-    return <Text color="gray.500">No runs yet.</Text>;
+    return <Text color="gray.300">No runs yet.</Text>;
   }
 
   return (

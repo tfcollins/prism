@@ -60,7 +60,7 @@ export function ProjectsPage() {
 
       {projectsQuery.isLoading && <Text>Loading…</Text>}
       {projectsQuery.data && projectsQuery.data.length === 0 && (
-        <Text color="gray.500">No projects yet.</Text>
+        <Text color="gray.300">No projects yet.</Text>
       )}
       {projectsQuery.data && projectsQuery.data.length > 0 && (
         <Table.Root variant="outline">
