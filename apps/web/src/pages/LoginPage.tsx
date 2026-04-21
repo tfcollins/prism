@@ -30,13 +30,22 @@ export function LoginPage() {
   }
 
   return (
-    <Box maxW="sm" mx="auto" mt={20} p={6} borderWidth={1} borderRadius="lg">
+    <Box
+      maxW="sm"
+      mx="auto"
+      mt={20}
+      p={6}
+      borderWidth={1}
+      borderRadius="lg"
+      borderColor="var(--prism-border)"
+      bg="var(--prism-bg-surface)"
+    >
       <Flex direction="column" alignItems="center" mb={6}>
         <Logo size="lg" showWordmark={false} />
         <Heading size="lg" mt={4} letterSpacing="0.05em">
           Prism
         </Heading>
-        <Text color="gray.300" fontSize="sm" mt={1}>
+        <Text color="var(--prism-text-subtle)" fontSize="sm" mt={1}>
           Sign in to continue
         </Text>
       </Flex>

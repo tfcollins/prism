@@ -15,7 +15,15 @@ export function ColorModeProvider({ children }: { children: ReactNode }) {
   const [colorMode, setState] = useState<ColorMode>(initialColorMode);
 
   useEffect(() => {
-    document.documentElement.dataset.colorMode = colorMode;
+    const el = document.documentElement;
+    el.dataset.colorMode = colorMode;
+    // Chakra v3 follows a `light`/`dark` class on the root element — adding it
+    // here makes Chakra's own components (Heading, Table, Input, Button) pick
+    // the right built-in tokens so their text stays readable in both modes.
+    el.classList.remove('light', 'dark');
+    el.classList.add(colorMode);
+    // Hints to the browser for native form controls + scrollbars.
+    el.style.colorScheme = colorMode;
   }, [colorMode]);
 
   const setColorMode = (m: ColorMode) => {

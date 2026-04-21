@@ -2,21 +2,24 @@ import type { ColorMode } from '../colorMode';
 
 /**
  * Mode-aware Plotly layout colors. Kept centralized so all four plot
- * components stay in visual sync when the color mode flips.
+ * components stay in visual sync when the color mode flips. Mirrors the
+ * corresponding `--prism-bg-surface` / `--prism-bg-plot` / `--prism-text`
+ * / `--prism-border` tokens from theme.ts — Plotly needs literal color
+ * strings, not CSS vars.
  */
 export function plotLayoutColors(mode: ColorMode) {
   if (mode === 'light') {
     return {
       paper: '#ffffff',
-      plot: '#f7fafc',
-      font: '#1a202c',
-      grid: '#e2e8f0',
+      plot: '#f3f4f6',
+      font: '#111827',
+      grid: '#e5e7eb',
     };
   }
   return {
-    paper: '#171923',
-    plot: '#0a0e13',
-    font: '#e2e8f0',
-    grid: '#2d3748',
+    paper: '#111827',
+    plot: '#030712',
+    font: '#f9fafb',
+    grid: '#374151',
   };
 }

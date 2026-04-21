@@ -50,13 +50,13 @@ export function RunDetailPage() {
               />
             </Box>
             <Box borderWidth={1} borderColor="var(--prism-border)" borderRadius="md" p={3} bg="var(--prism-bg-surface)">
-              {!selectedCaseId && <Text color="gray.300">Select a case from the tree</Text>}
+              {!selectedCaseId && <Text color="var(--prism-text-subtle)">Select a case from the tree</Text>}
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
                 <Stack gap={3}>
                   <Box>
                     <Heading size="sm">{caseQuery.data.name}</Heading>
-                    <Text fontSize="xs" color="gray.300">
+                    <Text fontSize="xs" color="var(--prism-text-subtle)">
                       {caseQuery.data.classname} · {caseQuery.data.status} · {caseQuery.data.duration_ms} ms
                     </Text>
                   </Box>
@@ -65,7 +65,7 @@ export function RunDetailPage() {
                       bg="var(--prism-danger-bg)"
                       p={2}
                       borderRadius="md"
-                      color="red.400"
+                      color="var(--prism-danger-fg)"
                       fontSize="sm"
                     >
                       {caseQuery.data.failure_message}
@@ -85,7 +85,7 @@ export function RunDetailPage() {
                       </Tabs.Content>
                     </Tabs.Root>
                   ) : (
-                    <Text color="gray.300" fontSize="sm">
+                    <Text color="var(--prism-text-subtle)" fontSize="sm">
                       No waveform artifact attached to this case.
                     </Text>
                   )}
