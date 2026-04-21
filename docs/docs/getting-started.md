@@ -37,6 +37,37 @@ curl -s -b /tmp/p.txt -H "X-Prism-Csrf: $CSRF" \
   http://localhost:8000/api/v1/runs
 ```
 
+## Convention: one JUnit upload = one Test Suite Run
+
+A project contains many **Test Suite Runs**. Each run is represented by a single
+JUnit XML upload that should contain exactly **one** `<testsuite>` element:
+
+```xml
+<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="dsp" tests="3" failures="1" time="0.36">
+    <testcase classname="codec" name="sine_sweep_1khz" time="0.12"/>
+    <testcase classname="codec" name="sine_sweep_5khz" time="0.14">
+      <failure message="SNR regression">…</failure>
+    </testcase>
+    <testcase classname="latency" name="impulse_response" time="0.10"/>
+  </testsuite>
+</testsuites>
+```
+
+The dashboard's **Suite** column shows that single suite name at a glance, and
+the run-detail page flattens the case list (no redundant collapsible suite
+node). Uploads with multiple `<testsuite>` elements are still accepted — they
+render as the pre-v0.5 expandable tree — but one-suite-per-upload is the
+recommended shape.
+
+To seed the demo dataset against a running stack:
+
+```bash
+python3 scripts/seed_demo.py              # uploads six example runs
+python3 scripts/seed_demo.py --reset      # re-uploads, replacing any seed-named runs
+```
+
 ## File naming convention for archive uploads
 
 Files inside the archive follow `{suite}__{case}__{label}.{ext}`:
