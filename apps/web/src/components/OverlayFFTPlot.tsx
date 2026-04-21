@@ -5,7 +5,9 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 
 import { api } from '../api/client';
 import type { FFTResponse } from '../api/types';
+import { useColorMode } from '../colorMode';
 import type { OverlayTrace } from './OverlayWaveformPlot';
+import { plotLayoutColors } from './plotLayout';
 
 const Plot = createPlotlyComponent(Plotly as object);
 
@@ -14,6 +16,7 @@ const PALETTE = ['#63b3ed', '#fc8181', '#68d391', '#f6ad55', '#b794f4', '#76e4f7
 const DEFAULT_PARAMS = { window: 'hann', nfft: 1024, overlap: 0.5 };
 
 export function OverlayFFTPlot({ traces }: { traces: OverlayTrace[] }) {
+  const { colorMode } = useColorMode();
   const queries = useQueries({
     queries: traces.map((t) => ({
       queryKey: ['artifacts', t.artifactId, 'fft', DEFAULT_PARAMS],
@@ -45,17 +48,18 @@ export function OverlayFFTPlot({ traces }: { traces: OverlayTrace[] }) {
     };
   });
 
+  const c = plotLayoutColors(colorMode);
   return (
     <Box>
       <Plot
         data={plotData}
         layout={{
-          paper_bgcolor: '#171923',
-          plot_bgcolor: '#0a0e13',
-          font: { color: '#e2e8f0' },
+          paper_bgcolor: c.paper,
+          plot_bgcolor: c.plot,
+          font: { color: c.font },
           margin: { l: 50, r: 20, t: 20, b: 40 },
-          xaxis: { title: { text: 'Frequency (Hz)' }, gridcolor: '#2d3748' },
-          yaxis: { title: { text: 'Magnitude (dB)' }, gridcolor: '#2d3748' },
+          xaxis: { title: { text: 'Frequency (Hz)' }, gridcolor: c.grid },
+          yaxis: { title: { text: 'Magnitude (dB)' }, gridcolor: c.grid },
           showlegend: true,
           legend: { orientation: 'h', y: -0.2 },
           height: 360,

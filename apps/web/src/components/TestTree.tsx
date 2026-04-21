@@ -38,7 +38,7 @@ function SuiteNode({
   const q = useSuiteCases(suite.id);
   return (
     <Box>
-      <Text fontSize="sm" fontWeight="600" color="gray.300" mb={1}>
+      <Text fontSize="sm" fontWeight="600" color="var(--prism-text-muted)" mb={1}>
         {suite.name}
       </Text>
       <Stack gap={0} pl={2}>
@@ -50,10 +50,19 @@ function SuiteNode({
             px={2}
             py={1}
             borderRadius="4px"
-            bg={selectedCaseId === c.id ? '#2c5282' : 'transparent'}
-            _hover={{ bg: selectedCaseId === c.id ? '#2c5282' : '#2d3748' }}
+            bg={selectedCaseId === c.id ? 'var(--prism-bg-sel)' : 'transparent'}
+            _hover={{
+              bg:
+                selectedCaseId === c.id
+                  ? 'var(--prism-bg-sel)'
+                  : 'var(--prism-bg-hover)',
+            }}
             fontSize="xs"
-            color={selectedCaseId === c.id ? 'white' : '#cbd5e0'}
+            color={
+              selectedCaseId === c.id
+                ? 'var(--prism-sidebar-active-fg)'
+                : 'var(--prism-text-muted)'
+            }
           >
             <Box
               as="span"

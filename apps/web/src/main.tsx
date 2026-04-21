@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { App } from './App';
 import { AuthProvider } from './auth/AuthProvider';
+import { ColorModeProvider } from './ColorModeProvider';
 import { system } from './theme';
 
 const queryClient = new QueryClient({
@@ -14,14 +15,16 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ChakraProvider value={system}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ChakraProvider>
+    <ColorModeProvider>
+      <ChakraProvider value={system}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ChakraProvider>
+    </ColorModeProvider>
   </StrictMode>,
 );

@@ -71,8 +71,12 @@ export function ComparePage() {
                     key={`${c.suite_name}/${c.name}`}
                     onClick={() => hasAnyWaveform && setSelected(isSelected ? null : c)}
                     cursor={hasAnyWaveform ? 'pointer' : 'default'}
-                    bg={isSelected ? '#1e3a5f' : undefined}
-                    _hover={hasAnyWaveform ? { bg: isSelected ? '#1e3a5f' : '#1a2438' } : undefined}
+                    bg={isSelected ? 'var(--prism-bg-sel)' : undefined}
+                    _hover={
+                      hasAnyWaveform
+                        ? { bg: isSelected ? 'var(--prism-bg-sel)' : 'var(--prism-bg-hover)' }
+                        : undefined
+                    }
                   >
                     <Table.Cell>{c.suite_name}</Table.Cell>
                     <Table.Cell>{c.name}</Table.Cell>
@@ -101,7 +105,13 @@ export function ComparePage() {
           </Table.Root>
 
           {selected && overlayTraces.length > 0 && (
-            <Box borderWidth={1} borderColor="#2d3748" borderRadius="md" p={4} bg="#171923">
+            <Box
+              borderWidth={1}
+              borderColor="var(--prism-border)"
+              borderRadius="md"
+              p={4}
+              bg="var(--prism-bg-surface)"
+            >
               <Heading size="sm" mb={3}>
                 {selected.suite_name} · {selected.name}
               </Heading>

@@ -5,7 +5,7 @@ import { useProjects, useRun } from '../api/queries';
 
 function Sep() {
   return (
-    <Text mx={2} color="#4a5568" fontSize="sm">
+    <Text mx={2} color="var(--prism-text-faint)" fontSize="sm">
       /
     </Text>
   );
@@ -14,13 +14,16 @@ function Sep() {
 function Crumb({ children, to }: { children: React.ReactNode; to?: string }) {
   if (to) {
     return (
-      <Link to={to} style={{ color: '#a0aec0', fontSize: '13px', textDecoration: 'none' }}>
+      <Link
+        to={to}
+        style={{ color: 'var(--prism-text-subtle)', fontSize: '13px', textDecoration: 'none' }}
+      >
         {children}
       </Link>
     );
   }
   return (
-    <Text fontSize="sm" color="#e2e8f0" fontWeight="500">
+    <Text fontSize="sm" color="var(--prism-text)" fontWeight="500">
       {children}
     </Text>
   );

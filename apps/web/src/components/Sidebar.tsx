@@ -14,8 +14,8 @@ const linkStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '6px 10px',
   borderRadius: '6px',
   fontSize: '13px',
-  color: isActive ? '#fff' : '#a0aec0',
-  background: isActive ? '#2d3748' : 'transparent',
+  color: isActive ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-subtle)',
+  background: isActive ? 'var(--prism-sidebar-active-bg)' : 'transparent',
   textDecoration: 'none',
 });
 
@@ -27,9 +27,9 @@ export function Sidebar() {
     <Box
       as="nav"
       w="220px"
-      bg="#171923"
+      bg="var(--prism-bg-surface)"
       borderRightWidth={1}
-      borderRightColor="#2d3748"
+      borderRightColor="var(--prism-border)"
       px={4}
       py={5}
       overflowY="auto"
@@ -50,7 +50,14 @@ export function Sidebar() {
 
       {projects.data && projects.data.length > 0 && (
         <Box mt={6}>
-          <Text fontSize="10px" textTransform="uppercase" letterSpacing="1px" color="#4a5568" mb={2} px={2}>
+          <Text
+            fontSize="10px"
+            textTransform="uppercase"
+            letterSpacing="1px"
+            color="var(--prism-text-faint)"
+            mb={2}
+            px={2}
+          >
             Projects
           </Text>
           <Stack gap={1}>
@@ -67,7 +74,7 @@ export function Sidebar() {
         </Box>
       )}
 
-      <Text mt={8} fontSize="xs" color="#4a5568" textTransform="uppercase">
+      <Text mt={8} fontSize="xs" color="var(--prism-text-faint)" textTransform="uppercase">
         v0.4
       </Text>
     </Box>

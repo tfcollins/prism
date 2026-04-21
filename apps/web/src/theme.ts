@@ -1,40 +1,79 @@
 import { createSystem, defaultConfig } from '@chakra-ui/react';
 
+// Design tokens are declared as CSS custom properties so individual components
+// can reference them with plain `var(--prism-…)` strings (works everywhere —
+// inline styles, Chakra props, Plotly layouts, etc.). Values swap when the
+// top-level `[data-color-mode]` attribute changes.
 export const system = createSystem(defaultConfig, {
   globalCss: {
-    'html, body': { backgroundColor: '#0f1419', color: '#e2e8f0' },
+    ':root': {
+      '--prism-bg-canvas': '#0f1419',
+      '--prism-bg-surface': '#171923',
+      '--prism-bg-plot': '#0a0e13',
+      '--prism-bg-hover': '#1a2438',
+      '--prism-bg-sel': '#1e3a5f',
+      '--prism-border': '#2d3748',
+      '--prism-border-strong': '#4a5568',
+      '--prism-text': '#e2e8f0',
+      '--prism-text-muted': '#cbd5e0',
+      '--prism-text-subtle': '#a0aec0',
+      '--prism-text-faint': '#4a5568',
+      '--prism-brand': '#63b3ed',
+      '--prism-brand-strong': '#3182ce',
+      '--prism-danger-bg': '#2d1a1a',
+      '--prism-sidebar-active-bg': '#2d3748',
+      '--prism-sidebar-active-fg': '#ffffff',
+    },
+    ':root[data-color-mode="light"]': {
+      '--prism-bg-canvas': '#f7fafc',
+      '--prism-bg-surface': '#ffffff',
+      '--prism-bg-plot': '#f7fafc',
+      '--prism-bg-hover': '#edf2f7',
+      '--prism-bg-sel': '#bee3f8',
+      '--prism-border': '#e2e8f0',
+      '--prism-border-strong': '#cbd5e0',
+      '--prism-text': '#1a202c',
+      '--prism-text-muted': '#2d3748',
+      '--prism-text-subtle': '#4a5568',
+      '--prism-text-faint': '#a0aec0',
+      '--prism-brand': '#2b6cb0',
+      '--prism-brand-strong': '#2c5282',
+      '--prism-danger-bg': '#fff5f5',
+      '--prism-sidebar-active-bg': '#bee3f8',
+      '--prism-sidebar-active-fg': '#1a365d',
+    },
 
-    // Tabs: Chakra v3's default inactive-tab text color is too dark against our
-    // dark-theme bg. Give inactive tabs a readable gray and keep active tabs
-    // visually distinct with brand cyan + bold weight.
+    'html, body': {
+      backgroundColor: 'var(--prism-bg-canvas)',
+      color: 'var(--prism-text)',
+    },
+
+    // Tabs: force readable inactive/active colors in both modes
     '[role="tab"]': {
-      color: '#cbd5e0',
+      color: 'var(--prism-text-muted)',
       fontWeight: '500',
     },
     '[role="tab"][data-state="active"], [role="tab"][aria-selected="true"]': {
-      color: '#63b3ed',
+      color: 'var(--prism-brand)',
       fontWeight: '600',
     },
     '[role="tab"]:hover:not([data-state="active"]):not([aria-selected="true"])': {
-      color: '#ffffff',
+      color: 'var(--prism-text)',
     },
 
-    // Outline-variant buttons (e.g. TopBar "Sign out"): Chakra's default
-    // border is too low-contrast on our dark bg — raise both border and text
-    // so the button is legible without shouting.
+    // Outline-variant buttons
     'button.chakra-button[data-variant="outline"], button[data-variant="outline"]': {
-      borderColor: '#4a5568',
-      color: '#e2e8f0',
+      borderColor: 'var(--prism-border-strong)',
+      color: 'var(--prism-text)',
     },
     'button.chakra-button[data-variant="outline"]:hover, button[data-variant="outline"]:hover': {
-      borderColor: '#718096',
-      backgroundColor: 'rgba(255,255,255,0.04)',
+      borderColor: 'var(--prism-text-subtle)',
+      backgroundColor: 'var(--prism-bg-hover)',
     },
 
-    // Checkbox default border is almost invisible on the dark table bg. Raise
-    // the unchecked border; checked state already has its own (blue) color.
+    // Checkbox border
     '[data-scope="checkbox"][data-part="control"]': {
-      borderColor: '#4a5568',
+      borderColor: 'var(--prism-border-strong)',
     },
   },
 });

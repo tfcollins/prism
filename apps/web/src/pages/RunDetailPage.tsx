@@ -37,10 +37,10 @@ export function RunDetailPage() {
           <Grid templateColumns="240px 1fr" gap={4} minH="500px">
             <Box
               borderWidth={1}
-              borderColor="#2d3748"
+              borderColor="var(--prism-border)"
               borderRadius="md"
               p={3}
-              bg="#171923"
+              bg="var(--prism-bg-surface)"
               overflowY="auto"
             >
               <TestTree
@@ -49,7 +49,7 @@ export function RunDetailPage() {
                 onSelectCase={setSelectedCaseId}
               />
             </Box>
-            <Box borderWidth={1} borderColor="#2d3748" borderRadius="md" p={3} bg="#171923">
+            <Box borderWidth={1} borderColor="var(--prism-border)" borderRadius="md" p={3} bg="var(--prism-bg-surface)">
               {!selectedCaseId && <Text color="gray.300">Select a case from the tree</Text>}
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
@@ -61,7 +61,13 @@ export function RunDetailPage() {
                     </Text>
                   </Box>
                   {caseQuery.data.failure_message && (
-                    <Box bg="#2d1a1a" p={2} borderRadius="md" color="red.200" fontSize="sm">
+                    <Box
+                      bg="var(--prism-danger-bg)"
+                      p={2}
+                      borderRadius="md"
+                      color="red.400"
+                      fontSize="sm"
+                    >
                       {caseQuery.data.failure_message}
                     </Box>
                   )}

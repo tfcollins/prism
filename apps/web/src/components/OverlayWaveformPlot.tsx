@@ -5,6 +5,8 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 
 import { api } from '../api/client';
 import type { WaveformResponse } from '../api/types';
+import { useColorMode } from '../colorMode';
+import { plotLayoutColors } from './plotLayout';
 
 const Plot = createPlotlyComponent(Plotly as object);
 
@@ -16,6 +18,7 @@ export interface OverlayTrace {
 }
 
 export function OverlayWaveformPlot({ traces }: { traces: OverlayTrace[] }) {
+  const { colorMode } = useColorMode();
   const queries = useQueries({
     queries: traces.map((t) => ({
       queryKey: ['artifacts', t.artifactId, 'waveform', 4000],
@@ -52,18 +55,19 @@ export function OverlayWaveformPlot({ traces }: { traces: OverlayTrace[] }) {
   });
 
   const xTitle = queries[0].data?.sample_rate ? 'Time (s)' : 'Sample index';
+  const c = plotLayoutColors(colorMode);
 
   return (
     <Box>
       <Plot
         data={plotData}
         layout={{
-          paper_bgcolor: '#171923',
-          plot_bgcolor: '#0a0e13',
-          font: { color: '#e2e8f0' },
+          paper_bgcolor: c.paper,
+          plot_bgcolor: c.plot,
+          font: { color: c.font },
           margin: { l: 50, r: 20, t: 20, b: 40 },
-          xaxis: { title: { text: xTitle }, gridcolor: '#2d3748' },
-          yaxis: { title: { text: 'Amplitude' }, gridcolor: '#2d3748' },
+          xaxis: { title: { text: xTitle }, gridcolor: c.grid },
+          yaxis: { title: { text: 'Amplitude' }, gridcolor: c.grid },
           showlegend: true,
           legend: { orientation: 'h', y: -0.2 },
           height: 360,
