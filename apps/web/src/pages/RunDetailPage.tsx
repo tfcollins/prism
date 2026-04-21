@@ -1,4 +1,4 @@
-import { Badge, Box, Grid, Heading, Stack, Tabs, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Grid, Heading, Stack, Tabs, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -43,10 +43,26 @@ export function RunDetailPage() {
               bg="var(--prism-bg-surface)"
               overflowY="auto"
             >
+              {runQuery.data.suites.length === 1 && (
+                <Flex align="center" gap={2} mb={2} pb={2} borderBottomWidth={1} borderColor="var(--prism-border)">
+                  <Text
+                    fontSize="10px"
+                    textTransform="uppercase"
+                    letterSpacing="1px"
+                    color="var(--prism-text-faint)"
+                  >
+                    Suite
+                  </Text>
+                  <Badge variant="subtle" colorPalette="blue">
+                    {runQuery.data.suites[0].name}
+                  </Badge>
+                </Flex>
+              )}
               <TestTree
                 suites={runQuery.data.suites}
                 selectedCaseId={selectedCaseId}
                 onSelectCase={setSelectedCaseId}
+                flatten={runQuery.data.suites.length === 1}
               />
             </Box>
             <Box borderWidth={1} borderColor="var(--prism-border)" borderRadius="md" p={3} bg="var(--prism-bg-surface)">

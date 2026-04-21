@@ -14,13 +14,23 @@ interface Props {
   suites: SuiteSummary[];
   selectedCaseId: string | null;
   onSelectCase: (caseId: string) => void;
+  /** When true, the per-suite name header is omitted and cases render directly
+   *  as one flat list. Useful when a Test Suite Run contains a single
+   *  `<testsuite>` (the suite name is shown once by the parent page instead). */
+  flatten?: boolean;
 }
 
-export function TestTree({ suites, selectedCaseId, onSelectCase }: Props) {
+export function TestTree({ suites, selectedCaseId, onSelectCase, flatten = false }: Props) {
   return (
-    <Stack gap={2}>
+    <Stack gap={flatten ? 0 : 2}>
       {suites.map((s) => (
-        <SuiteNode key={s.id} suite={s} selectedCaseId={selectedCaseId} onSelectCase={onSelectCase} />
+        <SuiteNode
+          key={s.id}
+          suite={s}
+          selectedCaseId={selectedCaseId}
+          onSelectCase={onSelectCase}
+          hideHeader={flatten}
+        />
       ))}
     </Stack>
   );
@@ -30,18 +40,22 @@ function SuiteNode({
   suite,
   selectedCaseId,
   onSelectCase,
+  hideHeader,
 }: {
   suite: SuiteSummary;
   selectedCaseId: string | null;
   onSelectCase: (caseId: string) => void;
+  hideHeader: boolean;
 }) {
   const q = useSuiteCases(suite.id);
   return (
     <Box>
-      <Text fontSize="sm" fontWeight="600" color="var(--prism-text-muted)" mb={1}>
-        {suite.name}
-      </Text>
-      <Stack gap={0} pl={2}>
+      {!hideHeader && (
+        <Text fontSize="sm" fontWeight="600" color="var(--prism-text-muted)" mb={1}>
+          {suite.name}
+        </Text>
+      )}
+      <Stack gap={0} pl={hideHeader ? 0 : 2}>
         {q.data?.map((c) => (
           <Box
             key={c.id}
