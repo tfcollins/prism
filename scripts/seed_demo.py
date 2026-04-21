@@ -19,20 +19,15 @@ Uses only the standard library so it runs anywhere Python 3.10+ is present.
 from __future__ import annotations
 
 import argparse
-import http.cookiejar
 import io
-import json
 import math
 import os
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
-import uuid
 import zipfile
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Iterable
+
+from _prism_client import PrismClient
 
 DEFAULT_URL = os.environ.get("PRISM_URL", "http://localhost:8000")
 DEFAULT_EMAIL = os.environ.get("PRISM_EMAIL", "admin@example.com")
@@ -257,90 +252,6 @@ def build_runs() -> list[RunSpec]:
 
 
 # --------------------------------------------------------------------------- #
-# Tiny HTTP client (stdlib only, cookie jar + multipart builder)
-# --------------------------------------------------------------------------- #
-
-class PrismClient:
-    def __init__(self, base_url: str) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.jar = http.cookiejar.CookieJar()
-        self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
-
-    def _read_cookie(self, name: str) -> str | None:
-        for c in self.jar:
-            if c.name == name:
-                return c.value
-        return None
-
-    def _request(self, method: str, path: str, *, body: bytes | None = None, headers: dict[str, str] | None = None) -> tuple[int, bytes]:
-        url = f"{self.base_url}{path}"
-        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
-        csrf = self._read_cookie("prism_csrf")
-        if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
-            req.add_header("X-Prism-Csrf", csrf)
-        try:
-            with self.opener.open(req) as resp:
-                return resp.status, resp.read()
-        except urllib.error.HTTPError as exc:
-            return exc.code, exc.read()
-
-    def login(self, email: str, password: str) -> None:
-        payload = json.dumps({"email": email, "password": password}).encode("utf-8")
-        code, _ = self._request("POST", "/api/v1/auth/login", body=payload, headers={"Content-Type": "application/json"})
-        if code != 200:
-            raise RuntimeError(f"login failed: HTTP {code}")
-
-    def ensure_project(self, slug: str, name: str) -> None:
-        payload = json.dumps({"slug": slug, "name": name, "description": "Seed demo"}).encode("utf-8")
-        code, body = self._request("POST", "/api/v1/projects", body=payload, headers={"Content-Type": "application/json"})
-        if code not in (201, 409):
-            raise RuntimeError(f"project create failed: HTTP {code} {body!r}")
-
-    def list_runs(self, project_slug: str) -> list[dict]:
-        code, body = self._request("GET", f"/api/v1/runs?project={urllib.parse.quote(project_slug)}")
-        if code != 200:
-            raise RuntimeError(f"list runs failed: HTTP {code} {body!r}")
-        return json.loads(body)
-
-    def delete_run(self, run_id: str) -> None:
-        code, body = self._request("DELETE", f"/api/v1/runs/{run_id}")
-        if code not in (204, 404):
-            raise RuntimeError(f"delete run failed: HTTP {code} {body!r}")
-
-    def upload_run(self, run: RunSpec, project_slug: str) -> dict:
-        boundary = f"----prismseed{uuid.uuid4().hex}"
-        parts: list[bytes] = []
-
-        def _add_field(name: str, value: str) -> None:
-            parts.append(f"--{boundary}\r\n".encode())
-            parts.append(f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode())
-            parts.append(value.encode("utf-8"))
-            parts.append(b"\r\n")
-
-        def _add_file(name: str, filename: str, content_type: str, content: bytes) -> None:
-            parts.append(f"--{boundary}\r\n".encode())
-            parts.append(
-                f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'.encode()
-            )
-            parts.append(f"Content-Type: {content_type}\r\n\r\n".encode())
-            parts.append(content)
-            parts.append(b"\r\n")
-
-        metadata = {"project_slug": project_slug, "name": run.name, "tags": run.tags}
-        _add_field("metadata", json.dumps(metadata))
-        _add_file("junit", "junit.xml", "application/xml", run.junit_xml)
-        if run.archive_zip is not None:
-            _add_file("archive", "archive.zip", "application/zip", run.archive_zip)
-        parts.append(f"--{boundary}--\r\n".encode())
-        body = b"".join(parts)
-        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
-        code, resp_body = self._request("POST", "/api/v1/runs", body=body, headers=headers)
-        if code != 201:
-            raise RuntimeError(f"upload {run.name!r} failed: HTTP {code} {resp_body!r}")
-        return json.loads(resp_body)
-
-
-# --------------------------------------------------------------------------- #
 # Entry point
 # --------------------------------------------------------------------------- #
 
@@ -374,7 +285,13 @@ def main(argv: list[str] | None = None) -> int:
 
     for spec in runs:
         print(f"  uploading {spec.name} (suite={spec.suite}, waveforms={'yes' if spec.archive_zip else 'no'}) …", flush=True)
-        client.upload_run(spec, args.project)
+        client.upload_run(
+            project_slug=args.project,
+            run_name=spec.name,
+            junit_xml=spec.junit_xml,
+            archive_zip=spec.archive_zip,
+            tags=spec.tags,
+        )
 
     print(f"✓ seeded {len(runs)} runs into project {args.project!r}", flush=True)
     return 0
