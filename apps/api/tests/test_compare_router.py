@@ -74,3 +74,43 @@ def test_compare_unknown_run_404(client: TestClient, seed_admin) -> None:
         headers={"X-Prism-Csrf": csrf},
     )
     assert resp.status_code == 404
+
+
+def _upload_with_waveform(client: TestClient, csrf: str, name: str, junit_xml: bytes) -> str:
+    arc = io.BytesIO()
+    with zipfile.ZipFile(arc, "w") as zf:
+        zf.writestr("dsp__ok__wave.csv", "# sample_rate=48000\n0.1\n0.2\n0.3\n")
+    resp = client.post(
+        "/api/v1/runs",
+        files={"junit": ("j.xml", junit_xml, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
+        data={"metadata": json.dumps({"project_slug": "audio", "name": name})},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+def test_compare_includes_waveform_artifact_ids(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    a = _upload_with_waveform(client, csrf, "a", _BASE_JUNIT)
+    b = _upload_with_waveform(client, csrf, "b", _FAIL_ON_OTHER)
+
+    resp = client.post(
+        "/api/v1/compare",
+        json={"run_ids": [a, b]},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    by_name = {(c["suite_name"], c["name"]): c for c in body["cases"]}
+    ok_case = by_name[("dsp", "ok")]
+    # Both runs uploaded a waveform attached to dsp.ok — both ids should be set
+    assert all(aid is not None for aid in ok_case["waveform_artifact_ids"])
+    assert len(ok_case["waveform_artifact_ids"]) == 2
+    # The two waveform artifacts have identical content -> deduped storage but
+    # distinct artifact ids per run, so the IDs should differ.
+    assert ok_case["waveform_artifact_ids"][0] != ok_case["waveform_artifact_ids"][1]
+    # The "other" case has no waveform attached
+    other_case = by_name[("dsp", "other")]
+    assert other_case["waveform_artifact_ids"] == [None, None]

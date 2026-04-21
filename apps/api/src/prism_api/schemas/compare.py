@@ -10,6 +10,8 @@ class CaseDiff(BaseModel):
     name: str
     suite_name: str
     statuses: list[str | None]  # one entry per requested run, None = case absent in that run
+    waveform_artifact_ids: list[str | None] = Field(default_factory=list)
+    # one entry per requested run, None = case absent OR no waveform artifact attached
 
 
 class RunHeader(BaseModel):

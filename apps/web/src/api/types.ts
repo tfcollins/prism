@@ -115,6 +115,7 @@ export interface CaseDiff {
   classname: string;
   name: string;
   statuses: (string | null)[];
+  waveform_artifact_ids: (string | null)[];
 }
 
 export interface CompareResponse {
