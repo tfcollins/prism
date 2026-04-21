@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, Flex, Table, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Checkbox, Flex, Table, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -34,6 +34,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
             <Table.ColumnHeader></Table.ColumnHeader>
             <Table.ColumnHeader>Status</Table.ColumnHeader>
             <Table.ColumnHeader>Run</Table.ColumnHeader>
+            <Table.ColumnHeader>Suite</Table.ColumnHeader>
             <Table.ColumnHeader>Pass</Table.ColumnHeader>
             <Table.ColumnHeader>Fail</Table.ColumnHeader>
             <Table.ColumnHeader>Tags</Table.ColumnHeader>
@@ -55,7 +56,30 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
                 {r.status}
               </Table.Cell>
               <Table.Cell>
-                <Link to={`/runs/${r.id}`} style={{ color: '#63b3ed' }}>{r.name}</Link>
+                <Link to={`/runs/${r.id}`} style={{ color: 'var(--prism-brand)' }}>
+                  {r.name}
+                </Link>
+              </Table.Cell>
+              <Table.Cell>
+                {r.suite_names.length === 0 && (
+                  <Text as="span" fontSize="xs" color="var(--prism-text-faint)">
+                    —
+                  </Text>
+                )}
+                {r.suite_names.length === 1 && (
+                  <Badge variant="subtle" colorPalette="blue">
+                    {r.suite_names[0]}
+                  </Badge>
+                )}
+                {r.suite_names.length > 1 && (
+                  <Flex gap={1} wrap="wrap">
+                    {r.suite_names.map((n) => (
+                      <Badge key={n} variant="subtle" colorPalette="blue">
+                        {n}
+                      </Badge>
+                    ))}
+                  </Flex>
+                )}
               </Table.Cell>
               <Table.Cell>{r.pass_count}</Table.Cell>
               <Table.Cell>{r.fail_count}</Table.Cell>

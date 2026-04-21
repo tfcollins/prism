@@ -34,6 +34,7 @@ export interface RunListItem {
   fail_count: number;
   error_count: number;
   skip_count: number;
+  suite_names: string[];
   tags: RunTag[];
 }
 
