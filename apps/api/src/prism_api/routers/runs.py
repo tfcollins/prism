@@ -11,9 +11,11 @@ from prism_api.config import Settings
 from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models.run import RunStatus
 from prism_api.models.user import User
+from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import SuiteRepo
+from prism_api.schemas.artifact import ArtifactOut
 from prism_api.schemas.run import (
     CreateRunMetadata,
     RunDetail,
@@ -150,3 +152,28 @@ def get_run(
         started_at=run.started_at, finished_at=run.finished_at,
         junit_artifact_id=run.junit_artifact_id, tags=tags, suites=suites,
     )
+
+
+@router.get("/{run_id}/artifacts", response_model=list[ArtifactOut])
+def list_run_artifacts(
+    run_id: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> list[ArtifactOut]:
+    """Return all run-scoped artifacts (boot.log, dmesg_*, iio_info.txt, etc.).
+
+    Per-case artifacts are reachable via /api/v1/cases/{id}; this endpoint
+    is the parallel for run-scoped owners.
+    """
+    runs = RunRepo(session)
+    if runs.get_by_id(run_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    arts = ArtifactRepo(session).list_by_owner("run", run_id)
+    return [
+        ArtifactOut(
+            id=a.id, owner_type=a.owner_type, owner_id=a.owner_id,
+            kind=a.kind.value, filename=a.filename,
+            size_bytes=a.size_bytes, content_hash=a.content_hash,
+        )
+        for a in arts
+    ]
