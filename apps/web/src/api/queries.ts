@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { api } from './client';
 import type {
+  CaseArtifact,
   CaseDetail,
   CaseListItem,
   CompareResponse,
@@ -73,6 +74,15 @@ export function useFFT(
     queryFn: async () =>
       (await api.get<FFTResponse>(`/artifacts/${artifactId}/fft`, { params })).data,
     enabled: Boolean(artifactId),
+  });
+}
+
+export function useRunArtifacts(runId: string | undefined) {
+  return useQuery({
+    queryKey: ['runs', runId, 'artifacts'],
+    queryFn: async () =>
+      (await api.get<CaseArtifact[]>(`/runs/${runId}/artifacts`)).data,
+    enabled: Boolean(runId),
   });
 }
 

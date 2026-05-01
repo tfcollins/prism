@@ -2,7 +2,7 @@ import { Badge, Box, Flex, Grid, Heading, Stack, Tabs, Text } from '@chakra-ui/r
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { useCase, useRun } from '../api/queries';
+import { useCase, useRun, useRunArtifacts } from '../api/queries';
 import { AppShell } from '../components/AppShell';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
@@ -15,6 +15,7 @@ export function RunDetailPage() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
 
   const runQuery = useRun(id);
+  const runArtifactsQuery = useRunArtifacts(id);
   const caseQuery = useCase(selectedCaseId ?? undefined);
 
   const waveform = caseQuery.data?.artifacts.find((a) => a.kind.startsWith('waveform'));
@@ -36,7 +37,7 @@ export function RunDetailPage() {
           <Heading size="lg" mb={2}>
             {runQuery.data.name}
           </Heading>
-          <Stack direction="row" gap={2} mb={6}>
+          <Stack direction="row" gap={2} mb={4}>
             <Badge colorPalette="blue">{runQuery.data.status}</Badge>
             {runQuery.data.tags.map((t) => (
               <Badge key={`${t.key}:${t.value}`} variant="outline">
@@ -44,6 +45,9 @@ export function RunDetailPage() {
               </Badge>
             ))}
           </Stack>
+          {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
+            <RunFilesSection artifacts={runArtifactsQuery.data} />
+          )}
           <Grid templateColumns="240px 1fr" gap={4} minH="500px">
             <Box
               borderWidth={1}
@@ -152,6 +156,57 @@ export function RunDetailPage() {
         </Box>
       )}
     </AppShell>
+  );
+}
+
+function RunFilesSection({
+  artifacts,
+}: {
+  artifacts: Array<{ id: string; filename: string; kind: string; size_bytes: number }>;
+}) {
+  // Filter out junit + manifest — those are housekeeping the UI already implies.
+  const visible = artifacts.filter(
+    (a) => a.filename !== 'junit.xml' && a.filename !== 'manifest.json',
+  );
+  if (visible.length === 0) return null;
+  return (
+    <Box mb={6}>
+      <Text
+        fontSize="10px"
+        textTransform="uppercase"
+        letterSpacing="1px"
+        color="var(--prism-text-faint)"
+        mb={1}
+      >
+        Run files
+      </Text>
+      <Box
+        borderWidth={1}
+        borderColor="var(--prism-border)"
+        borderRadius="md"
+        bg="var(--prism-bg-surface)"
+        px={3}
+        py={2}
+      >
+        <Stack gap={1}>
+          {visible.map((a) => (
+            <Flex key={a.id} align="center" gap={2} fontSize="sm">
+              <a
+                href={`/api/v1/artifacts/${a.id}/raw`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--prism-link)' }}
+              >
+                {a.filename}
+              </a>
+              <Text fontSize="xs" color="var(--prism-text-faint)">
+                ({a.kind} · {Math.round(a.size_bytes / 1024)} KB)
+              </Text>
+            </Flex>
+          ))}
+        </Stack>
+      </Box>
+    </Box>
   );
 }
 
