@@ -134,7 +134,7 @@ export function RunDetailPage() {
                         {otherArtifacts.map((a) => (
                           <Flex key={a.id} align="center" gap={2} fontSize="sm">
                             <a
-                              href={`/api/v1/artifacts/${a.id}/download`}
+                              href={`/api/v1/artifacts/${a.id}/raw`}
                               target="_blank"
                               rel="noreferrer"
                               style={{ color: 'var(--prism-link)' }}
