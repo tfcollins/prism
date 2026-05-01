@@ -8,6 +8,7 @@ import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
 import { TestTree } from '../components/TestTree';
 import { WaveformPlot } from '../components/WaveformPlot';
+import { parseTestId } from '../lib/parseTestId';
 
 export function RunDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,12 +80,8 @@ export function RunDetailPage() {
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
                 <Stack gap={3}>
-                  <Box>
-                    <Heading size="sm">{caseQuery.data.name}</Heading>
-                    <Text fontSize="xs" color="var(--prism-text-subtle)">
-                      {caseQuery.data.classname} · {caseQuery.data.status} · {caseQuery.data.duration_ms} ms
-                    </Text>
-                  </Box>
+                  <CaseHeader caseData={caseQuery.data} />
+                  <CaseParamsTable name={caseQuery.data.name} />
                   {caseQuery.data.failure_message && (
                     <Box
                       bg="var(--prism-danger-bg)"
@@ -155,5 +152,74 @@ export function RunDetailPage() {
         </Box>
       )}
     </AppShell>
+  );
+}
+
+function CaseHeader({
+  caseData,
+}: {
+  caseData: { name: string; classname: string; status: string; duration_ms: number };
+}) {
+  const { baseName, params } = parseTestId(caseData.name);
+  const hasParams = params.length > 0;
+  return (
+    <Box>
+      <Heading size="sm">{baseName}</Heading>
+      <Text fontSize="xs" color="var(--prism-text-subtle)">
+        {caseData.classname} · {caseData.status} · {caseData.duration_ms} ms
+        {hasParams && ` · instance ${params.length} param${params.length === 1 ? '' : 's'}`}
+      </Text>
+    </Box>
+  );
+}
+
+function CaseParamsTable({ name }: { name: string }) {
+  const { params } = parseTestId(name);
+  if (params.length === 0) return null;
+  return (
+    <Box>
+      <Text
+        fontSize="10px"
+        textTransform="uppercase"
+        letterSpacing="1px"
+        color="var(--prism-text-faint)"
+        mb={1}
+      >
+        Parameters
+      </Text>
+      <Box
+        borderWidth={1}
+        borderColor="var(--prism-border)"
+        borderRadius="md"
+        bg="var(--prism-bg-surface)"
+        px={3}
+        py={2}
+      >
+        <Stack gap={1}>
+          {params.map((p) => (
+            <Flex key={p.key} align="baseline" gap={3}>
+              <Text
+                fontSize="xs"
+                color="var(--prism-text-subtle)"
+                fontWeight="600"
+                minW="120px"
+                flexShrink={0}
+              >
+                {p.key}
+              </Text>
+              <Text
+                as="code"
+                fontSize="xs"
+                color="var(--prism-text-muted)"
+                wordBreak="break-all"
+                whiteSpace="pre-wrap"
+              >
+                {p.value}
+              </Text>
+            </Flex>
+          ))}
+        </Stack>
+      </Box>
+    </Box>
   );
 }

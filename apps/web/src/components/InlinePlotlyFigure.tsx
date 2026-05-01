@@ -34,9 +34,10 @@ export function InlinePlotlyFigure({ artifactId }: { artifactId: string }) {
 
   return (
     <Box>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Plot
-        data={q.data.data as Plotly.Data[]}
-        layout={layout as Plotly.Layout}
+        data={q.data.data as any[]}
+        layout={layout as any}
         config={{ displaylogo: false, responsive: true, ...(q.data.config ?? {}) }}
         style={{ width: '100%', minHeight: '500px' }}
         useResizeHandler
