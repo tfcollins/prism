@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import io
+from pathlib import PurePosixPath
 
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from prism_api.config import Settings
@@ -42,6 +43,42 @@ def get_artifact(
         id=a.id, owner_type=a.owner_type, owner_id=a.owner_id, kind=a.kind.value,
         filename=a.filename, size_bytes=a.size_bytes, content_hash=a.content_hash,
     )
+
+
+_INLINE_CONTENT_TYPES = {
+    ".json": "application/json",
+    ".html": "text/html; charset=utf-8",
+    ".htm": "text/html; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8",
+    ".log": "text/plain; charset=utf-8",
+    ".csv": "text/csv",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+}
+
+
+@router.get("/{artifact_id}/raw")
+def raw_artifact(
+    artifact_id: str,
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> Response:
+    """Stream the artifact bytes inline with a sensible Content-Type.
+
+    Unlike `/download` (which 307s to a presigned MinIO URL with
+    `Content-Type: binary/octet-stream`), this endpoint proxies the
+    bytes through the API and labels them by extension, so a UI can
+    fetch a JSON figure or render an HTML blob without iframe/CORS
+    gymnastics. Intended for small inline payloads (figure JSON,
+    metrics JSON, log text) — not large blobs.
+    """
+    a = _fetch_artifact_or_404(session, artifact_id)
+    storage = build_storage(settings)
+    data = storage.get_bytes(a.storage_key)
+    suffix = PurePosixPath(a.filename).suffix.lower()
+    media_type = _INLINE_CONTENT_TYPES.get(suffix, "application/octet-stream")
+    return Response(content=data, media_type=media_type)
 
 
 @router.get("/{artifact_id}/download")
