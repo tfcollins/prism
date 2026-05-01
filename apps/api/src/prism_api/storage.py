@@ -25,6 +25,10 @@ class ObjectStorage:
 
     client: S3Client
     bucket: str
+    public_endpoint: str | None = None
+    """If set, presigned URLs are rewritten so the host portion points
+    here instead of the internal s3 endpoint. Lets browsers running
+    outside the docker network reach MinIO via the host-mapped port."""
 
     def ensure_bucket(self) -> None:
         existing = {b["Name"] for b in self.client.list_buckets().get("Buckets", [])}
@@ -61,9 +65,15 @@ class ObjectStorage:
             return False
 
     def presigned_url(self, key: str, *, expires_in: int = 900) -> str:
-        return self.client.generate_presigned_url(
+        url = self.client.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
         )
+        if self.public_endpoint:
+            internal = self.client.meta.endpoint_url.rstrip("/")
+            public = self.public_endpoint.rstrip("/")
+            if url.startswith(internal):
+                url = public + url[len(internal):]
+        return url
 
 
 def build_storage(settings: Settings) -> ObjectStorage:
@@ -75,4 +85,8 @@ def build_storage(settings: Settings) -> ObjectStorage:
         aws_secret_access_key=settings.s3_secret_key,
         region_name="us-east-1",
     )
-    return ObjectStorage(client=client, bucket=settings.s3_bucket)
+    return ObjectStorage(
+        client=client,
+        bucket=settings.s3_bucket,
+        public_endpoint=settings.s3_public_endpoint,
+    )
