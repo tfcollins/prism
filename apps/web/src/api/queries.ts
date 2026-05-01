@@ -76,6 +76,14 @@ export function useFFT(
   });
 }
 
+export function useArtifactJson<T = unknown>(artifactId: string | undefined) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'raw-json'],
+    queryFn: async () => (await api.get<T>(`/artifacts/${artifactId}/raw`)).data,
+    enabled: Boolean(artifactId),
+  });
+}
+
 export function useCompare(runIds: string[]) {
   return useQuery({
     queryKey: ['compare', runIds.slice().sort().join(',')],

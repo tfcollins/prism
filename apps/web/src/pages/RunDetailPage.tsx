@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useCase, useRun } from '../api/queries';
 import { AppShell } from '../components/AppShell';
 import { FFTPlot } from '../components/FFTPlot';
+import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
 import { TestTree } from '../components/TestTree';
 import { WaveformPlot } from '../components/WaveformPlot';
 
@@ -16,6 +17,14 @@ export function RunDetailPage() {
   const caseQuery = useCase(selectedCaseId ?? undefined);
 
   const waveform = caseQuery.data?.artifacts.find((a) => a.kind.startsWith('waveform'));
+  // Plotly figure JSON: render inline via react-plotly. Match by filename
+  // since `kind` for *.json comes through as log_text from the detector.
+  const figureJson = caseQuery.data?.artifacts.find(
+    (a) => a.filename.toLowerCase().endsWith('.json') && a.filename.toLowerCase().includes('spectrum'),
+  );
+  const otherArtifacts = (caseQuery.data?.artifacts ?? []).filter(
+    (a) => a !== waveform && a !== figureJson,
+  );
 
   return (
     <AppShell>
@@ -87,6 +96,7 @@ export function RunDetailPage() {
                       {caseQuery.data.failure_message}
                     </Box>
                   )}
+                  {figureJson && <InlinePlotlyFigure artifactId={figureJson.id} />}
                   {waveform ? (
                     <Tabs.Root defaultValue="time">
                       <Tabs.List>
@@ -101,9 +111,42 @@ export function RunDetailPage() {
                       </Tabs.Content>
                     </Tabs.Root>
                   ) : (
-                    <Text color="var(--prism-text-subtle)" fontSize="sm">
-                      No waveform artifact attached to this case.
-                    </Text>
+                    !figureJson && (
+                      <Text color="var(--prism-text-subtle)" fontSize="sm">
+                        No plottable artifact attached to this case.
+                      </Text>
+                    )
+                  )}
+                  {otherArtifacts.length > 0 && (
+                    <Box>
+                      <Text
+                        fontSize="10px"
+                        textTransform="uppercase"
+                        letterSpacing="1px"
+                        color="var(--prism-text-faint)"
+                        mt={2}
+                        mb={1}
+                      >
+                        Attached files
+                      </Text>
+                      <Stack gap={1}>
+                        {otherArtifacts.map((a) => (
+                          <Flex key={a.id} align="center" gap={2} fontSize="sm">
+                            <a
+                              href={`/api/v1/artifacts/${a.id}/download`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: 'var(--prism-link)' }}
+                            >
+                              {a.filename}
+                            </a>
+                            <Text fontSize="xs" color="var(--prism-text-faint)">
+                              ({a.kind} · {Math.round(a.size_bytes / 1024)} KB)
+                            </Text>
+                          </Flex>
+                        ))}
+                      </Stack>
+                    </Box>
                   )}
                 </Stack>
               )}
