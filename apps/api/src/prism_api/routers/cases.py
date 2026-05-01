@@ -17,6 +17,7 @@ def get_case(
 ) -> CaseDetail:
     # CaseRepo doesn't have get_by_id — fetch directly
     from prism_api.models.suite import TestCase
+
     case = session.get(TestCase, case_id)
     if case is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "case not found")
@@ -25,8 +26,13 @@ def get_case(
         for a in ArtifactRepo(session).list_by_owner("case", case.id)
     ]
     return CaseDetail(
-        id=case.id, suite_id=case.suite_id, classname=case.classname, name=case.name,
-        status=case.status.value, duration_ms=case.duration_ms,
-        failure_message=case.failure_message, failure_trace=case.failure_trace,
+        id=case.id,
+        suite_id=case.suite_id,
+        classname=case.classname,
+        name=case.name,
+        status=case.status.value,
+        duration_ms=case.duration_ms,
+        failure_message=case.failure_message,
+        failure_trace=case.failure_trace,
         artifacts=artifacts,
     )

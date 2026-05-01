@@ -1,4 +1,5 @@
 """Users router tests."""
+
 from fastapi.testclient import TestClient
 
 
@@ -57,7 +58,9 @@ def test_cannot_delete_last_user(client: TestClient, seed_admin: None) -> None:
     _login(client)
     me = client.get("/api/v1/auth/me").json()
     # Create a second user
-    second = client.post("/api/v1/users", json={"email": "other@x.com", "password": "longpw!!"}).json()
+    second = client.post(
+        "/api/v1/users", json={"email": "other@x.com", "password": "longpw!!"}
+    ).json()
     # Log in as the second user
     client.post("/api/v1/auth/logout")
     client.post("/api/v1/auth/login", json={"email": "other@x.com", "password": "longpw!!"})

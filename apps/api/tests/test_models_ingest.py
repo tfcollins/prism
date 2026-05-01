@@ -1,4 +1,5 @@
 """Smoke tests for ingest-pipeline models against in-memory SQLite."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy import create_engine
@@ -28,16 +29,32 @@ def test_full_run_tree_round_trip() -> None:
         s.add(run)
         s.flush()
 
-        s.add_all([
-            RunTag(run_id=run.id, key="branch", value="main"),
-            RunTag(run_id=run.id, key="sha", value="abc123"),
-        ])
+        s.add_all(
+            [
+                RunTag(run_id=run.id, key="branch", value="main"),
+                RunTag(run_id=run.id, key="sha", value="abc123"),
+            ]
+        )
 
-        suite = TestSuite(run_id=run.id, name="dsp", pass_count=1, fail_count=0, error_count=0, skip_count=0, duration_ms=42)
+        suite = TestSuite(
+            run_id=run.id,
+            name="dsp",
+            pass_count=1,
+            fail_count=0,
+            error_count=0,
+            skip_count=0,
+            duration_ms=42,
+        )
         s.add(suite)
         s.flush()
 
-        case = TestCase(suite_id=suite.id, classname="codec", name="sine_sweep", status=CaseStatus.PASS, duration_ms=10)
+        case = TestCase(
+            suite_id=suite.id,
+            classname="codec",
+            name="sine_sweep",
+            status=CaseStatus.PASS,
+            duration_ms=10,
+        )
         s.add(case)
         s.flush()
 

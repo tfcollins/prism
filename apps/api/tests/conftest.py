@@ -1,4 +1,5 @@
 """Shared test fixtures."""
+
 from collections.abc import Iterator
 
 import pytest
@@ -59,9 +60,9 @@ def seed_admin(db_session: Session) -> None:
 @pytest.fixture
 def patch_ingest(monkeypatch, db_session, storage_fixture):
     """Replace the celery delay with an inline call, and provide the same storage to both sides."""
-    from prism_api.routers import runs as runs_module
-    from prism_api.routers import artifacts as artifacts_module
     from prism_api.ingest import IngestInputs, ingest_run
+    from prism_api.routers import artifacts as artifacts_module
+    from prism_api.routers import runs as runs_module
 
     def fake_enqueue(run_id: str, junit_bytes: bytes, archive_bytes: bytes | None, storage) -> None:
         ingest_run(
@@ -85,6 +86,7 @@ def storage_fixture(monkeypatch):
     """
     import boto3
     from moto import mock_aws
+
     from prism_api.routers import runs as runs_module
     from prism_api.storage import ObjectStorage
 

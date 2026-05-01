@@ -4,6 +4,7 @@ Revision ID: 0002
 Revises: 0001
 Create Date: 2026-04-20
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -19,13 +20,23 @@ def upgrade() -> None:
     op.create_table(
         "test_runs",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("project_id", sa.String(36), sa.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "project_id",
+            sa.String(36),
+            sa.ForeignKey("projects.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("status", sa.String(16), nullable=False),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("junit_artifact_id", sa.String(36), nullable=True),
-        sa.Column("created_by", sa.String(36), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "created_by",
+            sa.String(36),
+            sa.ForeignKey("users.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -33,7 +44,12 @@ def upgrade() -> None:
 
     op.create_table(
         "run_tags",
-        sa.Column("run_id", sa.String(36), sa.ForeignKey("test_runs.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "run_id",
+            sa.String(36),
+            sa.ForeignKey("test_runs.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
         sa.Column("key", sa.String(100), primary_key=True),
         sa.Column("value", sa.String(500), nullable=False),
     )
@@ -42,7 +58,12 @@ def upgrade() -> None:
     op.create_table(
         "test_suites",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("run_id", sa.String(36), sa.ForeignKey("test_runs.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "run_id",
+            sa.String(36),
+            sa.ForeignKey("test_runs.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("pass_count", sa.Integer, nullable=False, server_default="0"),
         sa.Column("fail_count", sa.Integer, nullable=False, server_default="0"),
@@ -57,7 +78,12 @@ def upgrade() -> None:
     op.create_table(
         "test_cases",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column("suite_id", sa.String(36), sa.ForeignKey("test_suites.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "suite_id",
+            sa.String(36),
+            sa.ForeignKey("test_suites.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("classname", sa.String(255), nullable=False, server_default=""),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("status", sa.String(16), nullable=False),

@@ -1,4 +1,5 @@
 """User management endpoints."""
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session

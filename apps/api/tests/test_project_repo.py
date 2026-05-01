@@ -1,4 +1,5 @@
 """Project repository tests."""
+
 from collections.abc import Iterator
 
 import pytest

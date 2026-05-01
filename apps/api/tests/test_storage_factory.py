@@ -5,15 +5,15 @@ from prism_api.storage import build_storage
 
 
 def _settings(**overrides) -> Settings:
-    base = dict(
-        database_url="sqlite:///:memory:",
-        s3_endpoint="http://minio:9000",
-        s3_access_key="ak",
-        s3_secret_key="sk",
-        s3_bucket="prism",
-        redis_url="redis://r:6379/0",
-        jwt_secret="testsecretlongenough",
-    )
+    base = {
+        "database_url": "sqlite:///:memory:",
+        "s3_endpoint": "http://minio:9000",
+        "s3_access_key": "ak",
+        "s3_secret_key": "sk",
+        "s3_bucket": "prism",
+        "redis_url": "redis://r:6379/0",
+        "jwt_secret": "testsecretlongenough",
+    }
     base.update(overrides)
     return Settings(**base)  # type: ignore[call-arg]
 

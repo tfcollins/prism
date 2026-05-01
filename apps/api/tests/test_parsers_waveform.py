@@ -1,4 +1,5 @@
 """Waveform loader tests: CSV, NPY, HDF5."""
+
 import io
 
 import h5py

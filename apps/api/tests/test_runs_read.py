@@ -21,8 +21,15 @@ def _upload(client: TestClient, csrf: str, project_slug: str = "audio", name: st
         zf.writestr("dsp__ok__waveform.csv", "# sample_rate=48000\n0.1\n0.2\n0.3\n")
     resp = client.post(
         "/api/v1/runs",
-        files={"junit": ("j.xml", junit, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
-        data={"metadata": json.dumps({"project_slug": project_slug, "name": name, "tags": {"branch": "main"}})},
+        files={
+            "junit": ("j.xml", junit, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
+        data={
+            "metadata": json.dumps(
+                {"project_slug": project_slug, "name": name, "tags": {"branch": "main"}}
+            )
+        },
         headers={"X-Prism-Csrf": csrf},
     )
     assert resp.status_code == 201, resp.text
@@ -55,9 +62,7 @@ def test_list_runs_basic(client: TestClient, seed_admin, patch_ingest) -> None:
     assert isinstance(runs[0]["created_at"], str) and runs[0]["created_at"]
 
 
-def test_list_runs_exposes_multi_suite_names(
-    client: TestClient, seed_admin, patch_ingest
-) -> None:
+def test_list_runs_exposes_multi_suite_names(client: TestClient, seed_admin, patch_ingest) -> None:
     """When a JUnit happens to contain multiple <testsuite> elements, all of
     their names are surfaced (existing multi-suite uploads still render)."""
     csrf = _login(client)

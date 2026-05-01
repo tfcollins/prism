@@ -1,4 +1,5 @@
 """Repos for ingest-pipeline models."""
+
 from collections.abc import Iterator
 
 import pytest
@@ -45,7 +46,10 @@ def test_run_and_tag_crud(session: Session) -> None:
 
     assert run_repo.get_by_id(run.id) == run
     assert run_repo.list_by_project(p.id) == [run]
-    assert {(t.key, t.value) for t in run_repo.tags_for(run.id)} == {("branch", "main"), ("sha", "abc")}
+    assert {(t.key, t.value) for t in run_repo.tags_for(run.id)} == {
+        ("branch", "main"),
+        ("sha", "abc"),
+    }
 
     run_repo.set_status(run.id, RunStatus.PASS)
     session.commit()
@@ -108,13 +112,23 @@ def test_derived_artifact_lookup(session: Session) -> None:
     run = RunRepo(session).create(project_id=p.id, name="r", status=RunStatus.PENDING)
     session.flush()
     art = ArtifactRepo(session).create(
-        owner_type="run", owner_id=run.id, kind=ArtifactKind.WAVEFORM_CSV,
-        filename="a.csv", size_bytes=10, content_hash="h" * 64, storage_key="k",
+        owner_type="run",
+        owner_id=run.id,
+        kind=ArtifactKind.WAVEFORM_CSV,
+        filename="a.csv",
+        size_bytes=10,
+        content_hash="h" * 64,
+        storage_key="k",
     )
     session.flush()
 
     dr = DerivedRepo(session)
-    d = dr.create(source_artifact_id=art.id, kind=DerivedKind.FFT, storage_key="derived/fft/x.npy", params_hash="p" * 32)
+    d = dr.create(
+        source_artifact_id=art.id,
+        kind=DerivedKind.FFT,
+        storage_key="derived/fft/x.npy",
+        params_hash="p" * 32,
+    )
     session.commit()
 
     assert dr.find(source_artifact_id=art.id, kind=DerivedKind.FFT, params_hash="p" * 32) == d

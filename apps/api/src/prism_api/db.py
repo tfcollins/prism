@@ -1,4 +1,5 @@
 """Database engine and session factory."""
+
 from collections.abc import Iterator
 from contextlib import contextmanager
 

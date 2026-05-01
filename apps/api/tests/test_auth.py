@@ -1,4 +1,5 @@
 """Auth helpers."""
+
 from datetime import timedelta
 
 import pytest

@@ -1,4 +1,5 @@
 """FFT via Welch's method with stable parameter hashing for derived-artifact caching."""
+
 from __future__ import annotations
 
 import hashlib
@@ -32,7 +33,9 @@ def params_hash(p: FFTParams) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def compute_fft(samples: np.ndarray, *, sample_rate: int | float | None, params: FFTParams) -> FFTResult:
+def compute_fft(
+    samples: np.ndarray, *, sample_rate: int | float | None, params: FFTParams
+) -> FFTResult:
     fs = float(sample_rate) if sample_rate else 1.0
     nperseg = min(params.nfft, len(samples))
     noverlap = int(nperseg * params.overlap)
@@ -46,4 +49,8 @@ def compute_fft(samples: np.ndarray, *, sample_rate: int | float | None, params:
     )
     # magnitudes: sqrt of spectrum (so it's |X(f)| rather than |X(f)|^2)
     magnitudes = np.sqrt(psd)
-    return FFTResult(frequencies=freqs.astype(np.float64), magnitudes=magnitudes.astype(np.float64), sample_rate=fs)
+    return FFTResult(
+        frequencies=freqs.astype(np.float64),
+        magnitudes=magnitudes.astype(np.float64),
+        sample_rate=fs,
+    )

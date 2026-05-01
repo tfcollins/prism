@@ -1,4 +1,5 @@
 """Model smoke tests against in-memory SQLite."""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

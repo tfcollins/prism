@@ -1,10 +1,12 @@
 """JUnit XML parser — thin wrapper over `junitparser`."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from io import BytesIO
 
-from junitparser import Error, Failure, JUnitXml, Skipped, TestCase as JTCase
+from junitparser import Error, Failure, JUnitXml, Skipped
+from junitparser import TestCase as JTCase
 
 
 @dataclass
@@ -47,6 +49,11 @@ def parse_junit_xml(data: bytes) -> list[ParsedSuite]:
     for suite in suites_iter:
         parsed = ParsedSuite(name=suite.name or "", duration_ms=int((suite.time or 0) * 1000))
         for c in suite:
+            # junitparser yields TestCase | TestSuite when iterating; for a
+            # well-formed JUnit doc each suite contains testcases. Skip
+            # anything else defensively.
+            if not isinstance(c, JTCase):
+                continue
             status, msg, trace = _case_status(c)
             duration_ms = int((c.time or 0) * 1000)
             parsed.cases.append(

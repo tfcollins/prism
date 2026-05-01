@@ -1,4 +1,5 @@
 """Waveform loaders for CSV, NPY, HDF5."""
+
 from __future__ import annotations
 
 import io

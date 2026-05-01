@@ -1,4 +1,5 @@
 """Run upload + read endpoints."""
+
 from __future__ import annotations
 
 import json
@@ -56,7 +57,9 @@ async def upload_run(
     try:
         meta = CreateRunMetadata.model_validate(json.loads(metadata))
     except (json.JSONDecodeError, ValidationError) as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"invalid metadata: {exc}") from exc
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, f"invalid metadata: {exc}"
+        ) from exc
 
     # 2) Resolve project
     project = ProjectRepo(session).get_by_slug(meta.project_slug)
@@ -118,14 +121,20 @@ def list_runs(
         counts = runs.aggregate_counts_by_run(r.id)
         tags = runs.tags_for(r.id)
         suites = suites_repo.list_by_run(r.id)
-        result.append(RunListItem(
-            id=r.id, project_id=r.project_id, name=r.name, status=r.status.value,
-            started_at=r.started_at, finished_at=r.finished_at,
-            created_at=r.created_at,
-            suite_names=[s.name for s in suites],
-            tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
-            **counts,
-        ))
+        result.append(
+            RunListItem(
+                id=r.id,
+                project_id=r.project_id,
+                name=r.name,
+                status=r.status.value,
+                started_at=r.started_at,
+                finished_at=r.finished_at,
+                created_at=r.created_at,
+                suite_names=[s.name for s in suites],
+                tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
+                **counts,
+            )
+        )
     return result
 
 
@@ -141,16 +150,27 @@ def get_run(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
     suites = [
         SuiteSummary(
-            id=s.id, name=s.name, pass_count=s.pass_count, fail_count=s.fail_count,
-            error_count=s.error_count, skip_count=s.skip_count, duration_ms=s.duration_ms,
+            id=s.id,
+            name=s.name,
+            pass_count=s.pass_count,
+            fail_count=s.fail_count,
+            error_count=s.error_count,
+            skip_count=s.skip_count,
+            duration_ms=s.duration_ms,
         )
         for s in SuiteRepo(session).list_by_run(run.id)
     ]
     tags = [RunTagOut(key=t.key, value=t.value) for t in runs.tags_for(run.id)]
     return RunDetail(
-        id=run.id, project_id=run.project_id, name=run.name, status=run.status.value,
-        started_at=run.started_at, finished_at=run.finished_at,
-        junit_artifact_id=run.junit_artifact_id, tags=tags, suites=suites,
+        id=run.id,
+        project_id=run.project_id,
+        name=run.name,
+        status=run.status.value,
+        started_at=run.started_at,
+        finished_at=run.finished_at,
+        junit_artifact_id=run.junit_artifact_id,
+        tags=tags,
+        suites=suites,
     )
 
 
@@ -171,9 +191,13 @@ def list_run_artifacts(
     arts = ArtifactRepo(session).list_by_owner("run", run_id)
     return [
         ArtifactOut(
-            id=a.id, owner_type=a.owner_type, owner_id=a.owner_id,
-            kind=a.kind.value, filename=a.filename,
-            size_bytes=a.size_bytes, content_hash=a.content_hash,
+            id=a.id,
+            owner_type=a.owner_type,
+            owner_id=a.owner_id,
+            kind=a.kind.value,
+            filename=a.filename,
+            size_bytes=a.size_bytes,
+            content_hash=a.content_hash,
         )
         for a in arts
     ]

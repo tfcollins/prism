@@ -1,4 +1,5 @@
 """Bootstrap helpers — runs on app startup."""
+
 from sqlalchemy.orm import Session
 
 from prism_api.auth import hash_password

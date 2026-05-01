@@ -1,4 +1,5 @@
 """Celery tasks."""
+
 from __future__ import annotations
 
 from sqlalchemy import create_engine
@@ -10,7 +11,7 @@ from prism_api.storage import build_storage
 from prism_api.worker.celery_app import celery_app
 
 
-@celery_app.task(name="prism.ingest_run")
+@celery_app.task(name="prism.ingest_run")  # type: ignore[untyped-decorator]
 def run_ingest(run_id: str, junit_xml_key: str, archive_key: str | None) -> None:
     settings = get_settings()
     storage = build_storage(settings)

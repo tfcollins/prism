@@ -1,4 +1,5 @@
 """Project schemas."""
+
 import re
 
 from pydantic import BaseModel, Field, field_validator

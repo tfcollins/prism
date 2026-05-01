@@ -1,4 +1,5 @@
 """Downsample a waveform for plotting — preserves min/max within each bucket."""
+
 from dataclasses import dataclass
 
 import numpy as np

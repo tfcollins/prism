@@ -8,12 +8,16 @@ def test_run_level() -> None:
 
 def test_suite_level() -> None:
     got = parse_artifact_filename("dsp__suite-log.log")
-    assert got == ArtifactOwner(scope="suite", suite="dsp", case=None, label="suite-log", ext=".log")
+    assert got == ArtifactOwner(
+        scope="suite", suite="dsp", case=None, label="suite-log", ext=".log"
+    )
 
 
 def test_case_level() -> None:
     got = parse_artifact_filename("dsp__sine_sweep_1khz__waveform.csv")
-    assert got == ArtifactOwner(scope="case", suite="dsp", case="sine_sweep_1khz", label="waveform", ext=".csv")
+    assert got == ArtifactOwner(
+        scope="case", suite="dsp", case="sine_sweep_1khz", label="waveform", ext=".csv"
+    )
 
 
 def test_case_level_with_label_underscores() -> None:

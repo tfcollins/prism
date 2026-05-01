@@ -1,4 +1,5 @@
 """Artifact kind detection — extension + magic bytes."""
+
 from pathlib import PurePosixPath
 
 from prism_api.models import ArtifactKind

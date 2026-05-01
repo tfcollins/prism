@@ -25,6 +25,12 @@ def list_cases(
     session: Session = Depends(session_dep),
 ) -> list[CaseListItem]:
     return [
-        CaseListItem(id=c.id, classname=c.classname, name=c.name, status=c.status.value, duration_ms=c.duration_ms)
+        CaseListItem(
+            id=c.id,
+            classname=c.classname,
+            name=c.name,
+            status=c.status.value,
+            duration_ms=c.duration_ms,
+        )
         for c in CaseRepo(session).list_by_suite(suite_id)
     ]

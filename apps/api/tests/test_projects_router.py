@@ -1,4 +1,5 @@
 """Projects router tests."""
+
 from fastapi.testclient import TestClient
 
 
