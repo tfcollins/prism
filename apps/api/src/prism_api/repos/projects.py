@@ -1,4 +1,5 @@
 """Project repository."""
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,9 +25,7 @@ class ProjectRepo:
         return self._session.get(Project, project_id)
 
     def list_all(self) -> list[Project]:
-        return list(
-            self._session.execute(select(Project).order_by(Project.created_at)).scalars()
-        )
+        return list(self._session.execute(select(Project).order_by(Project.created_at)).scalars())
 
     def delete(self, project_id: str) -> None:
         proj = self._session.get(Project, project_id)

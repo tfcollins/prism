@@ -1,5 +1,4 @@
 """Storage layer tests using moto (in-process S3)."""
-from io import BytesIO
 
 import boto3
 import pytest
@@ -17,7 +16,9 @@ def storage():
 
 
 def test_hash_bytes_is_sha256_hex():
-    assert hash_bytes(b"hello") == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    assert (
+        hash_bytes(b"hello") == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    )
 
 
 def test_put_and_get_round_trip(storage: ObjectStorage):

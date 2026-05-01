@@ -16,7 +16,10 @@ def _upload(client: TestClient, csrf: str, name: str, junit_xml: bytes) -> str:
         zf.writestr("readme.log", "ctx\n")
     resp = client.post(
         "/api/v1/runs",
-        files={"junit": ("j.xml", junit_xml, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
+        files={
+            "junit": ("j.xml", junit_xml, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
         data={"metadata": json.dumps({"project_slug": "audio", "name": name})},
         headers={"X-Prism-Csrf": csrf},
     )
@@ -70,7 +73,12 @@ def test_compare_unknown_run_404(client: TestClient, seed_admin) -> None:
     csrf = _login(client)
     resp = client.post(
         "/api/v1/compare",
-        json={"run_ids": ["00000000-0000-0000-0000-000000000000", "11111111-1111-1111-1111-111111111111"]},
+        json={
+            "run_ids": [
+                "00000000-0000-0000-0000-000000000000",
+                "11111111-1111-1111-1111-111111111111",
+            ]
+        },
         headers={"X-Prism-Csrf": csrf},
     )
     assert resp.status_code == 404
@@ -82,7 +90,10 @@ def _upload_with_waveform(client: TestClient, csrf: str, name: str, junit_xml: b
         zf.writestr("dsp__ok__wave.csv", "# sample_rate=48000\n0.1\n0.2\n0.3\n")
     resp = client.post(
         "/api/v1/runs",
-        files={"junit": ("j.xml", junit_xml, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
+        files={
+            "junit": ("j.xml", junit_xml, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
         data={"metadata": json.dumps({"project_slug": "audio", "name": name})},
         headers={"X-Prism-Csrf": csrf},
     )
@@ -90,7 +101,9 @@ def _upload_with_waveform(client: TestClient, csrf: str, name: str, junit_xml: b
     return resp.json()["id"]
 
 
-def test_compare_includes_waveform_artifact_ids(client: TestClient, seed_admin, patch_ingest) -> None:
+def test_compare_includes_waveform_artifact_ids(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
     csrf = _login(client)
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
     a = _upload_with_waveform(client, csrf, "a", _BASE_JUNIT)

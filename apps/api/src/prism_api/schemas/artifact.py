@@ -22,4 +22,4 @@ class FFTResponse(BaseModel):
     frequencies: list[float]
     magnitudes: list[float]
     sample_rate: float
-    params: dict
+    params: dict[str, str | int | float]

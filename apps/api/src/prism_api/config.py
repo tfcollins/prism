@@ -1,4 +1,5 @@
 """App configuration via pydantic-settings."""
+
 from functools import lru_cache
 from typing import Literal
 
@@ -32,7 +33,9 @@ class Settings(BaseSettings):
         if len(v) < 16:
             raise ValueError("PRISM_JWT_SECRET must be at least 16 characters")
         if v in {"replace-with-a-long-random-string", "change-me-in-prod"}:
-            raise ValueError("PRISM_JWT_SECRET appears to be an example placeholder; set a real secret")
+            raise ValueError(
+                "PRISM_JWT_SECRET appears to be an example placeholder; set a real secret"
+            )
         return v
 
 

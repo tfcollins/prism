@@ -14,7 +14,9 @@ def test_upload_without_csrf_returns_403(client: TestClient, seed_admin, patch_i
     assert resp.status_code == 403
 
 
-def test_upload_with_mismatched_csrf_returns_403(client: TestClient, seed_admin, patch_ingest) -> None:
+def test_upload_with_mismatched_csrf_returns_403(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
     client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
     resp = client.post(

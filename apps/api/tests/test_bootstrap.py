@@ -1,4 +1,5 @@
 """Bootstrap admin user tests."""
+
 from collections.abc import Iterator
 
 import pytest

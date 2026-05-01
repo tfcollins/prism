@@ -1,4 +1,5 @@
 """Settings loading tests."""
+
 import pytest
 
 from prism_api.config import Settings

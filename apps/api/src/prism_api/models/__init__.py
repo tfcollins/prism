@@ -1,4 +1,5 @@
 """SQLAlchemy models."""
+
 from prism_api.models.artifact import Artifact, ArtifactKind, DerivedArtifact, DerivedKind
 from prism_api.models.base import Base
 from prism_api.models.project import Project

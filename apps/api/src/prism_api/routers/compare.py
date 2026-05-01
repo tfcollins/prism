@@ -1,4 +1,5 @@
 """Compare runs."""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -39,8 +40,11 @@ def compare_runs(
         counts = runs_repo.aggregate_counts_by_run(run.id)
         runs.append(
             RunHeader(
-                id=run.id, name=run.name, status=run.status.value,
-                pass_count=counts["pass_count"], fail_count=counts["fail_count"],
+                id=run.id,
+                name=run.name,
+                status=run.status.value,
+                pass_count=counts["pass_count"],
+                fail_count=counts["fail_count"],
             )
         )
 
@@ -69,7 +73,9 @@ def compare_runs(
     cases = sorted(
         [
             CaseDiff(
-                suite_name=key[0], classname="", name=key[1],
+                suite_name=key[0],
+                classname="",
+                name=key[1],
                 statuses=[m.get(key) for m in per_run_status],
                 waveform_artifact_ids=[
                     _first_waveform_id(case_id_map[key]) if key in case_id_map else None

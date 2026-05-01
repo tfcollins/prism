@@ -3,7 +3,9 @@ from prism_api.parsers.detect import detect_kind
 
 
 def test_junit_xml() -> None:
-    assert detect_kind("results.xml", b'<?xml version="1.0"?><testsuites/>') == ArtifactKind.JUNIT_XML
+    assert (
+        detect_kind("results.xml", b'<?xml version="1.0"?><testsuites/>') == ArtifactKind.JUNIT_XML
+    )
 
 
 def test_waveform_csv() -> None:

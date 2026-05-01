@@ -1,4 +1,5 @@
 """Auth router integration tests."""
+
 from fastapi.testclient import TestClient
 
 

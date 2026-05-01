@@ -1,4 +1,5 @@
 """Run repository."""
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -10,7 +11,9 @@ class RunRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, *, project_id: str, name: str, status: RunStatus, created_by: str | None = None) -> TestRun:
+    def create(
+        self, *, project_id: str, name: str, status: RunStatus, created_by: str | None = None
+    ) -> TestRun:
         run = TestRun(project_id=project_id, name=name, status=status, created_by=created_by)
         self._session.add(run)
         self._session.flush()
@@ -22,7 +25,9 @@ class RunRepo:
     def list_by_project(self, project_id: str) -> list[TestRun]:
         return list(
             self._session.execute(
-                select(TestRun).where(TestRun.project_id == project_id).order_by(TestRun.created_at.desc())
+                select(TestRun)
+                .where(TestRun.project_id == project_id)
+                .order_by(TestRun.created_at.desc())
             ).scalars()
         )
 
@@ -42,9 +47,7 @@ class RunRepo:
         return tag
 
     def tags_for(self, run_id: str) -> list[RunTag]:
-        return list(
-            self._session.execute(select(RunTag).where(RunTag.run_id == run_id)).scalars()
-        )
+        return list(self._session.execute(select(RunTag).where(RunTag.run_id == run_id)).scalars())
 
     def list_with_filters(
         self,

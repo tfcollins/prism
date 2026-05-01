@@ -1,4 +1,5 @@
 """MinIO / S3 storage wrapper — thin abstraction over boto3."""
+
 from __future__ import annotations
 
 import hashlib
@@ -41,10 +42,14 @@ class ObjectStorage:
         h = hash_bytes(data)
         key = f"raw/{h[:2]}/{h}"
         # S3 put is idempotent for same content; skip existence probe to save a round-trip
-        self.client.put_object(Bucket=self.bucket, Key=key, Body=data, Metadata={"filename": filename})
+        self.client.put_object(
+            Bucket=self.bucket, Key=key, Body=data, Metadata={"filename": filename}
+        )
         return key
 
-    def put_at(self, key: str, data: bytes, *, content_type: str = "application/octet-stream") -> None:
+    def put_at(
+        self, key: str, data: bytes, *, content_type: str = "application/octet-stream"
+    ) -> None:
         """Write bytes to an explicit key (used for derived artifacts)."""
         self.client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
 
@@ -65,14 +70,14 @@ class ObjectStorage:
             return False
 
     def presigned_url(self, key: str, *, expires_in: int = 900) -> str:
-        url = self.client.generate_presigned_url(
+        url: str = self.client.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=expires_in
         )
         if self.public_endpoint:
             internal = self.client.meta.endpoint_url.rstrip("/")
             public = self.public_endpoint.rstrip("/")
             if url.startswith(internal):
-                url = public + url[len(internal):]
+                url = public + url[len(internal) :]
         return url
 
 

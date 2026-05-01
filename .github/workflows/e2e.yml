@@ -26,6 +26,13 @@ jobs:
             if curl -sf http://localhost:8180; then break; fi
             sleep 2
           done
+      - name: Seed demo data (creates the `audio` project the e2e tests reference)
+        run: |
+          python3 scripts/seed_demo.py
+        env:
+          PRISM_URL: http://localhost:8000
+          PRISM_EMAIL: admin@example.com
+          PRISM_PASSWORD: change-me-in-prod
       - uses: actions/setup-node@v4
         with:
           node-version: '20'

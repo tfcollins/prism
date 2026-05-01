@@ -1,4 +1,5 @@
 """Artifact endpoints: metadata, download, waveform JSON, FFT JSON."""
+
 from __future__ import annotations
 
 import io
@@ -14,6 +15,7 @@ from prism_api.deps import current_user, get_settings_dep, session_dep
 from prism_api.dsp.downsample import downsample_for_plot
 from prism_api.dsp.fft import FFTParams, compute_fft, params_hash
 from prism_api.models import ArtifactKind, DerivedKind
+from prism_api.models.artifact import Artifact
 from prism_api.models.user import User
 from prism_api.parsers.waveform import load_waveform
 from prism_api.repos.artifacts import ArtifactRepo, DerivedRepo
@@ -25,7 +27,7 @@ router = APIRouter(prefix="/api/v1/artifacts", tags=["artifacts"])
 _WAVEFORM_KINDS = {ArtifactKind.WAVEFORM_CSV, ArtifactKind.WAVEFORM_NPY, ArtifactKind.WAVEFORM_HDF5}
 
 
-def _fetch_artifact_or_404(session: Session, artifact_id: str):
+def _fetch_artifact_or_404(session: Session, artifact_id: str) -> Artifact:
     a = ArtifactRepo(session).get_by_id(artifact_id)
     if a is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "artifact not found")
@@ -40,8 +42,13 @@ def get_artifact(
 ) -> ArtifactOut:
     a = _fetch_artifact_or_404(session, artifact_id)
     return ArtifactOut(
-        id=a.id, owner_type=a.owner_type, owner_id=a.owner_id, kind=a.kind.value,
-        filename=a.filename, size_bytes=a.size_bytes, content_hash=a.content_hash,
+        id=a.id,
+        owner_type=a.owner_type,
+        owner_id=a.owner_id,
+        kind=a.kind.value,
+        filename=a.filename,
+        size_bytes=a.size_bytes,
+        content_hash=a.content_hash,
     )
 
 
@@ -104,7 +111,9 @@ def get_waveform(
 ) -> WaveformResponse:
     a = _fetch_artifact_or_404(session, artifact_id)
     if a.kind not in _WAVEFORM_KINDS:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform"
+        )
     storage = build_storage(settings)
     data = storage.get_bytes(a.storage_key)
     wf = load_waveform(a.kind, data, filename=a.filename)
@@ -129,7 +138,9 @@ def get_fft(
 ) -> FFTResponse:
     a = _fetch_artifact_or_404(session, artifact_id)
     if a.kind not in _WAVEFORM_KINDS:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform"
+        )
     params = FFTParams(window=window, nfft=nfft, overlap=overlap)  # type: ignore[arg-type]
     ph = params_hash(params)
     storage = build_storage(settings)
@@ -150,7 +161,9 @@ def get_fft(
         np.savez_compressed(buf, freqs=freqs, mags=mags, fs=np.array([sample_rate]))
         key = f"derived/fft/{a.content_hash}-{ph}.npz"
         storage.put_at(key, buf.getvalue(), content_type="application/octet-stream")
-        derived_repo.create(source_artifact_id=a.id, kind=DerivedKind.FFT, storage_key=key, params_hash=ph)
+        derived_repo.create(
+            source_artifact_id=a.id, kind=DerivedKind.FFT, storage_key=key, params_hash=ph
+        )
         session.commit()
     return FFTResponse(
         frequencies=[float(x) for x in freqs],

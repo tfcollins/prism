@@ -21,7 +21,10 @@ def _bootstrap(client: TestClient, csrf: str) -> str:
         zf.writestr("dsp__ok__waveform.csv", "# sample_rate=48000\n0.1\n0.2\n")
     resp = client.post(
         "/api/v1/runs",
-        files={"junit": ("j.xml", junit, "application/xml"), "archive": ("a.zip", arc.getvalue(), "application/zip")},
+        files={
+            "junit": ("j.xml", junit, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
         data={"metadata": json.dumps({"project_slug": "audio", "name": "r1"})},
         headers={"X-Prism-Csrf": csrf},
     )

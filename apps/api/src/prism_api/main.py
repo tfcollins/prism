@@ -1,4 +1,5 @@
 """FastAPI app entry point."""
+
 from fastapi import FastAPI
 
 from prism_api import __version__

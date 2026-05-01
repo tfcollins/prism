@@ -34,7 +34,7 @@ jobs:
           PRISM_S3_SECRET_KEY: x
           PRISM_S3_BUCKET: x
           PRISM_REDIS_URL: redis://localhost:6379/0
-          PRISM_JWT_SECRET: ci-secret
+          PRISM_JWT_SECRET: ci-secret-please-change-in-real-deployments
         run: |
           uv pip install --system .[dev] || uv sync
           uv run pytest -v

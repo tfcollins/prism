@@ -1,4 +1,5 @@
 """Celery application factory."""
+
 import os
 
 from celery import Celery
@@ -25,10 +26,9 @@ def build_celery(settings: Settings | None = None) -> Celery:
 
 # Only instantiate at module level if we have the required env vars.
 # Tests build their own instance via build_celery(_s()) and don't need this.
-if os.getenv("PRISM_DATABASE_URL"):
-    celery_app = build_celery()
-else:
-    # Provide a stub so that `from prism_api.worker.celery_app import celery_app`
-    # succeeds in test environments. The .task() decorator still works on a plain
-    # Celery object; it just won't connect to a broker.
-    celery_app = Celery("prism-uninitialized")
+# The stub branch lets `from prism_api.worker.celery_app import celery_app`
+# succeed in test environments. The .task() decorator still works on a plain
+# Celery object; it just won't connect to a broker.
+celery_app = (
+    build_celery() if os.getenv("PRISM_DATABASE_URL") else Celery("prism-uninitialized")
+)

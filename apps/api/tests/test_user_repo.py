@@ -1,4 +1,5 @@
 """User repository tests against in-memory SQLite."""
+
 from collections.abc import Iterator
 
 import pytest

@@ -1,4 +1,5 @@
 """Database engine + session smoke tests (uses SQLite in-memory)."""
+
 from sqlalchemy import text
 
 from prism_api.db import build_engine, build_session_factory

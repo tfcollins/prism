@@ -1,4 +1,5 @@
 """Declarative SQLAlchemy Base + common mixins."""
+
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime

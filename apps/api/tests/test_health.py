@@ -1,4 +1,5 @@
 """Health endpoint smoke tests."""
+
 from fastapi.testclient import TestClient
 
 

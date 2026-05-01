@@ -1,4 +1,5 @@
 """Ingest orchestration — pure function that the worker task wraps."""
+
 from __future__ import annotations
 
 import io
@@ -19,7 +20,12 @@ from prism_api.storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
 
-_STATUS_MAP = {"pass": CaseStatus.PASS, "fail": CaseStatus.FAIL, "error": CaseStatus.ERROR, "skip": CaseStatus.SKIP}
+_STATUS_MAP = {
+    "pass": CaseStatus.PASS,
+    "fail": CaseStatus.FAIL,
+    "error": CaseStatus.ERROR,
+    "skip": CaseStatus.SKIP,
+}
 
 
 @dataclass
@@ -64,7 +70,7 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
     # 2) Parse JUnit
     try:
         parsed_suites = parse_junit_xml(inputs.junit_xml)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.exception("failed to parse JUnit XML for run %s: %s", inputs.run_id, exc)
         runs.set_status(inputs.run_id, RunStatus.ERROR)
         return
@@ -105,7 +111,9 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
                 owner = parse_artifact_filename(name.rsplit("/", 1)[-1])
                 kind = detect_kind(name, data[:512])
                 key = storage.put_raw(data, filename=name)
-                owner_type, owner_id = _resolve_owner(owner, inputs.run_id, suite_by_name, case_by_key)
+                owner_type, owner_id = _resolve_owner(
+                    owner, inputs.run_id, suite_by_name, case_by_key
+                )
                 artifacts.create(
                     owner_type=owner_type,
                     owner_id=owner_id,

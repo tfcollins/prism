@@ -1,4 +1,5 @@
 """FastAPI dependencies."""
+
 import secrets
 from collections.abc import Iterator
 
@@ -23,7 +24,11 @@ def issue_csrf_token() -> str:
 def csrf_protect(request: Request) -> None:
     cookie_token = request.cookies.get(CSRF_COOKIE)
     header_token = request.headers.get(CSRF_HEADER)
-    if not cookie_token or not header_token or not secrets.compare_digest(cookie_token, header_token):
+    if (
+        not cookie_token
+        or not header_token
+        or not secrets.compare_digest(cookie_token, header_token)
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "missing or invalid csrf token")
 
 

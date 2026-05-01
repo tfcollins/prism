@@ -1,4 +1,5 @@
 """Suite and case repositories."""
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -34,7 +35,9 @@ class SuiteRepo:
         return suite
 
     def list_by_run(self, run_id: str) -> list[TestSuite]:
-        return list(self._session.execute(select(TestSuite).where(TestSuite.run_id == run_id)).scalars())
+        return list(
+            self._session.execute(select(TestSuite).where(TestSuite.run_id == run_id)).scalars()
+        )
 
 
 class CaseRepo:
@@ -66,4 +69,6 @@ class CaseRepo:
         return case
 
     def list_by_suite(self, suite_id: str) -> list[TestCase]:
-        return list(self._session.execute(select(TestCase).where(TestCase.suite_id == suite_id)).scalars())
+        return list(
+            self._session.execute(select(TestCase).where(TestCase.suite_id == suite_id)).scalars()
+        )

@@ -1,4 +1,5 @@
 """Auth endpoints."""
+
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -6,7 +7,14 @@ from sqlalchemy.orm import Session
 
 from prism_api.auth import create_access_token, verify_password
 from prism_api.config import Settings
-from prism_api.deps import CSRF_COOKIE, SESSION_COOKIE, current_user, get_settings_dep, issue_csrf_token, session_dep
+from prism_api.deps import (
+    CSRF_COOKIE,
+    SESSION_COOKIE,
+    current_user,
+    get_settings_dep,
+    issue_csrf_token,
+    session_dep,
+)
 from prism_api.models.user import User
 from prism_api.repos.users import UserRepo
 from prism_api.schemas.auth import LoginRequest, UserOut
@@ -60,7 +68,9 @@ def logout(response: Response, settings: Settings = Depends(get_settings_dep)) -
         samesite=settings.cookie_samesite,
         secure=settings.cookie_secure,
     )
-    response.delete_cookie(CSRF_COOKIE, path="/", samesite=settings.cookie_samesite, secure=settings.cookie_secure)
+    response.delete_cookie(
+        CSRF_COOKIE, path="/", samesite=settings.cookie_samesite, secure=settings.cookie_secure
+    )
 
 
 @router.get("/me")

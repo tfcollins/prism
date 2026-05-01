@@ -1,4 +1,5 @@
 """Artifact + derived-artifact models."""
+
 import enum
 import uuid
 from typing import Any
@@ -11,7 +12,7 @@ from sqlalchemy.types import JSON
 from prism_api.models.base import Base, TimestampMixin
 
 
-class ArtifactKind(str, enum.Enum):
+class ArtifactKind(enum.StrEnum):
     JUNIT_XML = "junit_xml"
     WAVEFORM_CSV = "waveform_csv"
     WAVEFORM_HDF5 = "waveform_hdf5"
@@ -22,7 +23,7 @@ class ArtifactKind(str, enum.Enum):
     OTHER_BINARY = "other_binary"
 
 
-class DerivedKind(str, enum.Enum):
+class DerivedKind(enum.StrEnum):
     FFT = "fft"
     THUMBNAIL = "thumbnail"
 
@@ -35,9 +36,13 @@ class Artifact(Base, TimestampMixin):
     __tablename__ = "artifacts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    owner_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)  # run|suite|case
+    owner_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, index=True
+    )  # run|suite|case
     owner_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    kind: Mapped[ArtifactKind] = mapped_column(Enum(ArtifactKind, native_enum=False), nullable=False)
+    kind: Mapped[ArtifactKind] = mapped_column(
+        Enum(ArtifactKind, native_enum=False), nullable=False
+    )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)

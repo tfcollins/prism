@@ -1,4 +1,5 @@
 """Runs router test — uses a monkeypatched celery task so ingest runs inline."""
+
 import io
 import json
 import zipfile
@@ -29,8 +30,8 @@ def _sample_archive() -> bytes:
 @pytest.fixture
 def patch_ingest(monkeypatch, db_session, storage_fixture):
     """Replace the celery delay with an inline call, and provide the same storage to both sides."""
-    from prism_api.routers import runs as runs_module
     from prism_api.ingest import IngestInputs, ingest_run
+    from prism_api.routers import runs as runs_module
 
     def fake_enqueue(run_id: str, junit_bytes: bytes, archive_bytes: bytes | None, storage) -> None:
         ingest_run(
@@ -69,7 +70,11 @@ def test_upload_run_with_archive(client: TestClient, seed_admin, patch_ingest) -
 
 
 def test_upload_requires_auth(client: TestClient) -> None:
-    resp = client.post("/api/v1/runs", files={"junit": ("j.xml", b"<testsuites/>", "application/xml")}, data={"metadata": "{}"})
+    resp = client.post(
+        "/api/v1/runs",
+        files={"junit": ("j.xml", b"<testsuites/>", "application/xml")},
+        data={"metadata": "{}"},
+    )
     assert resp.status_code == 401
 
 

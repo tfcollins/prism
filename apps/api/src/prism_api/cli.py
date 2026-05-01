@@ -1,4 +1,5 @@
 """Command-line entry points for ops tasks."""
+
 import sys
 
 from sqlalchemy import create_engine
@@ -14,9 +15,7 @@ def bootstrap_admin(settings: Settings | None = None) -> None:
     s = settings or get_settings()
     engine = create_engine(s.database_url)
     with sessionmaker(bind=engine)() as session:
-        ensure_bootstrap_admin(
-            session, email=s.admin_email, password=s.admin_password
-        )
+        ensure_bootstrap_admin(session, email=s.admin_email, password=s.admin_password)
         session.commit()
 
 

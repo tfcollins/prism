@@ -1,5 +1,3 @@
-import hashlib
-
 import numpy as np
 
 from prism_api.dsp.fft import FFTParams, compute_fft, params_hash
@@ -21,7 +19,9 @@ def test_compute_fft_finds_dominant_bin() -> None:
     fs = 8000
     t = np.arange(4096) / fs
     signal = np.sin(2 * np.pi * 1000 * t).astype(np.float64)
-    result = compute_fft(signal, sample_rate=fs, params=FFTParams(window="hann", nfft=1024, overlap=0.5))
+    result = compute_fft(
+        signal, sample_rate=fs, params=FFTParams(window="hann", nfft=1024, overlap=0.5)
+    )
     assert len(result.frequencies) == len(result.magnitudes)
     peak_idx = int(np.argmax(result.magnitudes))
     peak_freq = result.frequencies[peak_idx]
@@ -29,7 +29,9 @@ def test_compute_fft_finds_dominant_bin() -> None:
 
 
 def test_compute_fft_without_sample_rate_uses_unit_hz() -> None:
-    result = compute_fft(np.ones(512), sample_rate=None, params=FFTParams(window="hann", nfft=256, overlap=0.5))
+    result = compute_fft(
+        np.ones(512), sample_rate=None, params=FFTParams(window="hann", nfft=256, overlap=0.5)
+    )
     # Without a sample rate we fall back to fs=1.0; peak at f=0 for constant signal
     assert result.sample_rate == 1.0
     assert result.frequencies[0] == 0.0

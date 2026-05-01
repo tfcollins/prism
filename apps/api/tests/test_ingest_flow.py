@@ -1,4 +1,5 @@
 """End-to-end ingest flow using in-memory SQLite + moto S3 + synthetic archive."""
+
 import io
 import zipfile
 from collections.abc import Iterator
