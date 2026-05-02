@@ -46,7 +46,7 @@ class PrismClient:
         headers: dict[str, str] | None = None,
     ) -> tuple[int, bytes]:
         url = f"{self.base_url}{path}"
-        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
+        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310 — URL is built from caller-supplied base_url (http/https only); no shell injection vector
         csrf = self._read_cookie("prism_csrf")
         if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
             req.add_header("X-Prism-Csrf", csrf)
