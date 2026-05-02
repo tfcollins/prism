@@ -24,6 +24,15 @@ __all__ = ["PrismClient"]
 
 class PrismClient:
     def __init__(self, base_url: str) -> None:
+        # Reject non-http(s) schemes up front so the noqa: S310 below is true.
+        # urllib's default opener handles file://, ftp://, data://, etc., which
+        # an attacker who can set PRISM_URL could abuse for local-file
+        # disclosure / SSRF. See ruff S310. This guard must mirror the one in
+        # clients/python-pytest/src/pytest_prism/client.py since this file is
+        # the vendoring source for pyadi-iio's prism-report plugin.
+        scheme = urllib.parse.urlsplit(base_url).scheme.lower()
+        if scheme not in ("http", "https"):
+            raise ValueError(f"PrismClient base_url must be http or https; got scheme {scheme!r}")
         self.base_url = base_url.rstrip("/")
         self.jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
@@ -47,6 +56,7 @@ class PrismClient:
         headers: dict[str, str] | None = None,
     ) -> tuple[int, bytes]:
         url = f"{self.base_url}{path}"
+        # base_url's scheme is validated to http/https in __init__, so this is safe.
         req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310
         csrf = self._read_cookie("prism_csrf")
         if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
