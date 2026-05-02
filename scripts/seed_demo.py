@@ -16,6 +16,7 @@ Usage:
 
 Uses only the standard library so it runs anywhere Python 3.10+ is present.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,8 +25,8 @@ import math
 import os
 import sys
 import zipfile
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable
 
 from _prism_client import PrismClient
 
@@ -44,6 +45,7 @@ TWO_PI = 2 * math.pi
 # --------------------------------------------------------------------------- #
 # Signal generators
 # --------------------------------------------------------------------------- #
+
 
 def _sine(freq: float, amp: float = 1.0) -> Iterable[float]:
     for i in range(N):
@@ -66,18 +68,19 @@ def _noisy(source: Iterable[float], amp: float) -> Iterable[float]:
     # Deterministic pseudo-random from a hash — no numpy dependency.
     import random as _r
 
-    rng = _r.Random(0xC0DE)
+    rng = _r.Random(0xC0DE)  # noqa: S311
     for v in source:
         yield v + (rng.random() - 0.5) * 2 * amp
 
 
 def _csv(samples: Iterable[float]) -> str:
-    return "\n".join(["# sample_rate=%d" % FS, *(f"{x:.6f}" for x in samples)])
+    return "\n".join([f"# sample_rate={FS:d}", *(f"{x:.6f}" for x in samples)])
 
 
 # --------------------------------------------------------------------------- #
 # Dataset — six single-suite Test Suite Runs
 # --------------------------------------------------------------------------- #
+
 
 @dataclass(frozen=True)
 class RunSpec:
@@ -88,14 +91,14 @@ class RunSpec:
     archive_zip: bytes | None
 
 
-def _dsp_junit(cases: list[tuple[str, str, str | None]]) -> bytes:
+def _dsp_junit(cases: Sequence[tuple[str, str, str | None]]) -> bytes:
     """`cases` entries: (classname, name, failure_message_or_None)."""
     tests = len(cases)
     fails = sum(1 for _, _, f in cases if f is not None)
     total_time = 0.12 * tests
     parts = [
-        f'<?xml version="1.0"?>',
-        f'<testsuites>',
+        '<?xml version="1.0"?>',
+        "<testsuites>",
         f'  <testsuite name="dsp" tests="{tests}" failures="{fails}" time="{total_time:.2f}">',
     ]
     for classname, name, failure in cases:
@@ -105,20 +108,20 @@ def _dsp_junit(cases: list[tuple[str, str, str | None]]) -> bytes:
             parts.append(
                 f'    <testcase classname="{classname}" name="{name}" time="0.12">'
                 f'<failure message="{failure}">AssertionError traceback ...</failure>'
-                f'</testcase>'
+                f"</testcase>"
             )
-    parts.append('  </testsuite>')
-    parts.append('</testsuites>')
+    parts.append("  </testsuite>")
+    parts.append("</testsuites>")
     return "\n".join(parts).encode("utf-8")
 
 
-def _api_junit(cases: list[tuple[str, str, str | None]]) -> bytes:
+def _api_junit(cases: Sequence[tuple[str, str, str | None]]) -> bytes:
     tests = len(cases)
     fails = sum(1 for _, _, f in cases if f is not None)
     total_time = 0.04 * tests
     parts = [
-        f'<?xml version="1.0"?>',
-        f'<testsuites>',
+        '<?xml version="1.0"?>',
+        "<testsuites>",
         f'  <testsuite name="api" tests="{tests}" failures="{fails}" time="{total_time:.2f}">',
     ]
     for classname, name, failure in cases:
@@ -128,14 +131,16 @@ def _api_junit(cases: list[tuple[str, str, str | None]]) -> bytes:
             parts.append(
                 f'    <testcase classname="{classname}" name="{name}" time="0.04">'
                 f'<failure message="{failure}">AssertionError traceback ...</failure>'
-                f'</testcase>'
+                f"</testcase>"
             )
-    parts.append('  </testsuite>')
-    parts.append('</testsuites>')
+    parts.append("  </testsuite>")
+    parts.append("</testsuites>")
     return "\n".join(parts).encode("utf-8")
 
 
-def _dsp_archive(sine_1k: Iterable[float], sine_5k: Iterable[float], impulse: Iterable[float]) -> bytes:
+def _dsp_archive(
+    sine_1k: Iterable[float], sine_5k: Iterable[float], impulse: Iterable[float]
+) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("dsp__sine_sweep_1khz__wave.csv", _csv(sine_1k))
@@ -255,8 +260,10 @@ def build_runs() -> list[RunSpec]:
 # Entry point
 # --------------------------------------------------------------------------- #
 
+
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else "Seed Prism demo data")
+    desc = __doc__.splitlines()[0] if __doc__ else "Seed Prism demo data"
+    p = argparse.ArgumentParser(description=desc)
     p.add_argument("--url", default=DEFAULT_URL, help="Prism API base URL")
     p.add_argument("--email", default=DEFAULT_EMAIL, help="Login email")
     p.add_argument("--password", default=DEFAULT_PASSWORD, help="Login password")
@@ -281,10 +288,14 @@ def main(argv: list[str] | None = None) -> int:
         for r in existing:
             if r["name"] in seed_names:
                 print(f"  deleting existing run {r['name']} ({r['id']})", flush=True)
-                client.delete_run(r["id"])
+                client.delete_run(str(r["id"]))
 
     for spec in runs:
-        print(f"  uploading {spec.name} (suite={spec.suite}, waveforms={'yes' if spec.archive_zip else 'no'}) …", flush=True)
+        has_waves = "yes" if spec.archive_zip else "no"
+        print(
+            f"  uploading {spec.name} (suite={spec.suite}, waveforms={has_waves}) …",
+            flush=True,
+        )
         client.upload_run(
             project_slug=args.project,
             run_name=spec.name,
