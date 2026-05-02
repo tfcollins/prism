@@ -74,7 +74,8 @@ def attach(kind: str, payload: Mapping[str, Any]) -> None:
     if payloads is None:
         payloads = []
         item.stash[_PRISM_PAYLOADS_STASH] = payloads
-    payloads.append((kind, payload))
+    # Defensive copy so callers can mutate their payload without affecting the renderer.
+    payloads.append((kind, dict(payload)))
 
 
 def _current_item() -> pytest.Item | None:
