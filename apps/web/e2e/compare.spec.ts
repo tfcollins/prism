@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+
 import { expectNoSeriousAxeViolations } from './helpers/axe';
 
 const EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@example.com';
