@@ -1,6 +1,6 @@
-import { type ReactNode,useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
-import { type ColorMode,ColorModeContext } from './colorMode';
+import { type ColorMode, ColorModeContext } from './colorMode';
 
 const STORAGE_KEY = 'prism-color-mode';
 
