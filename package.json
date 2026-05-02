@@ -1,0 +1,8 @@
+{
+  "name": "prism-repo-tooling",
+  "private": true,
+  "description": "Repo-root dev tooling (markdownlint). Not a published package.",
+  "devDependencies": {
+    "markdownlint-cli2": "^0.13.0"
+  }
+}

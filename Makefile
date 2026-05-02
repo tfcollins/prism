@@ -1,4 +1,4 @@
-.PHONY: up up-bare down logs build test lint fmt docs clean
+.PHONY: up up-bare down logs build test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles fmt fmt-api fmt-web docs clean
 
 COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env
 
@@ -33,12 +33,37 @@ test-api:
 test-web:
 	cd apps/web && npm test
 
-lint:
+lint: lint-api lint-web lint-md lint-actions lint-dockerfiles
+
+lint-api:
 	cd apps/api && uv run ruff check . && uv run mypy src
+
+lint-web:
 	cd apps/web && npm run lint
 
-fmt:
+lint-md:
+	npx markdownlint-cli2 "**/*.md"
+
+lint-actions:
+	@if command -v actionlint >/dev/null 2>&1; then \
+		actionlint .github/workflows/*.yml; \
+	else \
+		echo "actionlint not on PATH; skipping (CI will still run it)"; \
+	fi
+
+lint-dockerfiles:
+	@if command -v hadolint >/dev/null 2>&1; then \
+		hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
+	else \
+		echo "hadolint not on PATH; skipping (CI will still run it)"; \
+	fi
+
+fmt: fmt-api fmt-web
+
+fmt-api:
 	cd apps/api && uv run ruff format .
+
+fmt-web:
 	cd apps/web && npm run fmt
 
 docs:
