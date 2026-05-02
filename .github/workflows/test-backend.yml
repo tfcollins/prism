@@ -38,3 +38,9 @@ jobs:
         run: |
           uv pip install --system .[dev] || uv sync
           uv run pytest -v
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api
+          path: apps/api/htmlcov
