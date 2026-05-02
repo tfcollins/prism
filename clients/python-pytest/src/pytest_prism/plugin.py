@@ -236,6 +236,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             if fail_on_err:
                 raise
             sys.stderr.write(f"pytest-prism: session_post {name!r} raised: {exc}; continuing\n")
+            hook_post_results[name] = {"error": str(exc)}
 
     run_meta = {
         "started_at": st.started_at,
