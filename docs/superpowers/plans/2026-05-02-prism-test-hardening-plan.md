@@ -11,10 +11,11 @@
 **Spec:** `docs/superpowers/specs/2026-05-02-prism-test-hardening-design.md`
 
 **Commit style:**
+
 - `prism-api:` for `apps/api/` changes (and `test-backend.yml` edits)
 - `pytest-prism:` for `clients/python-pytest/` changes (and `pytest-prism.yml` edits)
 - `prism-web:` for `apps/web/` changes (and `test-frontend.yml` / `e2e.yml` edits)
-- All commits append ` (Task N)` matching the task number
+- All commits append `(Task N)` matching the task number
 - No `Co-Authored-By` lines (per `no-co-author` skill)
 
 **Branch:** all work lands on `tfcollins/test-hardening` (already created). Push once after each task.
@@ -24,9 +25,11 @@
 ## File map
 
 **Created:**
+
 - `apps/web/e2e/helpers/axe.ts` — `expectNoSeriousAxeViolations(page)` helper
 
 **Modified:**
+
 - `apps/api/pyproject.toml` — coverage config + dev deps + addopts
 - `clients/python-pytest/pyproject.toml` — same
 - `apps/web/package.json` + `apps/web/package-lock.json` — `@vitest/coverage-v8` and `@axe-core/playwright`
@@ -47,6 +50,7 @@
 ### Task 1: apps/api — coverage + ergonomics
 
 **Files:**
+
 - Modify: `apps/api/pyproject.toml`, `.github/workflows/test-backend.yml`, `.gitignore`
 
 - [ ] **Step 1: Edit `apps/api/pyproject.toml`'s `[dependency-groups] dev`**
@@ -93,6 +97,7 @@ addopts = "-n auto --durations=10 --cov --cov-report=term-missing --cov-report=h
 cd apps/api && uv sync --extra dev || uv sync
 cd apps/api && uv run pytest -q
 ```
+
 Expected: 103 tests pass. xdist message about workers should appear at the top. A coverage summary table prints at the end. The 10 slowest tests are listed.
 
 If `pytest-randomly` surfaces an order-dependence failure: fix the underlying test (typically a fixture that mutates module-level state, or a test that depends on insertion order in a dict). Make a separate commit for each fix with message `prism-api: fix order-dependent test in <name> (Task 1)`.
@@ -118,7 +123,7 @@ Read the current file first. After the existing pytest step, add:
 
 Read `.gitignore`. Under the existing Python section, ensure these are listed (some may already be present; only add missing entries):
 
-```
+```text
 htmlcov/
 coverage.xml
 .coverage
@@ -131,6 +136,7 @@ git add apps/api/pyproject.toml .github/workflows/test-backend.yml .gitignore
 git commit -m "prism-api: enable coverage + pytest ergonomics (xdist, randomly, clarity, durations) (Task 1)"
 git push
 ```
+
 Expected: CI's `pytest` job runs, posts coverage summary in log, and uploads `coverage-api` artifact.
 
 ---
@@ -138,6 +144,7 @@ Expected: CI's `pytest` job runs, posts coverage summary in log, and uploads `co
 ### Task 2: clients/python-pytest — coverage + ergonomics
 
 **Files:**
+
 - Modify: `clients/python-pytest/pyproject.toml`, `.github/workflows/pytest-prism.yml`
 
 - [ ] **Step 1: Edit `clients/python-pytest/pyproject.toml`'s `[project.optional-dependencies] dev`**
@@ -184,6 +191,7 @@ addopts = "-n auto --durations=10 --cov --cov-report=term-missing --cov-report=h
 cd clients/python-pytest && uv sync --extra dev
 cd clients/python-pytest && uv run pytest -q --ignore=tests/contract
 ```
+
 Expected: 38 tests pass; xdist worker info at top; coverage summary at end; 10 slowest tests listed.
 
 Same fix pattern as Task 1 if randomly/xdist surface anything (rare for a small suite).
@@ -210,6 +218,7 @@ git add clients/python-pytest/pyproject.toml .github/workflows/pytest-prism.yml
 git commit -m "pytest-prism: enable coverage + pytest ergonomics (Task 2)"
 git push
 ```
+
 Expected: pytest-prism workflow runs across 3.10/3.11/3.12; only 3.12 uploads coverage artifact.
 
 ---
@@ -217,6 +226,7 @@ Expected: pytest-prism workflow runs across 3.10/3.11/3.12; only 3.12 uploads co
 ### Task 3: apps/web — coverage
 
 **Files:**
+
 - Modify: `apps/web/package.json`, `apps/web/package-lock.json`, `apps/web/vitest.config.ts`, `.github/workflows/test-frontend.yml`, `.gitignore`
 
 - [ ] **Step 1: Install `@vitest/coverage-v8`**
@@ -224,6 +234,7 @@ Expected: pytest-prism workflow runs across 3.10/3.11/3.12; only 3.12 uploads co
 ```bash
 cd apps/web && npm install -D @vitest/coverage-v8
 ```
+
 Expected: `package.json` and `package-lock.json` updated; the version chosen will match the vitest 2.x major already in deps.
 
 - [ ] **Step 2: Edit `apps/web/vitest.config.ts` to add coverage block**
@@ -245,6 +256,7 @@ Read the current file first. Within the `defineConfig({ test: { ... } })` block,
 ```bash
 cd apps/web && npx vitest run --coverage
 ```
+
 Expected: 18 tests pass; a coverage table prints at the end; `apps/web/coverage/index.html` is generated.
 
 - [ ] **Step 4: Edit `.github/workflows/test-frontend.yml` to enable coverage and upload artifact**
@@ -252,11 +264,13 @@ Expected: 18 tests pass; a coverage table prints at the end; `apps/web/coverage/
 Read the current file first. The `vitest` job's `npm test` step needs the `--coverage` flag. Two options depending on the current invocation:
 
 If the step uses `npm test`, change to:
+
 ```yaml
       - run: npx vitest run --coverage
 ```
 
 If the step already uses `npx vitest run`, append `--coverage`:
+
 ```yaml
       - run: npx vitest run --coverage
 ```
@@ -279,6 +293,7 @@ Under the Node section, ensure `coverage/` is listed (likely already present). V
 ```bash
 grep -n '^coverage' .gitignore
 ```
+
 If not present, add `coverage/` to the Node section.
 
 - [ ] **Step 6: Commit**
@@ -288,6 +303,7 @@ git add apps/web/package.json apps/web/package-lock.json apps/web/vitest.config.
 git commit -m "prism-web: enable vitest coverage with v8 provider (Task 3)"
 git push
 ```
+
 Expected: vitest CI job runs with coverage; `coverage-web` artifact appears on the run page.
 
 ---
@@ -295,6 +311,7 @@ Expected: vitest CI job runs with coverage; `coverage-web` artifact appears on t
 ### Task 4: Playwright retry-on-flake
 
 **Files:**
+
 - Modify: `apps/web/playwright.config.ts`
 
 - [ ] **Step 1: Read the current `apps/web/playwright.config.ts`**
@@ -349,6 +366,7 @@ git add apps/web/playwright.config.ts
 git commit -m "prism-web: retry e2e tests twice on CI flake (Task 4)"
 git push
 ```
+
 Expected: e2e workflow continues to run; if any test happens to be flaky on this run, it will retry up to twice before failing.
 
 ---
@@ -356,6 +374,7 @@ Expected: e2e workflow continues to run; if any test happens to be flaky on this
 ### Task 5: axe-playwright integration (with soft assertions)
 
 **Files:**
+
 - Create: `apps/web/e2e/helpers/axe.ts`
 - Modify: `apps/web/package.json`, `apps/web/package-lock.json`, `apps/web/e2e/login.spec.ts`, `apps/web/e2e/compare.spec.ts`
 
@@ -417,15 +436,18 @@ await expectNoSeriousAxeViolations(page);
 - [ ] **Step 4: Add call sites to `apps/web/e2e/compare.spec.ts`**
 
 Read the current file first. Add the same import. Add `await expectNoSeriousAxeViolations(page);` at two settling points:
+
 1. After the run-list / runs table renders.
 2. After the compare panel / overlay UI is visible (post-selection).
 
 - [ ] **Step 5: Verify Playwright still runs (locally if possible, or push to test on CI)**
 
 If a local Prism stack is available:
+
 ```bash
 make up && cd apps/web && npx playwright test
 ```
+
 Expected: tests pass (axe uses soft assertions; even with violations, tests pass). Test output and HTML report show axe findings.
 
 If no local stack: push and check CI.
@@ -437,6 +459,7 @@ git add apps/web/package.json apps/web/package-lock.json apps/web/e2e/helpers/ax
 git commit -m "prism-web: add @axe-core/playwright with soft assertions in e2e (Task 5)"
 git push
 ```
+
 Expected: e2e workflow runs; HTML report shows axe findings inline; tests pass even if violations exist.
 
 ---
@@ -446,6 +469,7 @@ Expected: e2e workflow runs; HTML report shows axe findings inline; tests pass e
 ### Task 6: Apply keyboard handlers to clickable Boxes
 
 **Files (likely; depends on what axe surfaces):**
+
 - Modify: `apps/web/src/components/TestTree.tsx`, `apps/web/src/pages/ComparePage.tsx`
 
 - [ ] **Step 1: Run e2e locally and read axe findings**
@@ -455,7 +479,8 @@ make up && cd apps/web && npx playwright test --reporter=list
 ```
 
 Look at the test output for axe-soft-assertion lines. They look like:
-```
+
+```text
 serious aria-required-children: ARIA role required-children
 serious click-events-have-key-events: Ensure clickable elements are keyboard-accessible (...)
 ```
@@ -529,6 +554,7 @@ Note: if you fix all sites in one editor pass, you can split into multiple commi
 ```bash
 cd apps/web && npx playwright test
 ```
+
 Expected: tests pass; HTML report and stdout show no axe-soft-assertion lines (or only `minor`/`moderate` lines, which the helper filters out).
 
 - [ ] **Step 5: Verify vitest tests still pass**
@@ -536,6 +562,7 @@ Expected: tests pass; HTML report and stdout show no axe-soft-assertion lines (o
 ```bash
 cd apps/web && npm test
 ```
+
 Expected: 18 tests pass. Adding `role="button"` and `tabIndex={0}` does not change DOM structure in a way that breaks Testing Library queries.
 
 - [ ] **Step 6: Push**
@@ -543,6 +570,7 @@ Expected: 18 tests pass. Adding `role="button"` and `tabIndex={0}` does not chan
 ```bash
 git push
 ```
+
 Expected: CI's e2e job runs; axe soft assertions report zero violations now.
 
 ---
@@ -552,6 +580,7 @@ Expected: CI's e2e job runs; axe soft assertions report zero violations now.
 ### Task 7: Flip axe helper from soft to hard expect
 
 **Files:**
+
 - Modify: `apps/web/e2e/helpers/axe.ts`
 
 - [ ] **Step 1: Verify zero serious/critical axe violations on the current branch**
@@ -559,6 +588,7 @@ Expected: CI's e2e job runs; axe soft assertions report zero violations now.
 ```bash
 cd apps/web && npx playwright test 2>&1 | grep -i 'axe\|serious\|critical' || echo "no axe issues detected"
 ```
+
 Expected: prints "no axe issues detected" (or similar; no lines matching the violation pattern).
 
 - [ ] **Step 2: Edit `apps/web/e2e/helpers/axe.ts` to use hard `expect`**
@@ -588,6 +618,7 @@ Also update the comment above it to reflect the gating change:
 ```bash
 cd apps/web && npx playwright test
 ```
+
 Expected: tests pass.
 
 - [ ] **Step 4: Commit and push**
@@ -597,6 +628,7 @@ git add apps/web/e2e/helpers/axe.ts
 git commit -m "prism-web: gate e2e on serious/critical axe violations (Task 7)"
 git push
 ```
+
 Expected: CI passes; from this commit onward, any new a11y regression in pages exercised by e2e specs blocks merge.
 
 ---
