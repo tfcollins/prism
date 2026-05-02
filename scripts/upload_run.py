@@ -24,6 +24,7 @@ Exit codes:
 
 Stdlib-only — works on any CI runner with Python 3.10+.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,7 +36,7 @@ from pathlib import Path
 # The shared client lives next to this file; use a path-relative import so the
 # script works when invoked from anywhere (e.g. `python3 /repo/scripts/...`).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _prism_client import PrismClient  # noqa: E402
+from _prism_client import PrismClient
 
 EXIT_OK = 0
 EXIT_BAD_INPUT = 2
@@ -47,9 +48,7 @@ EXIT_WAIT_TIMEOUT = 6
 
 def _parse_tag(raw: str) -> tuple[str, str]:
     if "=" not in raw:
-        raise argparse.ArgumentTypeError(
-            f"--tag expects key=value, got {raw!r}"
-        )
+        raise argparse.ArgumentTypeError(f"--tag expects key=value, got {raw!r}")
     k, v = raw.split("=", 1)
     k = k.strip()
     v = v.strip()
@@ -74,36 +73,68 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument("junit", type=Path, help="Path to the JUnit XML file.")
-    p.add_argument("--url", default=_env("PRISM_URL", "http://localhost:8000"),
-                   help="Prism API base URL (env: PRISM_URL).")
-    p.add_argument("--email", default=_env("PRISM_EMAIL"),
-                   help="Login email (env: PRISM_EMAIL).")
-    p.add_argument("--password", default=_env("PRISM_PASSWORD"),
-                   help="Login password (env: PRISM_PASSWORD).")
-    p.add_argument("--project", default=_env("PRISM_PROJECT"),
-                   help="Target project slug (env: PRISM_PROJECT).")
-    p.add_argument("--run-name", dest="run_name", default=_env("PRISM_RUN_NAME"),
-                   help="Name for this Test Suite Run (env: PRISM_RUN_NAME).")
-    p.add_argument("--tag", action="append", type=_parse_tag, default=[],
-                   metavar="key=value",
-                   help="Repeatable. Arbitrary tag on the run (branch=main, sha=abc123).")
-    p.add_argument("--archive", type=Path, default=None,
-                   help="Optional .zip of measurement artifacts to upload alongside the JUnit.")
-    p.add_argument("--auto-create-project", action="store_true",
-                   help="Create the target project if it doesn't exist.")
-    p.add_argument("--wait", nargs="?", type=int, const=60, default=None, metavar="SECONDS",
-                   help="After upload, poll every 2s until the run is no longer "
-                        "pending. Bare flag uses a 60s timeout; pass a value for longer.")
+    p.add_argument(
+        "--url",
+        default=_env("PRISM_URL", "http://localhost:8000"),
+        help="Prism API base URL (env: PRISM_URL).",
+    )
+    p.add_argument("--email", default=_env("PRISM_EMAIL"), help="Login email (env: PRISM_EMAIL).")
+    p.add_argument(
+        "--password", default=_env("PRISM_PASSWORD"), help="Login password (env: PRISM_PASSWORD)."
+    )
+    p.add_argument(
+        "--project", default=_env("PRISM_PROJECT"), help="Target project slug (env: PRISM_PROJECT)."
+    )
+    p.add_argument(
+        "--run-name",
+        dest="run_name",
+        default=_env("PRISM_RUN_NAME"),
+        help="Name for this Test Suite Run (env: PRISM_RUN_NAME).",
+    )
+    p.add_argument(
+        "--tag",
+        action="append",
+        type=_parse_tag,
+        default=[],
+        metavar="key=value",
+        help="Repeatable. Arbitrary tag on the run (branch=main, sha=abc123).",
+    )
+    p.add_argument(
+        "--archive",
+        type=Path,
+        default=None,
+        help="Optional .zip of measurement artifacts to upload alongside the JUnit.",
+    )
+    p.add_argument(
+        "--auto-create-project",
+        action="store_true",
+        help="Create the target project if it doesn't exist.",
+    )
+    p.add_argument(
+        "--wait",
+        nargs="?",
+        type=int,
+        const=60,
+        default=None,
+        metavar="SECONDS",
+        help="After upload, poll every 2s until the run is no longer "
+        "pending. Bare flag uses a 60s timeout; pass a value for longer.",
+    )
     verbosity = p.add_mutually_exclusive_group()
-    verbosity.add_argument("--quiet", "-q", action="store_true",
-                           help="Only print the final result line; errors still go to stderr.")
-    verbosity.add_argument("--verbose", "-v", action="store_true",
-                           help="Print each step to stdout.")
+    verbosity.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Only print the final result line; errors still go to stderr.",
+    )
+    verbosity.add_argument(
+        "--verbose", "-v", action="store_true", help="Print each step to stdout."
+    )
     return p
 
 
 def _require(args: argparse.Namespace, name: str, env: str) -> str | None:
-    val = getattr(args, name, None)
+    val: str | None = getattr(args, name, None)
     if not val:
         print(f"error: --{name.replace('_', '-')} is required (or set {env})", file=sys.stderr)
         return None
@@ -148,7 +179,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Project ---------------------------------------------------------- #
     if args.auto_create_project:
-        client.ensure_project(args.project, args.project, description="Auto-created by upload_run.py")
+        client.ensure_project(
+            args.project, args.project, description="Auto-created by upload_run.py"
+        )
     elif not client.project_exists(args.project):
         print(
             f"error: project {args.project!r} not found. "
@@ -163,9 +196,15 @@ def main(argv: list[str] | None = None) -> int:
     tags = dict(args.tag)
 
     if args.verbose:
-        say(f"→ uploading {args.junit.name} ({len(junit_bytes)} bytes) "
+        say(
+            f"→ uploading {args.junit.name} ({len(junit_bytes)} bytes) "
             f"as run {args.run_name!r} in project {args.project!r}"
-            + (f" with archive {args.archive.name} ({len(archive_bytes or b'')} bytes)" if archive_bytes else ""))
+            + (
+                f" with archive {args.archive.name} ({len(archive_bytes or b'')} bytes)"
+                if archive_bytes
+                else ""
+            )
+        )
 
     # --- Upload ----------------------------------------------------------- #
     try:
@@ -180,8 +219,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: upload failed — {exc}", file=sys.stderr)
         return EXIT_UPLOAD
 
-    run_id = result["id"]
-    status = result.get("status", "pending")
+    run_id: str = str(result["id"])
+    status: str = str(result.get("status", "pending"))
 
     # --- Optional wait-for-ingest ---------------------------------------- #
     if args.wait is not None:
@@ -203,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
             except RuntimeError as exc:
                 print(f"warning: could not poll run status — {exc}", file=sys.stderr)
                 break
-            status = detail.get("status", status)
+            status = str(detail.get("status", status))
 
     print(f"uploaded {args.run_name} (id={run_id}, status={status})")
     return EXIT_OK

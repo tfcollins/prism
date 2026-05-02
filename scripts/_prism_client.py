@@ -9,6 +9,7 @@ Session state (auth + CSRF cookies) is held in an in-memory cookie jar
 so all subsequent `self._request` calls automatically carry the login
 cookie and, for mutations, the `X-Prism-Csrf` header.
 """
+
 from __future__ import annotations
 
 import http.cookiejar
@@ -25,9 +26,7 @@ class PrismClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
         self.jar = http.cookiejar.CookieJar()
-        self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(self.jar)
-        )
+        self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
     # --------------------------------------------------------------------- #
     # Low-level request plumbing
@@ -48,7 +47,7 @@ class PrismClient:
         headers: dict[str, str] | None = None,
     ) -> tuple[int, bytes]:
         url = f"{self.base_url}{path}"
-        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
+        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310
         csrf = self._read_cookie("prism_csrf")
         if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
             req.add_header("X-Prism-Csrf", csrf)
@@ -65,8 +64,10 @@ class PrismClient:
     def login(self, email: str, password: str) -> None:
         payload = json.dumps({"email": email, "password": password}).encode("utf-8")
         code, body = self._request(
-            "POST", "/api/v1/auth/login",
-            body=payload, headers={"Content-Type": "application/json"},
+            "POST",
+            "/api/v1/auth/login",
+            body=payload,
+            headers={"Content-Type": "application/json"},
         )
         if code != 200:
             raise RuntimeError(f"login failed: HTTP {code} {body!r}")
@@ -77,10 +78,14 @@ class PrismClient:
 
     def ensure_project(self, slug: str, name: str, description: str = "") -> None:
         """Create the project if it doesn't exist. 409 (already exists) is fine."""
-        payload = json.dumps({"slug": slug, "name": name, "description": description}).encode("utf-8")
+        payload = json.dumps({"slug": slug, "name": name, "description": description}).encode(
+            "utf-8"
+        )
         code, body = self._request(
-            "POST", "/api/v1/projects",
-            body=payload, headers={"Content-Type": "application/json"},
+            "POST",
+            "/api/v1/projects",
+            body=payload,
+            headers={"Content-Type": "application/json"},
         )
         if code not in (201, 409):
             raise RuntimeError(f"project create failed: HTTP {code} {body!r}")
@@ -93,19 +98,21 @@ class PrismClient:
     # Runs
     # --------------------------------------------------------------------- #
 
-    def list_runs(self, project_slug: str) -> list[dict]:
+    def list_runs(self, project_slug: str) -> list[dict[str, object]]:
         code, body = self._request(
             "GET", f"/api/v1/runs?project={urllib.parse.quote(project_slug)}"
         )
         if code != 200:
             raise RuntimeError(f"list runs failed: HTTP {code} {body!r}")
-        return json.loads(body)
+        result: list[dict[str, object]] = json.loads(body)
+        return result
 
-    def get_run(self, run_id: str) -> dict:
+    def get_run(self, run_id: str) -> dict[str, object]:
         code, body = self._request("GET", f"/api/v1/runs/{urllib.parse.quote(run_id)}")
         if code != 200:
             raise RuntimeError(f"get run failed: HTTP {code} {body!r}")
-        return json.loads(body)
+        result: dict[str, object] = json.loads(body)
+        return result
 
     def delete_run(self, run_id: str) -> None:
         code, body = self._request("DELETE", f"/api/v1/runs/{urllib.parse.quote(run_id)}")
@@ -120,7 +127,7 @@ class PrismClient:
         junit_xml: bytes,
         archive_zip: bytes | None = None,
         tags: dict[str, str] | None = None,
-    ) -> dict:
+    ) -> dict[str, object]:
         """POST /api/v1/runs with a hand-built multipart body.
 
         Returns the parsed JSON response (includes run `id` + initial `status`).
@@ -155,4 +162,5 @@ class PrismClient:
         code, resp_body = self._request("POST", "/api/v1/runs", body=body, headers=headers)
         if code != 201:
             raise RuntimeError(f"upload {run_name!r} failed: HTTP {code} {resp_body!r}")
-        return json.loads(resp_body)
+        result: dict[str, object] = json.loads(resp_body)
+        return result
