@@ -16,13 +16,13 @@ jobs:
         run: docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env up -d --build
       - name: Wait for api
         run: |
-          for i in {1..60}; do
+          for _ in {1..60}; do
             if curl -sf http://localhost:8000/api/v1/health; then break; fi
             sleep 2
           done
       - name: Wait for web
         run: |
-          for i in {1..60}; do
+          for _ in {1..60}; do
             if curl -sf http://localhost:8180; then break; fi
             sleep 2
           done
