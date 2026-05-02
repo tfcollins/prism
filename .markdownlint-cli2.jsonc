@@ -1,11 +1,14 @@
 {
-  // Default rule set with two disables:
+  // Default rule set with these adjustments:
   //   MD013 (line-length) — too noisy for prose docs
-  //   MD033 (inline HTML) — needed for the README's <p align="center"> logo block
+  //   MD033 (inline HTML) — README uses <p align="center"> for the logo block
+  //   MD010 (no-hard-tabs) — disabled inside fenced code blocks because Makefile
+  //     recipes require literal TABs; the default --fix would silently mangle them
   "config": {
     "default": true,
     "MD013": false,
-    "MD033": false
+    "MD033": false,
+    "MD010": { "code_blocks": false }
   },
   "ignores": [
     "node_modules/**",

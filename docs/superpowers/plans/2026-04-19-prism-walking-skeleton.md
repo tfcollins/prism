@@ -66,38 +66,38 @@ Default admin login is set in `deploy/.env`. See `docs/getting-started.md` once 
 COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env
 
 up:
- $(COMPOSE) up -d
+	$(COMPOSE) up -d
 
 down:
- $(COMPOSE) down
+	$(COMPOSE) down
 
 logs:
- $(COMPOSE) logs -f
+	$(COMPOSE) logs -f
 
 build:
- $(COMPOSE) build
+	$(COMPOSE) build
 
 test: test-api test-web
 
 test-api:
- cd apps/api && uv run pytest
+	cd apps/api && uv run pytest
 
 test-web:
- cd apps/web && npm test
+	cd apps/web && npm test
 
 lint:
- cd apps/api && uv run ruff check . && uv run mypy src
- cd apps/web && npm run lint
+	cd apps/api && uv run ruff check . && uv run mypy src
+	cd apps/web && npm run lint
 
 fmt:
- cd apps/api && uv run ruff format .
- cd apps/web && npm run fmt
+	cd apps/api && uv run ruff format .
+	cd apps/web && npm run fmt
 
 docs:
- cd docs && mkdocs serve
+	cd docs && mkdocs serve
 
 clean:
- $(COMPOSE) down -v
+	$(COMPOSE) down -v
 ```
 
 - [ ] **Step 3: Extend .gitignore**
