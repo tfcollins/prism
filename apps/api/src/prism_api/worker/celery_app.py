@@ -29,6 +29,4 @@ def build_celery(settings: Settings | None = None) -> Celery:
 # The stub branch lets `from prism_api.worker.celery_app import celery_app`
 # succeed in test environments. The .task() decorator still works on a plain
 # Celery object; it just won't connect to a broker.
-celery_app = (
-    build_celery() if os.getenv("PRISM_DATABASE_URL") else Celery("prism-uninitialized")
-)
+celery_app = build_celery() if os.getenv("PRISM_DATABASE_URL") else Celery("prism-uninitialized")
