@@ -33,7 +33,7 @@ class RunResult:
 
 def _suite_name_from_junit(junit_xml: bytes) -> str:
     try:
-        root = ET.fromstring(junit_xml)
+        root = ET.fromstring(junit_xml)  # noqa: S314 — junit_xml is a local file written by pytest on this machine, not untrusted external input
     except ET.ParseError:
         return "pytest"
     suite = root if root.tag == "testsuite" else root.find("testsuite")
