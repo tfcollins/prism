@@ -1,0 +1,39 @@
+name: pytest-prism
+
+on:
+  push:
+    paths:
+      - "clients/python-pytest/**"
+      - ".github/workflows/pytest-prism.yml"
+  pull_request:
+    paths:
+      - "clients/python-pytest/**"
+      - ".github/workflows/pytest-prism.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: { version: latest }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        working-directory: clients/python-pytest
+        run: uv pip install --system ".[dev]"
+      - name: Lint
+        working-directory: clients/python-pytest
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type-check
+        working-directory: clients/python-pytest
+        run: uv run mypy src/pytest_prism tests
+      - name: Test (L1-L4)
+        working-directory: clients/python-pytest
+        run: uv run pytest -q --ignore=tests/contract
