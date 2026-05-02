@@ -7,6 +7,7 @@ Session state (auth + CSRF cookies) is held in an in-memory cookie jar
 so all subsequent `_request` calls automatically carry the login cookie
 and, for mutations, the `X-Prism-Csrf` header.
 """
+
 from __future__ import annotations
 
 import http.cookiejar
@@ -23,9 +24,7 @@ class PrismClient:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
         self.jar = http.cookiejar.CookieJar()
-        self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(self.jar)
-        )
+        self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
     # --------------------------------------------------------------------- #
     # Low-level request plumbing
@@ -63,8 +62,10 @@ class PrismClient:
     def login(self, email: str, password: str) -> None:
         payload = json.dumps({"email": email, "password": password}).encode("utf-8")
         code, body = self._request(
-            "POST", "/api/v1/auth/login",
-            body=payload, headers={"Content-Type": "application/json"},
+            "POST",
+            "/api/v1/auth/login",
+            body=payload,
+            headers={"Content-Type": "application/json"},
         )
         if code != 200:
             raise RuntimeError(f"login failed: HTTP {code} {body!r}")
@@ -75,10 +76,14 @@ class PrismClient:
 
     def ensure_project(self, slug: str, name: str, description: str = "") -> None:
         """Create the project if it doesn't exist. 409 (already exists) is fine."""
-        payload = json.dumps({"slug": slug, "name": name, "description": description}).encode("utf-8")
+        payload = json.dumps({"slug": slug, "name": name, "description": description}).encode(
+            "utf-8"
+        )
         code, body = self._request(
-            "POST", "/api/v1/projects",
-            body=payload, headers={"Content-Type": "application/json"},
+            "POST",
+            "/api/v1/projects",
+            body=payload,
+            headers={"Content-Type": "application/json"},
         )
         if code not in (201, 409):
             raise RuntimeError(f"project create failed: HTTP {code} {body!r}")
