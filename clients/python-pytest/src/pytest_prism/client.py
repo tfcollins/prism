@@ -29,9 +29,7 @@ class PrismClient:
         # local-file disclosure / SSRF. See ruff S310.
         scheme = urllib.parse.urlsplit(base_url).scheme.lower()
         if scheme not in ("http", "https"):
-            raise ValueError(
-                f"PrismClient base_url must be http or https; got scheme {scheme!r}"
-            )
+            raise ValueError(f"PrismClient base_url must be http or https; got scheme {scheme!r}")
         self.base_url = base_url.rstrip("/")
         self.jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
