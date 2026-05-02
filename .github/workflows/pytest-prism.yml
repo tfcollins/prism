@@ -25,7 +25,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install
         working-directory: clients/python-pytest
-        run: uv pip install --system ".[dev]"
+        run: uv sync --extra dev
       - name: Lint
         working-directory: clients/python-pytest
         run: |
