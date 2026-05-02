@@ -48,6 +48,7 @@ class Artifact(Base, TimestampMixin):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(_JSON, nullable=False, default=dict)
+    manifest_kind: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
 
 
 class DerivedArtifact(Base, TimestampMixin):

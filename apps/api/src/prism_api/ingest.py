@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 import logging
 import zipfile
 from dataclasses import dataclass
@@ -33,6 +34,40 @@ class IngestInputs:
     run_id: str
     junit_xml: bytes
     archive: bytes | None = None
+
+
+def _parse_manifest_kind_map(archive_bytes: bytes) -> dict[str, str]:
+    """Return {basename: manifest_kind} from manifest.json in the archive.
+
+    Empty dict for legacy archives (no manifest.json or schema_version != 2).
+    The basename used here is the bare filename inside the archive — pytest-prism
+    builds it as ``{suite}__{case}__{kind}__{label}.ext`` for case artifacts, but
+    the manifest's ``filename`` field is just the label part.  We map the
+    manifest's filename to its kind; the caller looks up the artifact by its
+    bare-archive name and matches the trailing label.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(archive_bytes)) as zf:
+            if "manifest.json" not in zf.namelist():
+                return {}
+            manifest = json.loads(zf.read("manifest.json"))
+    except (zipfile.BadZipFile, json.JSONDecodeError, KeyError):
+        return {}
+    if manifest.get("schema_version") != 2:
+        return {}
+    kinds: dict[str, str] = {}
+    for case in manifest.get("cases", []):
+        for art in case.get("artifacts", []):
+            fn = art.get("filename")
+            kind = art.get("kind")
+            if fn and kind:
+                kinds[fn] = kind
+    for art in manifest.get("run_artifacts", []):
+        fn = art.get("filename")
+        kind = art.get("kind")
+        if fn and kind:
+            kinds[fn] = kind
+    return kinds
 
 
 def _derive_run_status(suites: list[ParsedSuite]) -> RunStatus:
@@ -103,17 +138,23 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
 
     # 4) Extract archive and attach artifacts
     if inputs.archive:
+        kind_map = _parse_manifest_kind_map(inputs.archive)
         with zipfile.ZipFile(io.BytesIO(inputs.archive)) as zf:
             for name in zf.namelist():
-                if name.endswith("/"):
+                if name.endswith("/") or name == "manifest.json":
                     continue
                 data = zf.read(name)
-                owner = parse_artifact_filename(name.rsplit("/", 1)[-1])
+                bare = name.rsplit("/", 1)[-1]
+                owner = parse_artifact_filename(bare)
                 kind = detect_kind(name, data[:512])
                 key = storage.put_raw(data, filename=name)
                 owner_type, owner_id = _resolve_owner(
                     owner, inputs.run_id, suite_by_name, case_by_key
                 )
+                # Map archive name → manifest filename (trailing __-split label)
+                parts = bare.rsplit("__", 1)
+                label = parts[-1] if len(parts) > 1 else bare
+                manifest_kind = kind_map.get(label)
                 artifacts.create(
                     owner_type=owner_type,
                     owner_id=owner_id,
@@ -122,6 +163,7 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
                     size_bytes=len(data),
                     content_hash=key.rsplit("/", 1)[-1],
                     storage_key=key,
+                    manifest_kind=manifest_kind,
                 )
 
     # 5) Set final run status
