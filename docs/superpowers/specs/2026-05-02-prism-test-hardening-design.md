@@ -64,32 +64,39 @@ This is the same rollout shape as the lint lane's `continue-on-error: true` patt
 ### Lane A — Coverage measurement
 
 **`apps/api/pyproject.toml`:**
+
 - `[dependency-groups] dev` adds `pytest-cov>=5`.
 - New section `[tool.coverage.run]` with `source = ["src/prism_api"]`, `branch = false`.
 - New section `[tool.coverage.report]` with `show_missing = true`, `skip_covered = false`, `exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]`.
 - `[tool.pytest.ini_options] addopts` gains `--cov --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml:coverage.xml` (xml for tooling friendliness; not used in this lane but cheap to emit).
 
 **`clients/python-pytest/pyproject.toml`:**
+
 - Same pattern; `source = ["src/pytest_prism"]`.
 
 **`apps/web/package.json`:**
+
 - `devDependencies` adds `@vitest/coverage-v8` (matching the vitest 2.x major already pinned).
 
 **`apps/web/vitest.config.ts`:**
+
 - `test.coverage` block: `{ provider: 'v8', reporter: ['text', 'html'], reportsDirectory: 'coverage', include: ['src/**/*.{ts,tsx}'], exclude: ['src/**/*.d.ts', 'src/main.tsx'] }`.
 - Note: vitest's "text" reporter prints the summary to stdout; that's the log-summary equivalent of pytest's `term-missing`.
 
 **CI workflows:**
+
 - `test-backend.yml`'s pytest invocation already gets coverage from `addopts`. Append a final step using `actions/upload-artifact@v4` with `name: coverage-api`, `path: apps/api/htmlcov`.
 - `pytest-prism.yml` analogously: `name: coverage-pytest-prism`, `path: clients/python-pytest/htmlcov`. Matrix consideration: pytest-prism runs across Python 3.10/3.11/3.12 — only upload coverage from the 3.12 job to avoid artifact name collisions (use `if: matrix.python-version == '3.12'`).
 - `test-frontend.yml` (`vitest` job): pass `-- --coverage` to `npm test` (or use `npx vitest run --coverage`); upload `apps/web/coverage/` as `coverage-web`.
 
 **`.gitignore`:**
+
 - Add `htmlcov/`, `coverage.xml`, `coverage/`, `.coverage` under the existing Python and Node sections (some already covered; verify).
 
 ### Lane D — Runtime a11y
 
 **`apps/web/package.json`:**
+
 - `devDependencies` adds `@axe-core/playwright` (matches `@playwright/test` major already in deps).
 
 **New file `apps/web/e2e/helpers/axe.ts`:**
@@ -117,26 +124,33 @@ function formatAxeViolations(violations: { id: string; impact: string | null | u
 ```
 
 **Existing specs:**
+
 - `apps/web/e2e/login.spec.ts`: add one `await expectNoSeriousAxeViolations(page)` after login completes (page has settled into the dashboard).
 - `apps/web/e2e/compare.spec.ts`: add calls at two settling points — after the run-list renders, and after the compare panel is open.
 
 ### Lane F — Test ergonomics
 
 **`apps/api/pyproject.toml`:**
+
 - `[dependency-groups] dev` adds `pytest-xdist>=3.6`, `pytest-randomly>=3.15`, `pytest-clarity>=1.0`.
 - `[tool.pytest.ini_options] addopts` gains `-n auto --durations=10`. Combined with the coverage flags from lane A, the final `addopts` reads:
-  ```
+
+  ```toml
   addopts = "-n auto --durations=10 --cov --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml:coverage.xml"
   ```
+
 - `pytest-randomly` and `pytest-clarity` self-register via entry points; no further config needed.
 
 **`clients/python-pytest/pyproject.toml`:**
+
 - Same dev-dep additions and `addopts`.
 
 **`apps/web/playwright.config.ts`:**
+
 - Add `retries: process.env.CI ? 2 : 0` at the top level (alongside existing `testDir`, `use`, etc.). Local runs continue to fail fast.
 
 **`apps/web/vitest.config.ts`:**
+
 - No ergonomics change beyond the coverage block from lane A. Vitest is already parallel by default.
 
 ## Rollout — fix-as-part-of-lane
