@@ -6,7 +6,7 @@ import { useCompare } from '../api/queries';
 import type { CaseDiff } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { OverlayFFTPlot } from '../components/OverlayFFTPlot';
-import { type OverlayTrace,OverlayWaveformPlot } from '../components/OverlayWaveformPlot';
+import { type OverlayTrace, OverlayWaveformPlot } from '../components/OverlayWaveformPlot';
 
 export function ComparePage() {
   const [params] = useSearchParams();
@@ -64,7 +64,8 @@ export function ComparePage() {
             </Table.Header>
             <Table.Body>
               {q.data.cases.map((c) => {
-                const isSelected = selected?.suite_name === c.suite_name && selected?.name === c.name;
+                const isSelected =
+                  selected?.suite_name === c.suite_name && selected?.name === c.name;
                 const hasAnyWaveform = c.waveform_artifact_ids.some((id) => id !== null);
                 return (
                   <Table.Row
@@ -83,19 +84,30 @@ export function ComparePage() {
                     {c.statuses.map((s, i) => (
                       <Table.Cell key={i}>
                         {s ? (
-                          <Badge colorPalette={s === 'pass' ? 'green' : s === 'skip' ? 'gray' : 'red'}>{s}</Badge>
+                          <Badge
+                            colorPalette={s === 'pass' ? 'green' : s === 'skip' ? 'gray' : 'red'}
+                          >
+                            {s}
+                          </Badge>
                         ) : (
-                          <Text fontSize="xs" color="var(--prism-text-subtle)">absent</Text>
+                          <Text fontSize="xs" color="var(--prism-text-subtle)">
+                            absent
+                          </Text>
                         )}
                       </Table.Cell>
                     ))}
                     <Table.Cell>
                       {hasAnyWaveform ? (
-                        <Text fontSize="xs" color={isSelected ? 'var(--prism-brand)' : 'var(--prism-text-subtle)'}>
+                        <Text
+                          fontSize="xs"
+                          color={isSelected ? 'var(--prism-brand)' : 'var(--prism-text-subtle)'}
+                        >
                           {isSelected ? '▾ shown below' : 'click to overlay'}
                         </Text>
                       ) : (
-                        <Text fontSize="xs" color="var(--prism-text-faint)">no waveform</Text>
+                        <Text fontSize="xs" color="var(--prism-text-faint)">
+                          no waveform
+                        </Text>
                       )}
                     </Table.Cell>
                   </Table.Row>
@@ -119,7 +131,7 @@ export function ComparePage() {
                 Overlaying waveforms from {overlayTraces.length} of {runIds.length} runs
                 {overlayTraces.length < runIds.length &&
                   ` (others have no waveform attached: ${selected.waveform_artifact_ids
-                    .map((aid, i) => (aid ? null : runById[runIds[i]]?.name ?? runIds[i]))
+                    .map((aid, i) => (aid ? null : (runById[runIds[i]]?.name ?? runIds[i])))
                     .filter(Boolean)
                     .join(', ')})`}
               </Text>

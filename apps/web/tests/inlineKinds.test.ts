@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CaseArtifact } from '../src/api/types';
-import { INLINE_RENDERABLE_KINDS,pickInlineArtifact } from '../src/lib/inlineKinds';
-
+import { INLINE_RENDERABLE_KINDS, pickInlineArtifact } from '../src/lib/inlineKinds';
 
 function fakeArtifact(overrides: Partial<CaseArtifact>): CaseArtifact {
   return {
@@ -14,7 +13,6 @@ function fakeArtifact(overrides: Partial<CaseArtifact>): CaseArtifact {
     ...overrides,
   };
 }
-
 
 describe('pickInlineArtifact', () => {
   it('returns undefined when manifest_kind is null', () => {
