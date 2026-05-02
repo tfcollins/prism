@@ -74,6 +74,7 @@ export interface CaseListItem {
 export interface CaseArtifact {
   id: string;
   kind: string;
+  manifest_kind: string | null;
   filename: string;
   size_bytes: number;
 }
