@@ -78,6 +78,7 @@ ignore_missing_imports = true
 [tool.coverage.run]
 source = ["src/prism_api"]
 branch = false
+omit = ["src/prism_api/migrations/*"]
 
 [tool.coverage.report]
 show_missing = true
@@ -86,6 +87,9 @@ exclude_lines = [
   "pragma: no cover",
   "if TYPE_CHECKING:",
   "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "@(abc\\.)?abstractmethod",
+  "\\.\\.\\.",
 ]
 
 [tool.pytest.ini_options]
