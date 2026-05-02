@@ -1,5 +1,22 @@
-"""pytest-prism public API. Real exports land in Task 4."""
+"""pytest-prism public API."""
+
+from pytest_prism.api import (
+    RenderContext,
+    Renderer,
+    RenderResult,
+    SessionContext,
+    SessionHook,
+    attach,
+)
 
 __version__ = "0.1.0"
 
-__all__ = ["__version__"]
+__all__ = [
+    "RenderContext",
+    "RenderResult",
+    "Renderer",
+    "SessionContext",
+    "SessionHook",
+    "__version__",
+    "attach",
+]
