@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CaseArtifact } from '../src/api/types';
-import { pickInlineArtifact, INLINE_RENDERABLE_KINDS } from '../src/lib/inlineKinds';
+import { INLINE_RENDERABLE_KINDS,pickInlineArtifact } from '../src/lib/inlineKinds';
 
 
 function fakeArtifact(overrides: Partial<CaseArtifact>): CaseArtifact {

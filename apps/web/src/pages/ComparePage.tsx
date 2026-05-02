@@ -6,7 +6,7 @@ import { useCompare } from '../api/queries';
 import type { CaseDiff } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { OverlayFFTPlot } from '../components/OverlayFFTPlot';
-import { OverlayWaveformPlot, type OverlayTrace } from '../components/OverlayWaveformPlot';
+import { type OverlayTrace,OverlayWaveformPlot } from '../components/OverlayWaveformPlot';
 
 export function ComparePage() {
   const [params] = useSearchParams();
