@@ -17,6 +17,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 _UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 _MAX_SAFE_ID_LEN = 200
@@ -35,7 +36,7 @@ def _safe_test_id(nodeid: str) -> str:
 @dataclass
 class _CaseEntry:
     case_nodeid: str
-    artifacts: list[dict] = field(default_factory=list)
+    artifacts: list[dict[str, Any]] = field(default_factory=list)
 
 
 class OutputDir:
@@ -43,7 +44,7 @@ class OutputDir:
 
     def __init__(self, root: Path):
         self.root = Path(root)
-        self._run_artifacts: list[dict] = []
+        self._run_artifacts: list[dict[str, Any]] = []
         self._cases: dict[str, _CaseEntry] = {}
         self._initialized = False
 
@@ -140,7 +141,7 @@ class OutputDir:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    def finalize(self, *, run_meta: dict) -> dict:
+    def finalize(self, *, run_meta: dict[str, Any]) -> dict[str, Any]:
         manifest = {
             "schema_version": SCHEMA_VERSION,
             "run_meta": run_meta,

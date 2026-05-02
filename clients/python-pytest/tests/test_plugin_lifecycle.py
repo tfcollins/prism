@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
 
 pytest_plugins = ["pytester"]
 
@@ -31,7 +34,9 @@ _DISABLE_NOISY_PLUGINS = [
 ]
 
 
-def test_attach_with_no_registered_renderer_falls_through(pytester, tmp_path):
+def test_attach_with_no_registered_renderer_falls_through(
+    pytester: pytest.Pytester, tmp_path: Path
+) -> None:
     """Payload of an unknown kind is dumped as raw.json with a warning."""
     out = tmp_path / "out"
     pytester.makepyfile("""
@@ -50,7 +55,9 @@ def test_attach_with_no_registered_renderer_falls_through(pytester, tmp_path):
     assert payload == {"x": 1, "y": "hi"}
 
 
-def test_strict_registry_rejects_bad_entry_point(pytester, tmp_path, monkeypatch):
+def test_strict_registry_rejects_bad_entry_point(
+    pytester: pytest.Pytester, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """In strict mode, an entry point that fails to import → UsageError."""
     from importlib.metadata import EntryPoint
 
@@ -72,7 +79,7 @@ def test_strict_registry_rejects_bad_entry_point(pytester, tmp_path, monkeypatch
     assert "failed to import" in result.stderr.str() + result.stdout.str()
 
 
-def test_out_dir_overwrite_flag_clears_existing(pytester, tmp_path):
+def test_out_dir_overwrite_flag_clears_existing(pytester: pytest.Pytester, tmp_path: Path) -> None:
     """--prism-out-overwrite removes the dir before writing."""
     out = tmp_path / "out"
     out.mkdir()

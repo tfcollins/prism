@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pytest_prism.client import PrismClient
+from pytest_prism.config import Config
+from pytest_prism.manifest import OutputDir
 
 
 class UploadError(RuntimeError):
@@ -36,7 +38,7 @@ def _suite_name_from_junit(junit_xml: bytes) -> str:
         return "pytest"
     suite = root if root.tag == "testsuite" else root.find("testsuite")
     if suite is not None and suite.get("name"):
-        return suite.get("name")
+        return suite.get("name") or "pytest"
     return "pytest"
 
 
@@ -102,10 +104,16 @@ def _build_artifacts_zip(out_root: Path) -> bytes:
 
 
 def upload(
-    out_dir, cfg, *, poll_timeout_s: float = 60.0, poll_interval_s: float = 1.0
+    out_dir: OutputDir, cfg: Config, *, poll_timeout_s: float = 60.0, poll_interval_s: float = 1.0
 ) -> RunResult:
     if not cfg.upload_url:
         raise UploadError("upload() called with no upload_url")
+    if not cfg.upload_email:
+        raise UploadError("upload() called with no upload_email")
+    if not cfg.upload_password:
+        raise UploadError("upload() called with no upload_password")
+    if not cfg.upload_project:
+        raise UploadError("upload() called with no upload_project")
     junit_bytes = (out_dir.root / "junit.xml").read_bytes()
     archive_bytes = _build_artifacts_zip(out_dir.root)
 

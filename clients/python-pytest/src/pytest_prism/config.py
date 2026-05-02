@@ -10,8 +10,10 @@ import argparse
 import datetime as _dt
 import os
 import socket
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path, PosixPath
+from typing import Any
 
 
 class ConfigError(Exception):
@@ -27,7 +29,7 @@ class _RelDotPath(PosixPath):
     keeps that prefix while remaining a fully-functional ``Path``.
     """
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self) -> str:
         s = super().__str__()
         if s.startswith("/") or s.startswith("./") or s.startswith("../"):
             return s
@@ -61,7 +63,7 @@ class Config:
         return _resolve(ns, os.environ)
 
     @classmethod
-    def from_pytest(cls, pytest_config) -> Config:
+    def from_pytest(cls, pytest_config: Any) -> Config:
         # invocation_params.args includes pytest's own flags (-q, -v, ...)
         # plus any user args. Use parse_known_args to ignore non-prism flags.
         argv = list(pytest_config.invocation_params.args)
@@ -89,17 +91,17 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def _env_bool(env: dict, key: str) -> bool | None:
+def _env_bool(env: Mapping[str, str], key: str) -> bool | None:
     v = env.get(key)
     if v is None:
         return None
     return v.strip().lower() in ("1", "true", "yes", "on")
 
 
-def _resolve(ns: argparse.Namespace, env: dict) -> Config:
+def _resolve(ns: argparse.Namespace, env: Mapping[str, str]) -> Config:
     warnings: dict[str, str] = {}
 
-    def _pick(cli_val, env_key, default=None):
+    def _pick(cli_val: Any, env_key: str, default: Any = None) -> Any:
         if cli_val is not None:
             return cli_val
         if env_key in env:

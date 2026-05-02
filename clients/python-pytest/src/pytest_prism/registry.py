@@ -6,6 +6,8 @@ import logging
 from dataclasses import dataclass, field
 from importlib.metadata import EntryPoint, entry_points
 
+from pytest_prism.api import Renderer, SessionHook
+
 _LOG = logging.getLogger("pytest_prism.registry")
 
 RENDERER_GROUP = "pytest_prism.renderers"
@@ -18,8 +20,8 @@ class RegistryError(RuntimeError):
 
 @dataclass(frozen=True)
 class Registry:
-    renderers: dict[str, object] = field(default_factory=dict)
-    session_hooks: dict[str, object] = field(default_factory=dict)
+    renderers: dict[str, Renderer] = field(default_factory=dict)
+    session_hooks: dict[str, SessionHook] = field(default_factory=dict)
 
 
 def _discover_entry_points() -> list[EntryPoint]:
@@ -52,8 +54,8 @@ def _instantiate(ep: EntryPoint, *, strict: bool) -> object | None:
 
 def load_registry(*, strict: bool = False) -> Registry:
     """Discover entry points and build dispatch tables."""
-    renderers: dict[str, object] = {}
-    hooks: dict[str, object] = {}
+    renderers: dict[str, Renderer] = {}
+    hooks: dict[str, SessionHook] = {}
     for ep in _discover_entry_points():
         instance = _instantiate(ep, strict=strict)
         if instance is None:
@@ -65,7 +67,8 @@ def load_registry(*, strict: bool = False) -> Registry:
                     f"pytest-prism: duplicate renderer kind {kind!r} "
                     f"(entry points {ep.group}/{ep.name} collides with another)"
                 )
-            renderers[kind] = instance
+            if isinstance(instance, Renderer):
+                renderers[kind] = instance
         elif ep.group == SESSION_HOOK_GROUP:
             name = getattr(instance, "name", ep.name)
             if name in hooks:
@@ -73,5 +76,6 @@ def load_registry(*, strict: bool = False) -> Registry:
                     f"pytest-prism: duplicate session hook name {name!r} "
                     f"(entry points {ep.group}/{ep.name} collides with another)"
                 )
-            hooks[name] = instance
+            if isinstance(instance, SessionHook):
+                hooks[name] = instance
     return Registry(renderers=renderers, session_hooks=hooks)

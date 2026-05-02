@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 
 import pytest
 
@@ -47,7 +48,10 @@ def _seed(out: OutputDir, suite: str, case: str) -> None:
     out.finalize(run_meta={"plugin_version": "0.1.0"})
 
 
-def test_upload_run_appears_in_api(tmp_path):
+def test_upload_run_appears_in_api(tmp_path: Path) -> None:
+    # These are checked non-None by the pytestmark.skipif guard above.
+    assert _URL and _EMAIL and _PASSWORD, "L5 guard: env vars must be set"
+
     od = OutputDir(tmp_path / "out")
     _seed(od, suite="contract_suite", case=f"case_{int(time.time())}")
 

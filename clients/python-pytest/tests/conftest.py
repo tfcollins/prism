@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -23,16 +24,16 @@ class FakePrismRecord:
     next_status_value: str = "ready"
 
 
-def _make_handler(record: FakePrismRecord):
+def _make_handler(record: FakePrismRecord) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
-        def log_message(self, *_a, **_kw):
+        def log_message(self, *_a: Any, **_kw: Any) -> None:
             return  # silence
 
         def _read_body(self) -> bytes:
             length = int(self.headers.get("Content-Length", "0"))
             return self.rfile.read(length) if length else b""
 
-        def do_POST(self):
+        def do_POST(self) -> None:
             path = urlparse(self.path).path
             if path == "/api/v1/auth/login":
                 self.send_response(200)
@@ -56,7 +57,7 @@ def _make_handler(record: FakePrismRecord):
             self.send_response(404)
             self.end_headers()
 
-        def do_GET(self):
+        def do_GET(self) -> None:
             path = urlparse(self.path).path
             if path.startswith("/api/v1/runs/"):
                 run_id = path.rsplit("/", 1)[-1]
@@ -80,7 +81,7 @@ def _make_handler(record: FakePrismRecord):
 
 
 @pytest.fixture
-def fake_prism():
+def fake_prism() -> Iterator[tuple[str, FakePrismRecord]]:
     """Spin up a localhost HTTP server that pretends to be Prism."""
     record = FakePrismRecord()
     server = ThreadingHTTPServer(("127.0.0.1", 0), _make_handler(record))

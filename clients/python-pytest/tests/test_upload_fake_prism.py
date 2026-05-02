@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import zipfile
 from io import BytesIO
+from pathlib import Path
+
+import pytest
 
 from pytest_prism.config import Config
 from pytest_prism.manifest import OutputDir
 from pytest_prism.upload import UploadError, upload
+from tests.conftest import FakePrismRecord
 
 
-def _seeded_out(tmp_path) -> OutputDir:
+def _seeded_out(tmp_path: Path) -> OutputDir:
     od = OutputDir(tmp_path / "out")
     od.initialize()
     (od.root / "junit.xml").write_text(
@@ -49,7 +53,7 @@ def _cfg(url: str) -> Config:
     )
 
 
-def test_happy_path_upload(tmp_path, fake_prism):
+def test_happy_path_upload(tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]) -> None:
     url, record = fake_prism
     od = _seeded_out(tmp_path)
     cfg = _cfg(url)
@@ -63,7 +67,9 @@ def test_happy_path_upload(tmp_path, fake_prism):
     assert b'name="archive"' in body
 
 
-def test_archive_uses_kind_in_arcname(tmp_path, fake_prism):
+def test_archive_uses_kind_in_arcname(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]
+) -> None:
     """Per-case files are renamed to {suite}__{case}__{kind}__{filename}."""
     url, record = fake_prism
     od = _seeded_out(tmp_path)
@@ -82,26 +88,27 @@ def test_archive_uses_kind_in_arcname(tmp_path, fake_prism):
     assert "dmesg_pre.log" in names
 
 
-def test_fail_on_upload_error_propagates(tmp_path, fake_prism):
+def test_fail_on_upload_error_propagates(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]
+) -> None:
     url, record = fake_prism
     record.next_status_code = 500
     od = _seeded_out(tmp_path)
     cfg = _cfg(url)
-    import pytest as _pytest
 
-    with _pytest.raises(UploadError, match="run create failed"):
+    with pytest.raises(UploadError, match="run create failed"):
         upload(od, cfg, poll_timeout_s=2.0, poll_interval_s=0.05)
 
 
-def test_polls_until_ready(tmp_path, fake_prism):
+def test_polls_until_ready(tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]) -> None:
     """Status starts pending, then flips to ready on a later poll."""
+    import threading
+
     url, record = fake_prism
     record.next_status_value = "pending"
 
     # Flip to ready after a short delay using a background thread.
-    import threading
-
-    def _flip():
+    def _flip() -> None:
         import time as _t
 
         _t.sleep(0.15)

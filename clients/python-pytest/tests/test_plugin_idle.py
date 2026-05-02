@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
+
 pytest_plugins = ["pytester"]
 
 # Arguments forwarded to every inner pytest invocation to keep it stable
@@ -32,7 +36,7 @@ _DISABLE_NOISY_PLUGINS = [
 ]
 
 
-def test_plugin_inert_when_flag_off(pytester):
+def test_plugin_inert_when_flag_off(pytester: pytest.Pytester) -> None:
     pytester.makepyfile("""
         def test_passes():
             assert True
@@ -43,7 +47,7 @@ def test_plugin_inert_when_flag_off(pytester):
     assert "pytest-prism" not in result.stdout.str()
 
 
-def test_plugin_creates_out_dir_when_flag_on(pytester, tmp_path):
+def test_plugin_creates_out_dir_when_flag_on(pytester: pytest.Pytester, tmp_path: Path) -> None:
     out = tmp_path / "out"
     pytester.makepyfile("""
         def test_passes():
