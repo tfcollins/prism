@@ -36,6 +36,10 @@ dev = [
   "types-python-jose",
   "freezegun>=1.4",
   "moto[s3]>=5.0",
+  "pytest-cov>=5",
+  "pytest-xdist>=3.6",
+  "pytest-randomly>=3.15",
+  "pytest-clarity>=1.0",
 ]
 
 [build-system]
@@ -71,9 +75,23 @@ warn_unreachable = true
 module = ["celery", "celery.*", "h5py", "boto3", "boto3.*", "mypy_boto3_s3.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
+[tool.coverage.run]
+source = ["src/prism_api"]
+branch = false
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "-n auto --durations=10 --cov --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml:coverage.xml"
 filterwarnings = [
   "error",
   # passlib imports the stdlib 'crypt' module which is deprecated in Python 3.12;
