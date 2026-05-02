@@ -23,6 +23,15 @@ __all__ = ["PrismClient"]
 
 class PrismClient:
     def __init__(self, base_url: str) -> None:
+        # Reject non-http(s) schemes up front so the noqa: S310 below is true.
+        # urllib's default opener handles file://, ftp://, data://, etc., which
+        # an attacker who can set PRISM_URL in a CI env could abuse for
+        # local-file disclosure / SSRF. See ruff S310.
+        scheme = urllib.parse.urlsplit(base_url).scheme.lower()
+        if scheme not in ("http", "https"):
+            raise ValueError(
+                f"PrismClient base_url must be http or https; got scheme {scheme!r}"
+            )
         self.base_url = base_url.rstrip("/")
         self.jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
@@ -46,7 +55,8 @@ class PrismClient:
         headers: dict[str, str] | None = None,
     ) -> tuple[int, bytes]:
         url = f"{self.base_url}{path}"
-        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310 — URL is built from caller-supplied base_url (http/https only); no shell injection vector
+        # base_url's scheme is validated to http/https in __init__, so this is safe.
+        req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310
         csrf = self._read_cookie("prism_csrf")
         if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
             req.add_header("X-Prism-Csrf", csrf)

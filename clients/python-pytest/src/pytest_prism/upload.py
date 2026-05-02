@@ -10,10 +10,11 @@ from __future__ import annotations
 import io
 import json as _json
 import time
-import xml.etree.ElementTree as ET
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+
+import defusedxml.ElementTree as ET
 
 from pytest_prism.client import PrismClient
 from pytest_prism.config import Config
@@ -33,7 +34,7 @@ class RunResult:
 
 def _suite_name_from_junit(junit_xml: bytes) -> str:
     try:
-        root = ET.fromstring(junit_xml)  # noqa: S314 — junit_xml is a local file written by pytest on this machine, not untrusted external input
+        root = ET.fromstring(junit_xml)
     except ET.ParseError:
         return "pytest"
     suite = root if root.tag == "testsuite" else root.find("testsuite")
