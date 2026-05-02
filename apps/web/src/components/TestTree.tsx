@@ -202,7 +202,7 @@ function CaseRow({
       }}
       role="button"
       tabIndex={0}
-      aria-pressed={selectedCaseId === c.id}
+      aria-current={selectedCaseId === c.id ? 'true' : undefined}
       cursor="pointer"
       px={2}
       py={1}
