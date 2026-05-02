@@ -16,10 +16,9 @@ export async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
   const filtered = (results.violations as AxeViolation[]).filter(
     (v) => v.impact === 'serious' || v.impact === 'critical',
   );
-  // expect.soft reports findings without failing the test, so we can land
-  // this helper before existing violations are fixed. Task 7 flips this to
-  // hard `expect(...)` after fixes land.
-  expect.soft(filtered, formatViolations(filtered)).toEqual([]);
+  // From here on, any new serious/critical axe violation introduced by a PR
+  // will fail the e2e job, blocking merge until fixed.
+  expect(filtered, formatViolations(filtered)).toEqual([]);
 }
 
 function formatViolations(violations: AxeViolation[]): string {
