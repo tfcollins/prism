@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectNoSeriousAxeViolations } from './helpers/axe';
 
 const EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@example.com';
 const PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? 'change-me-in-prod';
@@ -22,6 +23,9 @@ test('select two runs and open the compare page', async ({ page }) => {
   await rows.nth(0).locator('label[data-scope="checkbox"]').click();
   await rows.nth(1).locator('label[data-scope="checkbox"]').click();
 
+  // Axe check 1: runs table is fully rendered.
+  await expectNoSeriousAxeViolations(page);
+
   // Button appears once ≥2 selected.
   const compareBtn = page.locator('button:has-text("Compare 2 runs")');
   await expect(compareBtn).toBeVisible();
@@ -33,4 +37,7 @@ test('select two runs and open the compare page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^compare$/i })).toBeVisible();
   await expect(page.getByText(/pass rate/i)).toBeVisible();
   await expect(page.locator('table')).toBeVisible();
+
+  // Axe check 2: compare panel / overlay UI is visible.
+  await expectNoSeriousAxeViolations(page);
 });
