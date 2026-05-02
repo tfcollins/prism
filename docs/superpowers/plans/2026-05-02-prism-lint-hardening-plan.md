@@ -118,35 +118,35 @@ Read the current Makefile first (`Makefile` at repo root). Replace the `.PHONY` 
 lint: lint-api lint-web lint-md lint-actions lint-dockerfiles
 
 lint-api:
- cd apps/api && uv run ruff check . && uv run mypy src
+	cd apps/api && uv run ruff check . && uv run mypy src
 
 lint-web:
- cd apps/web && npm run lint
+	cd apps/web && npm run lint
 
 lint-md:
- npx markdownlint-cli2 "**/*.md"
+	npx markdownlint-cli2 "**/*.md"
 
 lint-actions:
- @if command -v actionlint >/dev/null 2>&1; then \
-  actionlint .github/workflows/*.yml; \
- else \
-  echo "actionlint not on PATH; skipping (CI will still run it)"; \
- fi
+	@if command -v actionlint >/dev/null 2>&1; then \
+		actionlint .github/workflows/*.yml; \
+	else \
+		echo "actionlint not on PATH; skipping (CI will still run it)"; \
+	fi
 
 lint-dockerfiles:
- @if command -v hadolint >/dev/null 2>&1; then \
-  hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
- else \
-  echo "hadolint not on PATH; skipping (CI will still run it)"; \
- fi
+	@if command -v hadolint >/dev/null 2>&1; then \
+		hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
+	else \
+		echo "hadolint not on PATH; skipping (CI will still run it)"; \
+	fi
 
 fmt: fmt-api fmt-web
 
 fmt-api:
- cd apps/api && uv run ruff format .
+	cd apps/api && uv run ruff format .
 
 fmt-web:
- cd apps/web && npm run fmt
+	cd apps/web && npm run fmt
 ```
 
 Keep the existing `up`, `up-bare`, `down`, `logs`, `build`, `test`, `test-api`, `test-web`, `docs`, `clean` targets unchanged.
