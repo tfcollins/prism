@@ -40,7 +40,6 @@ jobs:
 
   markdown:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,7 +52,6 @@ jobs:
 
   actions:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint
@@ -63,7 +61,6 @@ jobs:
 
   dockerfile:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Run hadolint
