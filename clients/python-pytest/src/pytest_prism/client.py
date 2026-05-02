@@ -16,6 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from typing import Any, cast
 
 __all__ = ["PrismClient"]
 
@@ -96,19 +97,19 @@ class PrismClient:
     # Runs
     # --------------------------------------------------------------------- #
 
-    def list_runs(self, project_slug: str) -> list[dict]:
+    def list_runs(self, project_slug: str) -> list[dict[str, Any]]:
         code, body = self._request(
             "GET", f"/api/v1/runs?project={urllib.parse.quote(project_slug)}"
         )
         if code != 200:
             raise RuntimeError(f"list runs failed: HTTP {code} {body!r}")
-        return json.loads(body)
+        return cast(list[dict[str, Any]], json.loads(body))
 
-    def get_run(self, run_id: str) -> dict:
+    def get_run(self, run_id: str) -> dict[str, Any]:
         code, body = self._request("GET", f"/api/v1/runs/{urllib.parse.quote(run_id)}")
         if code != 200:
             raise RuntimeError(f"get run failed: HTTP {code} {body!r}")
-        return json.loads(body)
+        return cast(dict[str, Any], json.loads(body))
 
     def delete_run(self, run_id: str) -> None:
         code, body = self._request("DELETE", f"/api/v1/runs/{urllib.parse.quote(run_id)}")
@@ -123,7 +124,7 @@ class PrismClient:
         junit_xml: bytes,
         archive_zip: bytes | None = None,
         tags: dict[str, str] | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """POST /api/v1/runs with a hand-built multipart body.
 
         Returns the parsed JSON response (includes run `id` + initial `status`).
@@ -158,4 +159,4 @@ class PrismClient:
         code, resp_body = self._request("POST", "/api/v1/runs", body=body, headers=headers)
         if code != 201:
             raise RuntimeError(f"upload {run_name!r} failed: HTTP {code} {resp_body!r}")
-        return json.loads(resp_body)
+        return cast(dict[str, Any], json.loads(resp_body))

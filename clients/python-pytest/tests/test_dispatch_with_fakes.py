@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Mapping
 from importlib.metadata import EntryPoint
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -39,7 +42,7 @@ _DISABLE_NOISY_PLUGINS = [
 class _SentinelRenderer:
     payload_kind = "sentinel.kind"
 
-    def render(self, payload, ctx):
+    def render(self, payload: Mapping[str, Any], ctx: Any) -> Any:
         from pytest_prism import RenderResult
 
         (ctx.case_dir / "sentinel.txt").write_text(f"got {payload['x']}")
@@ -53,17 +56,17 @@ class _SentinelRenderer:
 class _SentinelHook:
     name = "sentinel_hook"
 
-    def session_pre(self, ctx):
+    def session_pre(self, ctx: Any) -> Mapping[str, Any]:
         (ctx.hook_dir / "pre.txt").write_text("hello pre")
         return {"phase": "pre"}
 
-    def session_post(self, ctx):
+    def session_post(self, ctx: Any) -> Mapping[str, Any]:
         (ctx.hook_dir / "post.txt").write_text("hello post")
         return {"phase": "post"}
 
 
 @pytest.fixture
-def patched_entry_points(monkeypatch):
+def patched_entry_points(monkeypatch: pytest.MonkeyPatch) -> None:
     eps = [
         EntryPoint(
             name="sentinel.kind",
@@ -80,10 +83,10 @@ def patched_entry_points(monkeypatch):
 
 
 def test_renderer_dispatch_writes_to_per_kind_subdir(
-    pytester,
-    tmp_path,
-    patched_entry_points,
-):
+    pytester: pytest.Pytester,
+    tmp_path: Path,
+    patched_entry_points: None,
+) -> None:
     out = tmp_path / "out"
     pytester.makepyfile("""
         from pytest_prism import attach
@@ -105,10 +108,10 @@ def test_renderer_dispatch_writes_to_per_kind_subdir(
 
 
 def test_session_hook_runs_pre_and_post(
-    pytester,
-    tmp_path,
-    patched_entry_points,
-):
+    pytester: pytest.Pytester,
+    tmp_path: Path,
+    patched_entry_points: None,
+) -> None:
     out = tmp_path / "out"
     pytester.makepyfile("def test_a(): assert True")
     result = pytester.runpytest_inprocess(
@@ -123,14 +126,14 @@ def test_session_hook_runs_pre_and_post(
 
 
 def test_renderer_exception_writes_error_log_and_does_not_fail_test(
-    pytester,
-    tmp_path,
-    monkeypatch,
-):
+    pytester: pytest.Pytester,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _Boom:
         payload_kind = "boom"
 
-        def render(self, payload, ctx):
+        def render(self, payload: Mapping[str, Any], ctx: Any) -> Any:
             raise RuntimeError("kaboom")
 
     sys.modules[__name__]._Boom = _Boom  # type: ignore[attr-defined]
@@ -159,16 +162,16 @@ def test_renderer_exception_writes_error_log_and_does_not_fail_test(
 
 
 def test_two_attaches_two_subdirs(
-    pytester,
-    tmp_path,
-    patched_entry_points,
-):
+    pytester: pytest.Pytester,
+    tmp_path: Path,
+    patched_entry_points: None,
+) -> None:
     """A single test that attaches two kinds gets two subdirs under cases/<id>/."""
 
     class _Other:
         payload_kind = "other.kind"
 
-        def render(self, payload, ctx):
+        def render(self, payload: Mapping[str, Any], ctx: Any) -> Any:
             from pytest_prism import RenderResult
 
             (ctx.case_dir / "o.txt").write_text("other")

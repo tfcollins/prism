@@ -7,8 +7,10 @@ import json
 import logging
 import sys
 import traceback
+from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -18,6 +20,7 @@ from pytest_prism.api import (
     RenderContext,
     RenderResult,
     SessionContext,
+    SessionHook,
 )
 from pytest_prism.config import Config, ConfigError
 from pytest_prism.manifest import OutputDir
@@ -34,9 +37,9 @@ class _State:
     out_dir: OutputDir
     registry: Registry
     started_at: str = ""
-    hook_pre_results: dict[str, dict] = None  # type: ignore[assignment]
+    hook_pre_results: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.hook_pre_results is None:
             self.hook_pre_results = {}
 
@@ -70,17 +73,20 @@ def pytest_configure(config: pytest.Config) -> None:
     except ConfigError as exc:
         raise pytest.UsageError(f"prism-report: {exc}") from exc
 
-    out_dir = OutputDir(cfg.out_dir)
+    if cfg.out_dir is None:
+        raise pytest.UsageError("prism-report: could not resolve output directory")
+    resolved_out_dir = cfg.out_dir
+    out_dir = OutputDir(resolved_out_dir)
     overwrite = config.getoption("--prism-out-overwrite")
-    if overwrite and cfg.out_dir is not None and cfg.out_dir.exists():
+    if overwrite and resolved_out_dir.exists():
         import shutil
 
-        shutil.rmtree(cfg.out_dir)
+        shutil.rmtree(resolved_out_dir)
     try:
         out_dir.initialize()
     except SystemExit as exc:
         raise pytest.UsageError(
-            f"prism-report: output dir {cfg.out_dir} is not empty; "
+            f"prism-report: output dir {resolved_out_dir} is not empty; "
             "pass --prism-out-overwrite or pick another path"
         ) from exc
 
@@ -89,8 +95,8 @@ def pytest_configure(config: pytest.Config) -> None:
     except RegistryError as exc:
         raise pytest.UsageError(f"prism-report: {exc}") from exc
 
-    config._prism_state = _State(cfg=cfg, out_dir=out_dir, registry=registry)
-    junit_path = cfg.out_dir / "junit.xml"
+    config._prism_state = _State(cfg=cfg, out_dir=out_dir, registry=registry)  # type: ignore[attr-defined]
+    junit_path = resolved_out_dir / "junit.xml"
     config.option.xmlpath = str(junit_path)
     for topic, msg in cfg.warnings.items():
         config.issue_config_time_warning(
@@ -109,7 +115,7 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     if not st.registry.session_hooks:
         return
 
-    def _run_pre(name: str, hook):
+    def _run_pre(name: str, hook: SessionHook) -> dict[str, Any]:
         ctx = SessionContext(
             run_dir=st.out_dir.root,
             hook_dir=st.out_dir.session_dir(name),
@@ -117,7 +123,7 @@ def pytest_sessionstart(session: pytest.Session) -> None:
             logger=logging.getLogger(f"pytest_prism.session.{name}"),
         )
         try:
-            return hook.session_pre(ctx)
+            return dict(hook.session_pre(ctx))
         except Exception as exc:
             (ctx.hook_dir / "error.log").write_text(
                 f"session_pre raised: {exc}\n\n{traceback.format_exc()}"
@@ -142,9 +148,12 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[Any]
+) -> Generator[None, None, None]:
     outcome = yield
-    outcome.get_result()
+    if outcome is not None:
+        outcome.get_result()
     if call.when != "call":
         return
     st: _State | None = getattr(item.config, "_prism_state", None)
@@ -219,7 +228,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         return
     fail_on_err = session.config.getoption("--prism-fail-on-hook-error")
 
-    hook_post_results: dict[str, dict] = {}
+    hook_post_results: dict[str, dict[str, Any]] = {}
     for name, hook in st.registry.session_hooks.items():
         ctx = SessionContext(
             run_dir=st.out_dir.root,
