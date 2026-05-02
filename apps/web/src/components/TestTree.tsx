@@ -194,6 +194,15 @@ function CaseRow({
   return (
     <Box
       onClick={() => onSelectCase(c.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectCase(c.id);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-pressed={selectedCaseId === c.id}
       cursor="pointer"
       px={2}
       py={1}
