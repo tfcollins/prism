@@ -1,4 +1,5 @@
 """Pytest plugin entry. Real wiring lands in Task 8."""
+
 from __future__ import annotations
 
 import pytest
