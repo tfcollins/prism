@@ -1,0 +1,20 @@
+{
+  // Default rule set with two disables:
+  //   MD013 (line-length) — too noisy for prose docs
+  //   MD033 (inline HTML) — needed for the README's <p align="center"> logo block
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false
+  },
+  "ignores": [
+    "node_modules/**",
+    "**/node_modules/**",
+    "site/**",
+    "**/.venv/**",
+    "apps/web/playwright-report/**",
+    "apps/web/test-results/**",
+    "apps/web/dist/**",
+    "**/__pycache__/**"
+  ]
+}
