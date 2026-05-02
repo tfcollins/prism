@@ -33,3 +33,38 @@ jobs:
         run: |
           npm ci || npm install
           npm run lint
+
+  markdown:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx markdownlint-cli2 "**/*.md"
+
+  actions:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo \
+            rhysd/actionlint:latest -color
+
+  dockerfile:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run hadolint
+        run: |
+          for f in apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; do
+            echo "==> $f"
+            docker run --rm -i hadolint/hadolint:latest-alpine < "$f"
+          done
