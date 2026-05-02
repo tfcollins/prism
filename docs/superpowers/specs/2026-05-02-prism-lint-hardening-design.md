@@ -47,7 +47,7 @@ No new orchestrator. The existing two-tier setup is extended:
 
 `scripts/` is linted by invoking `apps/api`'s ruff config from outside its directory:
 
-```
+```bash
 cd apps/api && uv run ruff check ../../scripts && uv run ruff format --check ../../scripts
 cd apps/api && uv run mypy ../../scripts
 ```
@@ -59,14 +59,17 @@ This is added to api's existing `lint.yml` job (one extra command, no new job ne
 ### Lane A — Python deliverable alignment
 
 **`clients/python-pytest/pyproject.toml`:**
+
 - `[tool.ruff.lint] select` becomes `["E","F","I","B","UP","ASYNC","S","C4","SIM","RUF"]` (api's full set, including `ASYNC` for uniformity even though the plugin is synchronous — adding rules with no matching code is inert).
 - Test directory's existing per-file-ignores expanded to suppress `S101`/`S105`/`S106`/`S107` if not already covered.
 
 **`apps/api/pyproject.toml`:**
+
 - Rule set unchanged.
 - CI gains `uv run ruff format --check .` (matching pytest-prism's CI step).
 
 **`scripts/`:**
+
 - Linted via api's pyproject as described in Architecture.
 - mypy: included in api's mypy run. `_prism_client.py` is the vendored source for pyadi-iio's prism-report plugin (which is strict-mypy); keeping it type-clean here prevents downstream churn.
 
@@ -75,10 +78,12 @@ This is added to api's existing `lint.yml` job (one extra command, no new job ne
 ### Lane D — Frontend accessibility & import order
 
 **Dependencies (`apps/web/package.json`):**
+
 - `eslint-plugin-jsx-a11y` (latest 6.x, eslint v9 compatible).
 - `eslint-plugin-simple-import-sort`.
 
 **`apps/web/eslint.config.js`:**
+
 - Extend `jsx-a11y/recommended` ruleset.
 - Add `simple-import-sort/imports` and `simple-import-sort/exports` at severity `error`.
 - Remove any existing import-order rule from the existing config to avoid conflict.
@@ -88,11 +93,13 @@ This is added to api's existing `lint.yml` job (one extra command, no new job ne
 ### Lane B — Cross-cutting linters
 
 **actionlint** (GitHub Actions YAML):
+
 - CI: new `actions` job in `lint.yml` using the official docker image (`rhysd/actionlint:latest`).
 - Runs on `.github/workflows/*.yml`.
 - Local: `make lint-actions` invokes `actionlint` from `PATH`; skips silently if missing.
 
 **markdownlint** (`markdownlint-cli2`):
+
 - New repo-root `package.json` + `package-lock.json` (NOT inside `apps/web/`) — markdownlint covers markdown across api, web, scripts, docs, and READMEs at the repo root.
 - New `.markdownlint-cli2.jsonc` at repo root.
 - Default ruleset, with these disables:
@@ -103,6 +110,7 @@ This is added to api's existing `lint.yml` job (one extra command, no new job ne
 - Local: `make lint-md`.
 
 **hadolint** (Dockerfiles):
+
 - CI: new `dockerfile` job using `hadolint/hadolint:latest-alpine` docker image.
 - Runs against `apps/api/Dockerfile`, `apps/api/Dockerfile.dev`, `apps/web/Dockerfile`, `apps/web/Dockerfile.dev`.
 - Local: `make lint-dockerfiles` invokes `hadolint` from `PATH`; skips silently if missing.

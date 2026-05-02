@@ -25,6 +25,7 @@
 ### Task 0.1: Top-level repo files
 
 **Files:**
+
 - Create: `README.md`
 - Create: `Makefile`
 - Modify: `.gitignore`
@@ -32,6 +33,7 @@
 - [ ] **Step 1: Write the README skeleton**
 
 `README.md`:
+
 ```markdown
 # Prism
 
@@ -53,55 +55,56 @@ Default admin login is set in `deploy/.env`. See `docs/getting-started.md` once 
 - `apps/web/` — React frontend (Chakra UI v3)
 - `deploy/` — docker-compose orchestration
 - `docs/` — MkDocs Material site
-```
 
 - [ ] **Step 2: Write the Makefile**
 
 `Makefile`:
+
 ```makefile
 .PHONY: up down logs build test lint fmt docs clean
 
 COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env
 
 up:
-	$(COMPOSE) up -d
+ $(COMPOSE) up -d
 
 down:
-	$(COMPOSE) down
+ $(COMPOSE) down
 
 logs:
-	$(COMPOSE) logs -f
+ $(COMPOSE) logs -f
 
 build:
-	$(COMPOSE) build
+ $(COMPOSE) build
 
 test: test-api test-web
 
 test-api:
-	cd apps/api && uv run pytest
+ cd apps/api && uv run pytest
 
 test-web:
-	cd apps/web && npm test
+ cd apps/web && npm test
 
 lint:
-	cd apps/api && uv run ruff check . && uv run mypy src
-	cd apps/web && npm run lint
+ cd apps/api && uv run ruff check . && uv run mypy src
+ cd apps/web && npm run lint
 
 fmt:
-	cd apps/api && uv run ruff format .
-	cd apps/web && npm run fmt
+ cd apps/api && uv run ruff format .
+ cd apps/web && npm run fmt
 
 docs:
-	cd docs && mkdocs serve
+ cd docs && mkdocs serve
 
 clean:
-	$(COMPOSE) down -v
+ $(COMPOSE) down -v
 ```
 
 - [ ] **Step 3: Extend .gitignore**
 
 `.gitignore`:
-```
+
+```text
 .superpowers/
 
 # Python
@@ -151,6 +154,7 @@ cd /home/tcollins/dev/prism && git add README.md Makefile .gitignore && git comm
 ### Task 0.2: docker-compose skeleton
 
 **Files:**
+
 - Create: `deploy/docker-compose.yml`
 - Create: `deploy/docker-compose.dev.yml`
 - Create: `deploy/.env.example`
@@ -158,6 +162,7 @@ cd /home/tcollins/dev/prism && git add README.md Makefile .gitignore && git comm
 - [ ] **Step 1: Write base docker-compose.yml**
 
 `deploy/docker-compose.yml`:
+
 ```yaml
 name: prism
 
@@ -238,6 +243,7 @@ volumes:
 - [ ] **Step 2: Write dev override**
 
 `deploy/docker-compose.dev.yml`:
+
 ```yaml
 services:
   postgres:
@@ -272,7 +278,8 @@ services:
 - [ ] **Step 3: Write .env.example**
 
 `deploy/.env.example`:
-```
+
+```text
 POSTGRES_DB=prism
 POSTGRES_USER=prism
 POSTGRES_PASSWORD=change-me-in-prod
@@ -292,6 +299,7 @@ ADMIN_PASSWORD=change-me-in-prod
 cd /home/tcollins/dev/prism && cp deploy/.env.example deploy/.env && \
   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env config > /dev/null && echo OK
 ```
+
 Expected: `OK`
 
 - [ ] **Step 5: Commit**
@@ -307,6 +315,7 @@ cd /home/tcollins/dev/prism && git add deploy/ && git commit -m "chore: add dock
 ### Task 1.1: Python project structure
 
 **Files:**
+
 - Create: `apps/api/pyproject.toml`
 - Create: `apps/api/src/prism_api/__init__.py`
 - Create: `apps/api/src/prism_api/main.py`
@@ -319,6 +328,7 @@ cd /home/tcollins/dev/prism && git add deploy/ && git commit -m "chore: add dock
 - [ ] **Step 1: Write pyproject.toml**
 
 `apps/api/pyproject.toml`:
+
 ```toml
 [project]
 name = "prism-api"
@@ -387,6 +397,7 @@ filterwarnings = ["error"]
 - [ ] **Step 2: Write package entry point**
 
 `apps/api/src/prism_api/__init__.py`:
+
 ```python
 """Prism API package."""
 
@@ -394,6 +405,7 @@ __version__ = "0.1.0"
 ```
 
 `apps/api/src/prism_api/main.py`:
+
 ```python
 """FastAPI app entry point."""
 from fastapi import FastAPI
@@ -414,6 +426,7 @@ def health() -> dict[str, str]:
 `apps/api/tests/__init__.py`: empty file.
 
 `apps/api/tests/conftest.py`:
+
 ```python
 """Shared test fixtures."""
 from collections.abc import Iterator
@@ -433,6 +446,7 @@ def client() -> Iterator[TestClient]:
 - [ ] **Step 4: Write Dockerfiles**
 
 `apps/api/Dockerfile`:
+
 ```dockerfile
 FROM python:3.12-slim AS base
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
@@ -446,6 +460,7 @@ CMD ["uvicorn", "prism_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 `apps/api/Dockerfile.dev`:
+
 ```dockerfile
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
@@ -458,7 +473,8 @@ EXPOSE 8000
 ```
 
 `apps/api/.dockerignore`:
-```
+
+```text
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -473,6 +489,7 @@ tests/
 ```bash
 cd /home/tcollins/dev/prism/apps/api && python -c "import sys; sys.path.insert(0, 'src'); from prism_api.main import app; print(app.title)"
 ```
+
 Expected output: `Prism API`
 
 - [ ] **Step 6: Commit**
@@ -486,11 +503,13 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): sc
 ### Task 1.2: First passing test (health endpoint)
 
 **Files:**
+
 - Create: `apps/api/tests/test_health.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_health.py`:
+
 ```python
 """Health endpoint smoke tests."""
 from fastapi.testclient import TestClient
@@ -509,6 +528,7 @@ def test_health_returns_ok(client: TestClient) -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_health.py -v
 ```
+
 Expected: `test_health_returns_ok PASSED`.
 
 If `uv run` is not available, use `python -m pytest tests/test_health.py -v` after `pip install -e .[dev]` from `apps/api/`.
@@ -526,12 +546,14 @@ cd /home/tcollins/dev/prism && git add apps/api/tests/ && git commit -m "test(ap
 ### Task 2.1: Settings module
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/config.py`
 - Create: `apps/api/tests/test_config.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_config.py`:
+
 ```python
 """Settings loading tests."""
 import pytest
@@ -573,11 +595,13 @@ def test_settings_admin_bootstrap_optional(monkeypatch: pytest.MonkeyPatch) -> N
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_config.py -v
 ```
+
 Expected: `ModuleNotFoundError: No module named 'prism_api.config'`.
 
 - [ ] **Step 3: Write the implementation**
 
 `apps/api/src/prism_api/config.py`:
+
 ```python
 """App configuration via pydantic-settings."""
 from functools import lru_cache
@@ -614,6 +638,7 @@ def get_settings() -> Settings:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_config.py -v
 ```
+
 Expected: both tests PASS.
 
 - [ ] **Step 5: Commit**
@@ -627,6 +652,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 ### Task 2.2: Database session & Base model
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/db.py`
 - Create: `apps/api/src/prism_api/models/__init__.py`
 - Create: `apps/api/src/prism_api/models/base.py`
@@ -635,6 +661,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_db.py`:
+
 ```python
 """Database engine + session smoke tests (uses SQLite in-memory)."""
 from sqlalchemy import text
@@ -655,11 +682,13 @@ def test_engine_round_trip() -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_db.py -v
 ```
+
 Expected: `ModuleNotFoundError`.
 
 - [ ] **Step 3: Write the Base + db module**
 
 `apps/api/src/prism_api/models/__init__.py`:
+
 ```python
 """SQLAlchemy models."""
 from prism_api.models.base import Base
@@ -668,6 +697,7 @@ __all__ = ["Base"]
 ```
 
 `apps/api/src/prism_api/models/base.py`:
+
 ```python
 """Declarative SQLAlchemy Base + common mixins."""
 from datetime import UTC, datetime
@@ -695,6 +725,7 @@ class TimestampMixin:
 ```
 
 `apps/api/src/prism_api/db.py`:
+
 ```python
 """Database engine and session factory."""
 from collections.abc import Iterator
@@ -750,6 +781,7 @@ def get_session() -> Iterator[Session]:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_db.py -v
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -763,6 +795,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 ### Task 2.3: User & Project models
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/models/user.py`
 - Create: `apps/api/src/prism_api/models/project.py`
 - Create: `apps/api/tests/test_models_smoke.py`
@@ -770,6 +803,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_models_smoke.py`:
+
 ```python
 """Model smoke tests against in-memory SQLite."""
 from sqlalchemy import create_engine
@@ -799,11 +833,13 @@ def test_create_user_and_project() -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_models_smoke.py -v
 ```
+
 Expected: ModuleNotFoundError.
 
 - [ ] **Step 3: Implement User and Project models**
 
 `apps/api/src/prism_api/models/user.py`:
+
 ```python
 """User model."""
 import uuid
@@ -825,6 +861,7 @@ class User(Base, TimestampMixin):
 ```
 
 `apps/api/src/prism_api/models/project.py`:
+
 ```python
 """Project model."""
 import uuid
@@ -847,6 +884,7 @@ class Project(Base, TimestampMixin):
 ```
 
 Update `apps/api/src/prism_api/models/__init__.py`:
+
 ```python
 """SQLAlchemy models."""
 from prism_api.models.base import Base
@@ -861,6 +899,7 @@ __all__ = ["Base", "Project", "User"]
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_models_smoke.py -v
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -874,6 +913,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 ### Task 2.4: Alembic setup & initial migration
 
 **Files:**
+
 - Create: `apps/api/alembic.ini`
 - Create: `apps/api/src/prism_api/migrations/env.py`
 - Create: `apps/api/src/prism_api/migrations/script.py.mako`
@@ -882,6 +922,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 - [ ] **Step 1: Write alembic.ini**
 
 `apps/api/alembic.ini`:
+
 ```ini
 [alembic]
 script_location = src/prism_api/migrations
@@ -926,6 +967,7 @@ datefmt = %H:%M:%S
 - [ ] **Step 2: Write env.py**
 
 `apps/api/src/prism_api/migrations/env.py`:
+
 ```python
 """Alembic environment."""
 from logging.config import fileConfig
@@ -976,6 +1018,7 @@ else:
 - [ ] **Step 3: Write script template**
 
 `apps/api/src/prism_api/migrations/script.py.mako`:
+
 ```python
 """${message}
 
@@ -1006,6 +1049,7 @@ def downgrade() -> None:
 - [ ] **Step 4: Write initial migration**
 
 `apps/api/src/prism_api/migrations/versions/0001_initial.py`:
+
 ```python
 """initial schema: users + projects
 
@@ -1065,6 +1109,7 @@ Edit `apps/api/pyproject.toml` dev group to add `"alembic>=1.13"` if missing (it
 ```bash
 cd /home/tcollins/dev/prism/apps/api && PRISM_DATABASE_URL=sqlite:///./test.db PRISM_S3_ENDPOINT=x PRISM_S3_ACCESS_KEY=x PRISM_S3_SECRET_KEY=x PRISM_S3_BUCKET=x PRISM_REDIS_URL=x PRISM_JWT_SECRET=x uv run alembic upgrade head && rm -f test.db
 ```
+
 Expected: `Running upgrade  -> 0001` then no errors.
 
 - [ ] **Step 7: Commit**
@@ -1080,12 +1125,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): ad
 ### Task 3.1: Password hashing helpers
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/auth.py`
 - Create: `apps/api/tests/test_auth.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_auth.py`:
+
 ```python
 """Auth helpers."""
 from datetime import timedelta
@@ -1131,11 +1178,13 @@ def test_decode_rejects_expired_token() -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_auth.py -v
 ```
+
 Expected: ImportError.
 
 - [ ] **Step 3: Implement auth helpers**
 
 `apps/api/src/prism_api/auth.py`:
+
 ```python
 """Password hashing and JWT helpers."""
 from dataclasses import dataclass
@@ -1188,6 +1237,7 @@ def decode_access_token(token: str, *, secret: str, algorithm: str = "HS256") ->
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_auth.py -v
 ```
+
 Expected: 4/4 PASS.
 
 - [ ] **Step 5: Commit**
@@ -1201,6 +1251,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): pa
 ### Task 3.2: User repository (CRUD on User model)
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/repos/__init__.py`
 - Create: `apps/api/src/prism_api/repos/users.py`
 - Create: `apps/api/tests/test_user_repo.py`
@@ -1208,6 +1259,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): pa
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_user_repo.py`:
+
 ```python
 """User repository tests against in-memory SQLite."""
 from collections.abc import Iterator
@@ -1259,6 +1311,7 @@ def test_delete_user(session: Session) -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_user_repo.py -v
 ```
+
 Expected: ModuleNotFoundError.
 
 - [ ] **Step 3: Implement the repo**
@@ -1266,6 +1319,7 @@ Expected: ModuleNotFoundError.
 `apps/api/src/prism_api/repos/__init__.py`: empty file.
 
 `apps/api/src/prism_api/repos/users.py`:
+
 ```python
 """User repository."""
 from sqlalchemy import select
@@ -1304,6 +1358,7 @@ class UserRepo:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_user_repo.py -v
 ```
+
 Expected: 3/3 PASS.
 
 - [ ] **Step 5: Commit**
@@ -1317,12 +1372,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): Us
 ### Task 3.3: Bootstrap admin on startup
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/bootstrap.py`
 - Create: `apps/api/tests/test_bootstrap.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_bootstrap.py`:
+
 ```python
 """Bootstrap admin user tests."""
 from collections.abc import Iterator
@@ -1369,11 +1426,13 @@ def test_skipped_when_creds_missing(session: Session) -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_bootstrap.py -v
 ```
+
 Expected: ModuleNotFoundError.
 
 - [ ] **Step 3: Implement bootstrap**
 
 `apps/api/src/prism_api/bootstrap.py`:
+
 ```python
 """Bootstrap helpers — runs on app startup."""
 from sqlalchemy.orm import Session
@@ -1397,6 +1456,7 @@ def ensure_bootstrap_admin(session: Session, *, email: str | None, password: str
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_bootstrap.py -v
 ```
+
 Expected: 3/3 PASS.
 
 - [ ] **Step 5: Commit**
@@ -1410,6 +1470,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 ### Task 3.4: Auth schemas & router (login + me)
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/schemas/__init__.py`
 - Create: `apps/api/src/prism_api/schemas/auth.py`
 - Create: `apps/api/src/prism_api/routers/__init__.py`
@@ -1422,6 +1483,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_auth_router.py`:
+
 ```python
 """Auth router integration tests."""
 from fastapi.testclient import TestClient
@@ -1458,6 +1520,7 @@ def test_logout_clears_cookie(client: TestClient, seed_admin: None) -> None:
 - [ ] **Step 2: Update conftest.py with shared DB fixture**
 
 `apps/api/tests/conftest.py`:
+
 ```python
 """Shared test fixtures."""
 from collections.abc import Iterator
@@ -1515,6 +1578,7 @@ def seed_admin(db_session: Session) -> None:
 - [ ] **Step 3: Implement deps module**
 
 `apps/api/src/prism_api/deps.py`:
+
 ```python
 """FastAPI dependencies."""
 from collections.abc import Iterator
@@ -1563,6 +1627,7 @@ def current_user(
 `apps/api/src/prism_api/schemas/__init__.py`: empty.
 
 `apps/api/src/prism_api/schemas/auth.py`:
+
 ```python
 """Auth request/response schemas."""
 from pydantic import BaseModel, EmailStr
@@ -1583,6 +1648,7 @@ class UserOut(BaseModel):
 `apps/api/src/prism_api/routers/__init__.py`: empty.
 
 `apps/api/src/prism_api/routers/auth.py`:
+
 ```python
 """Auth endpoints."""
 from datetime import timedelta
@@ -1642,6 +1708,7 @@ def me(user: User = Depends(current_user)) -> UserOut:
 - [ ] **Step 6: Wire router into main.py**
 
 `apps/api/src/prism_api/main.py`:
+
 ```python
 """FastAPI app entry point."""
 from fastapi import FastAPI
@@ -1663,6 +1730,7 @@ def health() -> dict[str, str]:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_auth_router.py -v
 ```
+
 Expected: 4/4 PASS.
 
 - [ ] **Step 8: Commit**
@@ -1676,6 +1744,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): au
 ### Task 3.5: Users router (list / create / delete)
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/schemas/user.py`
 - Create: `apps/api/src/prism_api/routers/users.py`
 - Create: `apps/api/tests/test_users_router.py`
@@ -1684,6 +1753,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): au
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_users_router.py`:
+
 ```python
 """Users router tests."""
 from fastapi.testclient import TestClient
@@ -1737,11 +1807,13 @@ def test_delete_user(client: TestClient, seed_admin: None) -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_users_router.py -v
 ```
+
 Expected: 404s and import errors.
 
 - [ ] **Step 3: Implement schemas**
 
 `apps/api/src/prism_api/schemas/user.py`:
+
 ```python
 """User request/response schemas."""
 from pydantic import BaseModel, EmailStr, Field
@@ -1760,6 +1832,7 @@ class UserOut(BaseModel):
 - [ ] **Step 4: Implement router**
 
 `apps/api/src/prism_api/routers/users.py`:
+
 ```python
 """User management endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -1812,6 +1885,7 @@ def delete_user(
 - [ ] **Step 5: Wire into main.py**
 
 Update `apps/api/src/prism_api/main.py` imports + `app.include_router`:
+
 ```python
 from prism_api.routers import auth as auth_router, users as users_router
 ...
@@ -1824,6 +1898,7 @@ app.include_router(users_router.router)
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_users_router.py -v
 ```
+
 Expected: 4/4 PASS.
 
 - [ ] **Step 7: Commit**
@@ -1839,12 +1914,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): us
 ### Task 4.1: Project repository
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/repos/projects.py`
 - Create: `apps/api/tests/test_project_repo.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_project_repo.py`:
+
 ```python
 """Project repository tests."""
 from collections.abc import Iterator
@@ -1898,6 +1975,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_project_repo.py
 - [ ] **Step 3: Implement ProjectRepo**
 
 `apps/api/src/prism_api/repos/projects.py`:
+
 ```python
 """Project repository."""
 from sqlalchemy import select
@@ -1952,6 +2030,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): Pr
 ### Task 4.2: Projects router
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/schemas/project.py`
 - Create: `apps/api/src/prism_api/routers/projects.py`
 - Create: `apps/api/tests/test_projects_router.py`
@@ -1960,6 +2039,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): Pr
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_projects_router.py`:
+
 ```python
 """Projects router tests."""
 from fastapi.testclient import TestClient
@@ -2014,6 +2094,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_projects_router
 - [ ] **Step 3: Implement schemas**
 
 `apps/api/src/prism_api/schemas/project.py`:
+
 ```python
 """Project schemas."""
 import re
@@ -2046,6 +2127,7 @@ class ProjectOut(BaseModel):
 - [ ] **Step 4: Implement router**
 
 `apps/api/src/prism_api/routers/projects.py`:
+
 ```python
 """Project endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -2110,6 +2192,7 @@ app.include_router(projects_router.router)
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_projects_router.py -v
 ```
+
 Expected: 4/4 PASS.
 
 - [ ] **Step 7: Commit**
@@ -2125,6 +2208,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): pr
 The bootstrap admin is created via an explicit CLI invoked by the container entrypoint *after* migrations. This avoids tangling the FastAPI lifespan with DB writes and makes the bootstrap path easy to test in isolation.
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/cli.py`
 - Create: `apps/api/docker-entrypoint.sh`
 - Create: `apps/api/tests/test_cli.py`
@@ -2135,6 +2219,7 @@ The bootstrap admin is created via an explicit CLI invoked by the container entr
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_cli.py`:
+
 ```python
 """CLI bootstrap test."""
 import pytest
@@ -2189,6 +2274,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_cli.py -v
 - [ ] **Step 3: Implement the CLI**
 
 `apps/api/src/prism_api/cli.py`:
+
 ```python
 """Command-line entry points for ops tasks."""
 import sys
@@ -2236,6 +2322,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_cli.py -v
 - [ ] **Step 5: Write the docker entrypoint**
 
 `apps/api/docker-entrypoint.sh`:
+
 ```bash
 #!/bin/sh
 set -e
@@ -2247,6 +2334,7 @@ exec "$@"
 - [ ] **Step 6: Update Dockerfiles to use the entrypoint**
 
 `apps/api/Dockerfile`:
+
 ```dockerfile
 FROM python:3.12-slim AS base
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
@@ -2264,6 +2352,7 @@ CMD ["uvicorn", "prism_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 `apps/api/Dockerfile.dev`:
+
 ```dockerfile
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
@@ -2285,6 +2374,7 @@ CMD ["uvicorn", "prism_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest -v
 ```
+
 Expected: all green.
 
 - [ ] **Step 8: Commit**
@@ -2300,6 +2390,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 ### Task 5.1: Vite + React + Chakra scaffold
 
 **Files:**
+
 - Create: `apps/web/package.json`
 - Create: `apps/web/tsconfig.json`
 - Create: `apps/web/tsconfig.node.json`
@@ -2320,6 +2411,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 - [ ] **Step 1: Write package.json**
 
 `apps/web/package.json`:
+
 ```json
 {
   "name": "prism-web",
@@ -2369,6 +2461,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 - [ ] **Step 2: Write tsconfig and vite config**
 
 `apps/web/tsconfig.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -2393,6 +2486,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 ```
 
 `apps/web/tsconfig.node.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -2407,6 +2501,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git commit -m "feat(api): bo
 ```
 
 `apps/web/vite.config.ts`:
+
 ```ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -2426,6 +2521,7 @@ export default defineConfig({
 ```
 
 `apps/web/vitest.config.ts`:
+
 ```ts
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -2443,6 +2539,7 @@ export default defineConfig({
 - [ ] **Step 3: Write index.html and React entrypoints**
 
 `apps/web/index.html`:
+
 ```html
 <!doctype html>
 <html lang="en">
@@ -2459,6 +2556,7 @@ export default defineConfig({
 ```
 
 `apps/web/src/main.tsx`:
+
 ```tsx
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -2486,6 +2584,7 @@ createRoot(document.getElementById('root')!).render(
 ```
 
 `apps/web/src/App.tsx`:
+
 ```tsx
 import { Heading } from '@chakra-ui/react';
 
@@ -2495,6 +2594,7 @@ export function App() {
 ```
 
 `apps/web/src/theme.ts`:
+
 ```ts
 import { createSystem, defaultConfig } from '@chakra-ui/react';
 
@@ -2508,6 +2608,7 @@ export const system = createSystem(defaultConfig, {
 - [ ] **Step 4: Write Dockerfiles**
 
 `apps/web/Dockerfile`:
+
 ```dockerfile
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -2523,6 +2624,7 @@ EXPOSE 80
 ```
 
 `apps/web/Dockerfile.dev`:
+
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -2533,7 +2635,8 @@ EXPOSE 5173
 ```
 
 `apps/web/nginx.conf`:
-```
+
+```nginx
 server {
   listen 80;
   server_name _;
@@ -2553,7 +2656,8 @@ server {
 ```
 
 `apps/web/.dockerignore`:
-```
+
+```text
 node_modules
 dist
 coverage
@@ -2564,6 +2668,7 @@ test-results
 - [ ] **Step 5: Write eslint, prettier, gitignore**
 
 `apps/web/eslint.config.js`:
+
 ```js
 import js from '@eslint/js';
 import tsParser from '@typescript-eslint/parser';
@@ -2589,6 +2694,7 @@ export default [
 ```
 
 `apps/web/prettier.config.js`:
+
 ```js
 export default {
   semi: true,
@@ -2599,7 +2705,8 @@ export default {
 ```
 
 `apps/web/.gitignore`:
-```
+
+```text
 node_modules
 dist
 coverage
@@ -2613,6 +2720,7 @@ test-results
 ```bash
 cd /home/tcollins/dev/prism/apps/web && npm install --no-audit --no-fund && npm run build
 ```
+
 Expected: `dist/` built successfully.
 
 - [ ] **Step 7: Commit**
@@ -2626,12 +2734,14 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git commit -m "feat(web): sc
 ### Task 5.2: First passing component test
 
 **Files:**
+
 - Create: `apps/web/tests/setup.ts`
 - Create: `apps/web/tests/App.test.tsx`
 
 - [ ] **Step 1: Write test setup**
 
 `apps/web/tests/setup.ts`:
+
 ```ts
 import '@testing-library/jest-dom';
 ```
@@ -2639,6 +2749,7 @@ import '@testing-library/jest-dom';
 - [ ] **Step 2: Write the test**
 
 `apps/web/tests/App.test.tsx`:
+
 ```tsx
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
@@ -2663,6 +2774,7 @@ describe('App', () => {
 ```bash
 cd /home/tcollins/dev/prism/apps/web && npm test
 ```
+
 Expected: 1 passed.
 
 - [ ] **Step 4: Commit**
@@ -2678,12 +2790,14 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git commit -m "test(web): sm
 ### Task 6.1: Axios client and types
 
 **Files:**
+
 - Create: `apps/web/src/api/client.ts`
 - Create: `apps/web/src/api/types.ts`
 
 - [ ] **Step 1: Write the client**
 
 `apps/web/src/api/client.ts`:
+
 ```ts
 import axios from 'axios';
 
@@ -2696,6 +2810,7 @@ export const api = axios.create({
 - [ ] **Step 2: Write API types**
 
 `apps/web/src/api/types.ts`:
+
 ```ts
 export interface User {
   id: string;
@@ -2727,6 +2842,7 @@ cd /home/tcollins/dev/prism && git add apps/web/src/api/ && git commit -m "feat(
 ### Task 6.2: Auth provider + hooks
 
 **Files:**
+
 - Create: `apps/web/src/auth/AuthProvider.tsx`
 - Create: `apps/web/src/auth/useAuth.ts`
 - Create: `apps/web/tests/AuthProvider.test.tsx`
@@ -2734,6 +2850,7 @@ cd /home/tcollins/dev/prism && git add apps/web/src/api/ && git commit -m "feat(
 - [ ] **Step 1: Write the failing test**
 
 `apps/web/tests/AuthProvider.test.tsx`:
+
 ```tsx
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -2795,6 +2912,7 @@ cd /home/tcollins/dev/prism/apps/web && npm test
 - [ ] **Step 3: Implement AuthProvider**
 
 `apps/web/src/auth/AuthProvider.tsx`:
+
 ```tsx
 import { useQuery } from '@tanstack/react-query';
 import { createContext, type ReactNode } from 'react';
@@ -2837,6 +2955,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 ```
 
 `apps/web/src/auth/useAuth.ts`:
+
 ```ts
 import { useContext } from 'react';
 
@@ -2852,6 +2971,7 @@ export function useAuth(): AuthContextValue {
 - [ ] **Step 4: Wire AuthProvider into main.tsx**
 
 Update `apps/web/src/main.tsx`:
+
 ```tsx
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -2901,6 +3021,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git commit -m "feat(web): Au
 ### Task 7.1: Routing skeleton with protected routes
 
 **Files:**
+
 - Create: `apps/web/src/routes/ProtectedRoute.tsx`
 - Modify: `apps/web/src/App.tsx`
 - Create: `apps/web/src/pages/LoginPage.tsx`
@@ -2909,6 +3030,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git commit -m "feat(web): Au
 - [ ] **Step 1: Write LoginPage**
 
 `apps/web/src/pages/LoginPage.tsx`:
+
 ```tsx
 import { Box, Button, Heading, Input, Stack, Text } from '@chakra-ui/react';
 import { useState } from 'react';
@@ -2979,6 +3101,7 @@ export function LoginPage() {
 - [ ] **Step 2: Write ProjectsPage**
 
 `apps/web/src/pages/ProjectsPage.tsx`:
+
 ```tsx
 import { Box, Button, Heading, Input, Stack, Table, Text } from '@chakra-ui/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -3069,6 +3192,7 @@ export function ProjectsPage() {
 - [ ] **Step 3: Write ProtectedRoute**
 
 `apps/web/src/routes/ProtectedRoute.tsx`:
+
 ```tsx
 import { Navigate } from 'react-router-dom';
 
@@ -3085,6 +3209,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 - [ ] **Step 4: Update App.tsx with routes**
 
 `apps/web/src/App.tsx`:
+
 ```tsx
 import { Route, Routes } from 'react-router-dom';
 
@@ -3112,6 +3237,7 @@ export function App() {
 - [ ] **Step 5: Update App.test.tsx (since heading changed)**
 
 `apps/web/tests/App.test.tsx`:
+
 ```tsx
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -3161,6 +3287,7 @@ describe('App', () => {
 ```bash
 cd /home/tcollins/dev/prism/apps/web && npm test
 ```
+
 Expected: all tests PASS.
 
 - [ ] **Step 7: Commit**
@@ -3176,11 +3303,13 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git commit -m "feat(web): lo
 ### Task 8.1: Lint workflow
 
 **Files:**
+
 - Create: `.github/workflows/lint.yml`
 
 - [ ] **Step 1: Write the workflow**
 
 `.github/workflows/lint.yml`:
+
 ```yaml
 name: lint
 
@@ -3225,6 +3354,7 @@ jobs:
 cd /home/tcollins/dev/prism/apps/api && uv run ruff check . && uv run mypy src
 cd /home/tcollins/dev/prism/apps/web && npm run lint
 ```
+
 Expected: zero errors. Fix any reported issues before committing.
 
 - [ ] **Step 3: Commit**
@@ -3238,11 +3368,13 @@ cd /home/tcollins/dev/prism && git add .github/ && git commit -m "ci: lint workf
 ### Task 8.2: Backend test workflow
 
 **Files:**
+
 - Create: `.github/workflows/test-backend.yml`
 
 - [ ] **Step 1: Write the workflow**
 
 `.github/workflows/test-backend.yml`:
+
 ```yaml
 name: test-backend
 
@@ -3297,11 +3429,13 @@ cd /home/tcollins/dev/prism && git add .github/workflows/test-backend.yml && git
 ### Task 8.3: Frontend test workflow
 
 **Files:**
+
 - Create: `.github/workflows/test-frontend.yml`
 
 - [ ] **Step 1: Write the workflow**
 
 `.github/workflows/test-frontend.yml`:
+
 ```yaml
 name: test-frontend
 
@@ -3359,6 +3493,7 @@ docker compose -f /home/tcollins/dev/prism/deploy/docker-compose.yml -f /home/tc
 ```bash
 curl -s http://localhost:8000/api/v1/health
 ```
+
 Expected: `{"status":"ok","version":"0.1.0"}`
 
 - [ ] **Step 4: Log in and create a project**
@@ -3374,11 +3509,12 @@ curl -s -b /tmp/prism_cookies.txt -H 'Content-Type: application/json' \
 
 curl -s -b /tmp/prism_cookies.txt http://localhost:8000/api/v1/projects
 ```
+
 Expected: project appears in the list.
 
 - [ ] **Step 5: Open the web UI**
 
-Browser: http://localhost:8080 → log in with `admin@example.com` / `change-me-in-prod` → see "audio-codec" in the projects list. Create another project from the form.
+Browser: <http://localhost:8080> → log in with `admin@example.com` / `change-me-in-prod` → see "audio-codec" in the projects list. Create another project from the form.
 
 - [ ] **Step 6: Tear down**
 

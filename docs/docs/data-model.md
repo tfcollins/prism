@@ -1,6 +1,6 @@
 # Data model
 
-```
+```text
 User
 Project ─< TestRun ─< TestSuite ─< TestCase
             (≡ one    (typically      │

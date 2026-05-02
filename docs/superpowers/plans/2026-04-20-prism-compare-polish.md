@@ -31,6 +31,7 @@
 ### Task 0.1: Issue + verify CSRF token
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/deps.py` (add `CSRF_COOKIE` constant + `csrf_protect` dependency)
 - Modify: `apps/api/src/prism_api/routers/auth.py` (issue CSRF cookie on login; clear on logout)
 - Modify: `apps/api/src/prism_api/routers/runs.py` (require `csrf_protect` on `POST /runs`)
@@ -40,6 +41,7 @@
 - [ ] **Step 1: Add the deps**
 
 Append to `apps/api/src/prism_api/deps.py`:
+
 ```python
 import secrets
 
@@ -61,6 +63,7 @@ def csrf_protect(request: Request) -> None:
 - [ ] **Step 2: Issue + clear in auth router**
 
 In `apps/api/src/prism_api/routers/auth.py` `login()`, after `set_cookie(SESSION_COOKIE,...)`, add:
+
 ```python
 from prism_api.deps import CSRF_COOKIE, issue_csrf_token
 ...
@@ -75,7 +78,9 @@ response.set_cookie(
     path="/",
 )
 ```
+
 And in `logout()`:
+
 ```python
 response.delete_cookie(CSRF_COOKIE, path="/", samesite=settings.cookie_samesite, secure=settings.cookie_secure)
 ```
@@ -87,6 +92,7 @@ In `apps/api/src/prism_api/routers/runs.py` add `_csrf: None = Depends(csrf_prot
 - [ ] **Step 4: Update existing tests**
 
 `apps/api/tests/test_auth_router.py` — append:
+
 ```python
 def test_login_issues_csrf_cookie(client, seed_admin):
     r = client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
@@ -95,12 +101,15 @@ def test_login_issues_csrf_cookie(client, seed_admin):
 ```
 
 `apps/api/tests/test_runs_router.py` — update existing upload tests to set the CSRF header AND cookie. The `_login` helper should now extract the CSRF cookie value and the upload calls must pass `headers={"X-Prism-Csrf": <token>}`. Helper:
+
 ```python
 def _login(client) -> str:
     client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
     return client.cookies.get("prism_csrf") or ""
 ```
+
 Then in each upload call:
+
 ```python
 csrf = _login(client)
 client.post("/api/v1/runs", files=..., data=..., headers={"X-Prism-Csrf": csrf})
@@ -111,6 +120,7 @@ Also update `apps/api/tests/test_runs_read.py` and `apps/api/tests/test_cases_ro
 - [ ] **Step 5: Add CSRF-specific test**
 
 `apps/api/tests/test_csrf.py`:
+
 ```python
 import json
 
@@ -147,6 +157,7 @@ def test_upload_with_mismatched_csrf_returns_403(client: TestClient, seed_admin)
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest -v
 ```
+
 Expected: all tests pass (now ~95 with the new csrf tests).
 
 - [ ] **Step 7: Commit**
@@ -160,11 +171,13 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 0.2: Frontend echoes the CSRF header
 
 **Files:**
+
 - Modify: `apps/web/src/api/client.ts` (axios interceptor reads cookie + sets header)
 
 - [ ] **Step 1: Update axios client**
 
 `apps/web/src/api/client.ts`:
+
 ```ts
 import axios from 'axios';
 
@@ -210,6 +223,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 1.1: Compare schemas + endpoint
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/schemas/compare.py`
 - Create: `apps/api/src/prism_api/routers/compare.py`
 - Modify: `apps/api/src/prism_api/main.py` (include router)
@@ -218,6 +232,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write schemas**
 
 `apps/api/src/prism_api/schemas/compare.py`:
+
 ```python
 from pydantic import BaseModel, Field
 
@@ -250,6 +265,7 @@ class CompareResponse(BaseModel):
 - [ ] **Step 2: Write the failing test**
 
 `apps/api/tests/test_compare_router.py`:
+
 ```python
 import io
 import json
@@ -332,6 +348,7 @@ def test_compare_unknown_run_404(client: TestClient, seed_admin) -> None:
 - [ ] **Step 3: Implement router**
 
 `apps/api/src/prism_api/routers/compare.py`:
+
 ```python
 """Compare runs."""
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -428,6 +445,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 2.1: Hook + page
 
 **Files:**
+
 - Modify: `apps/web/src/api/types.ts` (add `CompareResponse`, `RunHeader`, `CaseDiff`)
 - Modify: `apps/web/src/api/queries.ts` (add `useCompare(runIds: string[])` mutation-style fetch)
 - Create: `apps/web/src/pages/ComparePage.tsx`
@@ -438,6 +456,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Append types**
 
 In `apps/web/src/api/types.ts`:
+
 ```ts
 export interface RunHeader {
   id: string;
@@ -464,6 +483,7 @@ export interface CompareResponse {
 - [ ] **Step 2: Add query hook**
 
 Append to `apps/web/src/api/queries.ts`:
+
 ```ts
 import type { CompareResponse } from './types';
 
@@ -479,6 +499,7 @@ export function useCompare(runIds: string[]) {
 - [ ] **Step 3: ComparePage**
 
 `apps/web/src/pages/ComparePage.tsx`:
+
 ```tsx
 import { Badge, Box, Heading, Stack, Table, Text } from '@chakra-ui/react';
 import { useSearchParams } from 'react-router-dom';
@@ -563,6 +584,7 @@ import { ComparePage } from './pages/ComparePage';
 - [ ] **Step 5: Add Compare nav link**
 
 Update `apps/web/src/components/Sidebar.tsx` `navItems`:
+
 ```ts
 const navItems = [
   { to: '/', label: 'Runs' },
@@ -574,6 +596,7 @@ const navItems = [
 - [ ] **Step 6: Add multi-select to RunsTable**
 
 Replace `apps/web/src/components/RunsTable.tsx` to track selected IDs and render a "Compare selected" button at the bottom:
+
 ```tsx
 import { Box, Button, Checkbox, Flex, Table, Text } from '@chakra-ui/react';
 import { useState } from 'react';
@@ -682,6 +705,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 3.1: MkDocs scaffold + basic content
 
 **Files:**
+
 - Create: `docs/mkdocs.yml`
 - Create: `docs/docs/index.md`
 - Create: `docs/docs/getting-started.md`
@@ -730,6 +754,7 @@ markdown_extensions:
 - [ ] **Step 2: Write the markdown pages**
 
 `docs/docs/index.md`:
+
 ```markdown
 # Prism
 
@@ -748,9 +773,9 @@ open http://localhost:8180
 ```
 
 Default login is in `deploy/.env`. See [Getting started](getting-started.md) for next steps.
-```
 
 `docs/docs/getting-started.md`:
+
 ```markdown
 # Getting started
 
@@ -805,20 +830,21 @@ Supported artifact types: `*.xml` (JUnit), `*.csv` `*.npy` `*.h5` (waveforms), `
 
 Single column of floats, optionally with a `# sample_rate=<int>` comment on the first line:
 
-```
+```text
 # sample_rate=48000
 0.000000
 0.130526
 0.258819
 ...
 ```
-```
 
 `docs/docs/architecture.md`:
+
 ```markdown
 # Architecture
 
 ```
+
 ┌─────────┐     ┌──────┐     ┌──────────┐     ┌──────────┐
 │ Browser │────▶│ web  │────▶│   api    │◀───▶│ postgres │
 └─────────┘     │nginx │     │ FastAPI  │     └──────────┘
@@ -834,7 +860,6 @@ Single column of floats, optionally with a `# sample_rate=<int>` comment on the 
                               ┌──────────────────────┐
                               │     minio (S3)       │
                               └──────────────────────┘
-```
 
 ## Services
 
@@ -859,13 +884,14 @@ Single column of floats, optionally with a `# sample_rate=<int>` comment on the 
 1. Browser navigates to a case → calls `GET /api/v1/cases/:id`, sees its attached `Artifact` rows.
 2. For a waveform artifact, browser calls `GET /api/v1/artifacts/:id/waveform?downsample=N`. The api fetches the raw bytes from MinIO, parses with the right loader, runs `downsample_for_plot`, returns JSON samples.
 3. For an FFT, browser calls `GET /api/v1/artifacts/:id/fft?window=&nfft=&overlap=`. The api looks up `DerivedArtifact` by `(source_hash, params_hash)`. Cache hit → load `.npz` from MinIO. Cache miss → compute Welch FFT, store as `.npz`, create `DerivedArtifact` row, return JSON.
-```
 
 `docs/docs/data-model.md`:
+
 ```markdown
 # Data model
 
 ```
+
 User
 Project ─< TestRun ─< TestSuite ─< TestCase
               │                       │
@@ -873,7 +899,6 @@ Project ─< TestRun ─< TestSuite ─< TestCase
               └─< Artifact >──────────┘
                      │
                      └─< DerivedArtifact (FFT cache, thumbnails)
-```
 
 | Table             | Purpose |
 |-------------------|---------|
@@ -887,9 +912,9 @@ Project ─< TestRun ─< TestSuite ─< TestCase
 | `derived_artifacts` | Cached computations (FFT) keyed by source + params |
 
 Artifacts are content-addressed: identical bytes across runs share one MinIO object. The polymorphic `owner_type` column avoids three near-identical FK columns.
-```
 
 `docs/docs/api.md`:
+
 ```markdown
 # API reference
 
@@ -932,6 +957,7 @@ The full OpenAPI 3 spec is auto-generated by FastAPI and served live at `/api/do
 ```
 
 `docs/docs/development.md`:
+
 ```markdown
 # Development
 
@@ -976,9 +1002,9 @@ uv run alembic revision --autogenerate -m "describe change"
 # Review/edit the generated file, then:
 uv run alembic upgrade head
 ```
-```
 
 `docs/docs/ci-integration.md`:
+
 ```markdown
 # Integrating with your CI
 
@@ -1014,11 +1040,11 @@ curl -fs -b /tmp/p.txt -H "X-Prism-Csrf: $CSRF" \
 ```
 
 Note: a long-lived Prism user account for CI is the simplest pattern in v1. API tokens are planned for a future release.
-```
 
 - [ ] **Step 3: Add a docs Dockerfile + compose service for live preview**
 
 Append to `deploy/docker-compose.dev.yml`:
+
 ```yaml
   docs:
     image: squidfunk/mkdocs-material:latest
@@ -1035,6 +1061,7 @@ Add `DOCS_HOST_PORT=8181` to `deploy/.env.example`.
 ```bash
 docker run --rm -v /home/tcollins/dev/prism/docs:/docs squidfunk/mkdocs-material:latest build --strict
 ```
+
 Expected: `INFO - Documentation built in <site>` with no warnings.
 
 - [ ] **Step 5: Commit**
@@ -1048,11 +1075,13 @@ cd /home/tcollins/dev/prism && git add docs/ deploy/ && git -c user.email=travis
 ### Task 3.2: Docs CI workflow
 
 **Files:**
+
 - Create: `.github/workflows/docs.yml`
 
 - [ ] **Step 1: Write the workflow**
 
 `.github/workflows/docs.yml`:
+
 ```yaml
 name: docs
 
@@ -1083,6 +1112,7 @@ cd /home/tcollins/dev/prism && git add .github/workflows/docs.yml && git -c user
 ### Task 4.1: Playwright scaffold + login spec
 
 **Files:**
+
 - Create: `apps/web/playwright.config.ts`
 - Create: `apps/web/e2e/login.spec.ts`
 - Modify: `apps/web/package.json` (add `e2e` script)
@@ -1096,6 +1126,7 @@ cd /home/tcollins/dev/prism/apps/web && npm install -D @playwright/test && npx p
 - [ ] **Step 2: Write playwright config**
 
 `apps/web/playwright.config.ts`:
+
 ```ts
 import { defineConfig } from '@playwright/test';
 
@@ -1114,6 +1145,7 @@ export default defineConfig({
 - [ ] **Step 3: Write login spec**
 
 `apps/web/e2e/login.spec.ts`:
+
 ```ts
 import { expect, test } from '@playwright/test';
 
@@ -1143,6 +1175,7 @@ test('logout clears session and bounces to login', async ({ page }) => {
 - [ ] **Step 4: Add npm script**
 
 In `apps/web/package.json` `scripts`:
+
 ```json
 "e2e": "playwright test"
 ```
@@ -1152,6 +1185,7 @@ In `apps/web/package.json` `scripts`:
 ```bash
 cd /home/tcollins/dev/prism/apps/web && npm run e2e
 ```
+
 Expected: 2 passing (assumes the dev stack is running on the default ports).
 
 - [ ] **Step 6: Commit**
@@ -1165,6 +1199,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 4.2: E2E CI workflow
 
 **Files:**
+
 - Create: `.github/workflows/e2e.yml`
 
 - [ ] **Step 1: Write the workflow**

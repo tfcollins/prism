@@ -36,6 +36,7 @@ Plan-3 items (frontend) are **out of scope** for Plan 2: I5 (AuthProvider error 
 ### Task 0.1: Cookie hardening (I1 + I4)
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/config.py` (add `cookie_secure: bool = False`, `cookie_samesite: Literal["lax","strict","none"] = "lax"`)
 - Modify: `apps/api/src/prism_api/routers/auth.py` (use settings on login + logout)
 - Modify: `apps/api/tests/conftest.py` (pass new fields in test Settings construction)
@@ -44,6 +45,7 @@ Plan-3 items (frontend) are **out of scope** for Plan 2: I5 (AuthProvider error 
 - [ ] **Step 1: Add failing test**
 
 Append to `apps/api/tests/test_auth_router.py`:
+
 ```python
 def test_login_cookie_attributes(client, seed_admin):
     r = client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
@@ -70,6 +72,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_auth_router.py 
 - [ ] **Step 3: Update Settings**
 
 Replace `apps/api/src/prism_api/config.py`:
+
 ```python
 """App configuration via pydantic-settings."""
 from functools import lru_cache
@@ -147,6 +150,7 @@ In `apps/api/tests/conftest.py` `settings` fixture, ensure `jwt_secret="testsecr
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest -v
 ```
+
 Expected: 34 passing (32 original + 2 new).
 
 - [ ] **Step 7: Commit**
@@ -160,6 +164,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 0.2: delete_user guards (I2)
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/repos/users.py` (`delete` returns bool)
 - Modify: `apps/api/src/prism_api/routers/users.py`
 - Test: `apps/api/tests/test_users_router.py` (extend)
@@ -167,6 +172,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Add failing tests**
 
 Append to `apps/api/tests/test_users_router.py`:
+
 ```python
 def test_cannot_delete_self(client, seed_admin):
     _login(client)
@@ -204,6 +210,7 @@ def test_delete_unknown_user_404(client, seed_admin):
 - [ ] **Step 2: Update `UserRepo.delete` to return bool**
 
 `apps/api/src/prism_api/repos/users.py` — change the method:
+
 ```python
 def delete(self, user_id: str) -> bool:
     user = self._session.get(User, user_id)
@@ -216,6 +223,7 @@ def delete(self, user_id: str) -> bool:
 - [ ] **Step 3: Update users router**
 
 `apps/api/src/prism_api/routers/users.py`:
+
 ```python
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
@@ -240,6 +248,7 @@ def delete_user(
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_users_router.py -v
 ```
+
 Expected: 7 passing.
 
 - [ ] **Step 5: Commit**
@@ -261,6 +270,7 @@ Delete the `get_session` function (the bottom of the file). Leave `build_engine`
 ```bash
 cd /home/tcollins/dev/prism/apps/api && grep -rn "get_session" src tests
 ```
+
 Expected: no output.
 
 - [ ] **Step 3: Run tests**
@@ -268,6 +278,7 @@ Expected: no output.
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest -v
 ```
+
 Expected: all passing.
 
 - [ ] **Step 4: Commit**
@@ -283,6 +294,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Edit `apps/api/docker-entrypoint.sh`**
 
 Replace:
+
 ```sh
 #!/bin/sh
 set -e
@@ -306,7 +318,8 @@ cd /home/tcollins/dev/prism && git add apps/api/docker-entrypoint.sh && git -c u
 - [ ] **Step 1: Replace the placeholder JWT secret**
 
 `deploy/.env.example` — change the `JWT_SECRET` line to a real-but-obviously-dev secret:
-```
+
+```text
 JWT_SECRET=dev-only-replace-with-32-plus-random-chars-please
 ```
 
@@ -325,6 +338,7 @@ cd /home/tcollins/dev/prism && git add deploy/.env.example && git -c user.email=
 ### Task 1.1: Model files
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/models/run.py` (TestRun, RunTag)
 - Create: `apps/api/src/prism_api/models/suite.py` (TestSuite, TestCase)
 - Create: `apps/api/src/prism_api/models/artifact.py` (Artifact, DerivedArtifact)
@@ -334,6 +348,7 @@ cd /home/tcollins/dev/prism && git add deploy/.env.example && git -c user.email=
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_models_ingest.py`:
+
 ```python
 """Smoke tests for ingest-pipeline models against in-memory SQLite."""
 from datetime import UTC, datetime
@@ -414,6 +429,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_models_ingest.p
 - [ ] **Step 3: Implement models**
 
 `apps/api/src/prism_api/models/run.py`:
+
 ```python
 """Run + run-tag models."""
 import enum
@@ -458,6 +474,7 @@ class RunTag(Base):
 ```
 
 `apps/api/src/prism_api/models/suite.py`:
+
 ```python
 """Suite + case models."""
 import enum
@@ -503,6 +520,7 @@ class TestCase(Base, TimestampMixin):
 ```
 
 `apps/api/src/prism_api/models/artifact.py`:
+
 ```python
 """Artifact + derived-artifact models."""
 import enum
@@ -562,6 +580,7 @@ class DerivedArtifact(Base, TimestampMixin):
 ```
 
 Update `apps/api/src/prism_api/models/__init__.py`:
+
 ```python
 """SQLAlchemy models."""
 from prism_api.models.artifact import Artifact, ArtifactKind, DerivedArtifact, DerivedKind
@@ -605,6 +624,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 1.2: Alembic migration 0002
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/migrations/versions/0002_ingest_tables.py`
 
 - [ ] **Step 1: Write the migration**
@@ -734,6 +754,7 @@ def downgrade() -> None:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && PRISM_DATABASE_URL=sqlite:///./test.db PRISM_S3_ENDPOINT=x PRISM_S3_ACCESS_KEY=x PRISM_S3_SECRET_KEY=x PRISM_S3_BUCKET=x PRISM_REDIS_URL=x PRISM_JWT_SECRET=testsecretlongenough uv run alembic upgrade head && rm -f test.db
 ```
+
 Expected: `Running upgrade 0001 -> 0002` with no errors.
 
 - [ ] **Step 3: Commit**
@@ -747,6 +768,7 @@ cd /home/tcollins/dev/prism && git add apps/api/src/prism_api/migrations/ && git
 ### Task 1.3: Repositories for new models
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/repos/runs.py` (RunRepo)
 - Create: `apps/api/src/prism_api/repos/suites.py` (SuiteRepo, CaseRepo)
 - Create: `apps/api/src/prism_api/repos/artifacts.py` (ArtifactRepo, DerivedRepo)
@@ -755,6 +777,7 @@ cd /home/tcollins/dev/prism && git add apps/api/src/prism_api/migrations/ && git
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_ingest_repos.py`:
+
 ```python
 """Repos for ingest-pipeline models."""
 from collections.abc import Iterator
@@ -888,6 +911,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_ingest_repos.py
 - [ ] **Step 3: Implement repos**
 
 `apps/api/src/prism_api/repos/runs.py`:
+
 ```python
 """Run repository."""
 from sqlalchemy import select
@@ -938,6 +962,7 @@ class RunRepo:
 ```
 
 `apps/api/src/prism_api/repos/suites.py`:
+
 ```python
 """Suite and case repositories."""
 from sqlalchemy import select
@@ -1011,6 +1036,7 @@ class CaseRepo:
 ```
 
 `apps/api/src/prism_api/repos/artifacts.py`:
+
 ```python
 """Artifact and derived-artifact repositories."""
 from typing import Any
@@ -1117,6 +1143,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 2.1: Storage wrapper
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/storage.py`
 - Test: `apps/api/tests/test_storage.py`
 
@@ -1127,6 +1154,7 @@ Edit `apps/api/pyproject.toml` `[dependency-groups] dev` list to include `"moto[
 - [ ] **Step 2: Write the failing test**
 
 `apps/api/tests/test_storage.py`:
+
 ```python
 """Storage layer tests using moto (in-process S3)."""
 from io import BytesIO
@@ -1183,6 +1211,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_storage.py -v
 - [ ] **Step 4: Implement storage**
 
 `apps/api/src/prism_api/storage.py`:
+
 ```python
 """MinIO / S3 storage wrapper — thin abstraction over boto3."""
 from __future__ import annotations
@@ -1252,6 +1281,7 @@ class ObjectStorage:
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_storage.py -v
 ```
+
 Expected: 4/4 PASS.
 
 - [ ] **Step 6: Commit**
@@ -1265,6 +1295,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 2.2: Storage factory & bootstrap
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/storage.py` (add `build_storage(settings)` helper)
 - Modify: `apps/api/src/prism_api/cli.py` (add `ensure-bucket` subcommand)
 - Modify: `apps/api/docker-entrypoint.sh` (call `python -m prism_api.cli ensure-bucket`)
@@ -1273,6 +1304,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Add failing test**
 
 `apps/api/tests/test_storage_factory.py`:
+
 ```python
 from unittest.mock import patch
 
@@ -1312,6 +1344,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_storage_factory
 - [ ] **Step 3: Implement factory**
 
 Append to `apps/api/src/prism_api/storage.py`:
+
 ```python
 import boto3
 
@@ -1332,6 +1365,7 @@ def build_storage(settings: Settings) -> ObjectStorage:
 - [ ] **Step 4: Add `ensure-bucket` CLI command**
 
 Update `apps/api/src/prism_api/cli.py`:
+
 ```python
 """Command-line entry points for ops tasks."""
 import sys
@@ -1380,6 +1414,7 @@ if __name__ == "__main__":
 - [ ] **Step 5: Update entrypoint**
 
 `apps/api/docker-entrypoint.sh`:
+
 ```sh
 #!/bin/sh
 set -e
@@ -1394,6 +1429,7 @@ exec "$@"
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest -v
 ```
+
 Expected: all passing.
 
 - [ ] **Step 7: Commit**
@@ -1409,6 +1445,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 3.1: JUnit parser
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/parsers/__init__.py` (empty)
 - Create: `apps/api/src/prism_api/parsers/junit.py`
 - Create: `apps/api/tests/fixtures/sample-junit.xml`
@@ -1417,6 +1454,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the sample fixture**
 
 `apps/api/tests/fixtures/sample-junit.xml`:
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
@@ -1436,6 +1474,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 2: Write the failing test**
 
 `apps/api/tests/test_parsers_junit.py`:
+
 ```python
 from pathlib import Path
 
@@ -1479,6 +1518,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_parsers_junit.p
 `apps/api/src/prism_api/parsers/__init__.py`: empty.
 
 `apps/api/src/prism_api/parsers/junit.py`:
+
 ```python
 """JUnit XML parser — thin wrapper over `junitparser`."""
 from __future__ import annotations
@@ -1570,12 +1610,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 3.2: Artifact kind detector
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/parsers/detect.py`
 - Test: `apps/api/tests/test_parsers_detect.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_parsers_detect.py`:
+
 ```python
 from prism_api.models import ArtifactKind
 from prism_api.parsers.detect import detect_kind
@@ -1629,6 +1671,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_parsers_detect.
 - [ ] **Step 3: Implement detector**
 
 `apps/api/src/prism_api/parsers/detect.py`:
+
 ```python
 """Artifact kind detection — extension + magic bytes."""
 from pathlib import PurePosixPath
@@ -1699,12 +1742,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 The worker links each uploaded file to a suite/case/run by parsing its filename per the convention `{suite}__{case}__{label}.{ext}`. If only one `__` separator is present, the file attaches to a suite; if none, it attaches to the run.
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/parsers/filename.py`
 - Test: `apps/api/tests/test_parsers_filename.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_parsers_filename.py`:
+
 ```python
 from prism_api.parsers.filename import ArtifactOwner, parse_artifact_filename
 
@@ -1737,6 +1782,7 @@ def test_case_level_with_label_underscores() -> None:
 - [ ] **Step 3: Implement parser**
 
 `apps/api/src/prism_api/parsers/filename.py`:
+
 ```python
 """Artifact filename convention parser.
 
@@ -1789,6 +1835,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 4.1: Celery app
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/worker/__init__.py` (empty)
 - Create: `apps/api/src/prism_api/worker/celery_app.py`
 - Test: `apps/api/tests/test_celery_app.py`
@@ -1796,6 +1843,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_celery_app.py`:
+
 ```python
 from prism_api.worker.celery_app import build_celery
 from prism_api.config import Settings
@@ -1825,6 +1873,7 @@ def test_celery_app_configured_from_settings():
 `apps/api/src/prism_api/worker/__init__.py`: empty.
 
 `apps/api/src/prism_api/worker/celery_app.py`:
+
 ```python
 """Celery application factory."""
 from celery import Celery
@@ -1865,6 +1914,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 4.2: Ingest task
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/worker/tasks.py`
 - Create: `apps/api/src/prism_api/ingest.py` (orchestration logic — testable without Celery)
 - Test: `apps/api/tests/test_ingest_flow.py`
@@ -1872,6 +1922,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_ingest_flow.py`:
+
 ```python
 """End-to-end ingest flow using in-memory SQLite + moto S3 + synthetic archive."""
 import io
@@ -2012,6 +2063,7 @@ def test_ingest_without_junit_errors_the_run(session: Session, storage: ObjectSt
 - [ ] **Step 3: Implement orchestration**
 
 `apps/api/src/prism_api/ingest.py`:
+
 ```python
 """Ingest orchestration — pure function that the worker task wraps."""
 from __future__ import annotations
@@ -2155,6 +2207,7 @@ def _resolve_owner(
 - [ ] **Step 4: Implement the Celery task wrapper**
 
 `apps/api/src/prism_api/worker/tasks.py`:
+
 ```python
 """Celery tasks."""
 from __future__ import annotations
@@ -2189,6 +2242,7 @@ def run_ingest(run_id: str, junit_xml_key: str, archive_key: str | None) -> None
 ```bash
 cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_ingest_flow.py -v
 ```
+
 Expected: 3/3 PASS.
 
 - [ ] **Step 6: Commit**
@@ -2204,11 +2258,13 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 5.1: Upload schemas
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/schemas/run.py`
 
 - [ ] **Step 1: Write the schemas**
 
 `apps/api/src/prism_api/schemas/run.py`:
+
 ```python
 """Run request/response schemas."""
 from datetime import datetime
@@ -2248,6 +2304,7 @@ No commit yet — fold into next task to keep commit topical.
 ### Task 5.2: POST /runs endpoint
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/routers/runs.py`
 - Modify: `apps/api/src/prism_api/main.py` (include runs router)
 - Test: `apps/api/tests/test_runs_router.py`
@@ -2255,6 +2312,7 @@ No commit yet — fold into next task to keep commit topical.
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_runs_router.py`:
+
 ```python
 """Runs router test — uses a monkeypatched celery task so ingest runs inline."""
 import io
@@ -2340,6 +2398,7 @@ def test_upload_unknown_project(client: TestClient, seed_admin, patch_ingest) ->
 ```
 
 Also update `apps/api/tests/conftest.py` to add a `storage_fixture`:
+
 ```python
 @pytest.fixture
 def storage_fixture():
@@ -2361,6 +2420,7 @@ def storage_fixture():
 - [ ] **Step 3: Implement router**
 
 `apps/api/src/prism_api/routers/runs.py`:
+
 ```python
 """Run upload endpoint."""
 from __future__ import annotations
@@ -2452,6 +2512,7 @@ async def upload_run(
 - [ ] **Step 4: Wire the router in main.py**
 
 `apps/api/src/prism_api/main.py` — add import and include:
+
 ```python
 from prism_api.routers import runs as runs_router
 ...
@@ -2477,6 +2538,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 Replace `enqueue_ingest` to upload payloads to S3 first and pass keys to Celery.
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/routers/runs.py`
 - Modify: `apps/api/src/prism_api/worker/tasks.py`
 - Modify: `apps/api/tests/conftest.py` (simpler `storage_fixture` once enqueue uses keys)
@@ -2484,6 +2546,7 @@ Replace `enqueue_ingest` to upload payloads to S3 first and pass keys to Celery.
 - [ ] **Step 1: Update `enqueue_ingest` to take storage + keys**
 
 Replace `enqueue_ingest` body in `apps/api/src/prism_api/routers/runs.py`:
+
 ```python
 def enqueue_ingest(
     run_id: str,
@@ -2497,6 +2560,7 @@ def enqueue_ingest(
 ```
 
 Update the router call site:
+
 ```python
 storage = build_storage(settings)
 storage.ensure_bucket()
@@ -2512,6 +2576,7 @@ The `run_ingest` task in `apps/api/src/prism_api/worker/tasks.py` already fetche
 - [ ] **Step 3: Update the test fixture**
 
 In `apps/api/tests/conftest.py`, REPLACE `storage_fixture` with a version that also monkeypatches the router's `build_storage` (so the router uses the in-memory bucket):
+
 ```python
 @pytest.fixture
 def storage_fixture(monkeypatch):
@@ -2529,6 +2594,7 @@ def storage_fixture(monkeypatch):
 ```
 
 Then update `patch_ingest` in `apps/api/tests/test_runs_router.py` to match the new 4-arg signature:
+
 ```python
 @pytest.fixture
 def patch_ingest(monkeypatch, db_session, storage_fixture):
@@ -2561,12 +2627,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 6.1: Add worker service to compose
 
 **Files:**
+
 - Modify: `deploy/docker-compose.yml` (add `worker` service)
 - Modify: `deploy/docker-compose.dev.yml` (hot reload for worker src)
 
 - [ ] **Step 1: Add worker service in base compose**
 
 Append under `services:` in `deploy/docker-compose.yml`:
+
 ```yaml
   worker:
     build:
@@ -2594,6 +2662,7 @@ Note: `entrypoint: []` overrides the image's `./docker-entrypoint.sh` (which is 
 - [ ] **Step 2: Add worker overrides in dev**
 
 Append to `deploy/docker-compose.dev.yml` under `services:`:
+
 ```yaml
   worker:
     build:
@@ -2608,6 +2677,7 @@ Append to `deploy/docker-compose.dev.yml` under `services:`:
 ```bash
 cd /home/tcollins/dev/prism && docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env config > /dev/null && echo OK
 ```
+
 Expected: `OK`.
 
 - [ ] **Step 4: Bring the stack up and confirm worker runs**
@@ -2616,6 +2686,7 @@ Expected: `OK`.
 cd /home/tcollins/dev/prism && docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env up -d --build worker
 docker logs prism-worker-1 2>&1 | tail -10
 ```
+
 Expected: Celery banner with `celery@<hostname>` and `Connected to redis://redis:6379/0`.
 
 - [ ] **Step 5: Commit**
@@ -2651,6 +2722,7 @@ curl -s -b /tmp/pc.txt \
   -F 'metadata={"project_slug":"audio","name":"smoke-1","tags":{"branch":"main"}}' \
   http://localhost:8000/api/v1/runs
 ```
+
 Expected: JSON with `"status": "pending"` (worker processes async; status becomes `mixed` within seconds).
 
 - [ ] **Step 4: Query the database to verify**

@@ -10,7 +10,7 @@
 1. `cp deploy/.env.example deploy/.env`
 2. Edit `deploy/.env`: set `JWT_SECRET` to a random ≥32-character string, change `ADMIN_PASSWORD`.
 3. `make up`
-4. Visit http://localhost:8180 — log in with the admin email/password from `.env`.
+4. Visit <http://localhost:8180> — log in with the admin email/password from `.env`.
 
 ## Upload a run via curl
 
@@ -82,7 +82,7 @@ Supported artifact types: `*.xml` (JUnit), `*.csv` `*.npy` `*.h5` (waveforms), `
 
 Single column of floats, optionally with a `# sample_rate=<int>` comment on the first line:
 
-```
+```text
 # sample_rate=48000
 0.000000
 0.130526
