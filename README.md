@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-file MD041 -->
 <p align="center">
   <img src="assets/logo.svg" alt="Prism logo" width="96" />
 </p>

@@ -11,11 +11,12 @@
 **Spec:** `docs/superpowers/specs/2026-05-02-prism-lint-hardening-design.md`
 
 **Commit style (matches repo conventions):**
+
 - `lint:` for cross-cutting tooling (markdownlint, actionlint, hadolint, Makefile, shared CI)
 - `pytest-prism:` for `clients/python-pytest/` changes
 - `prism-api:` for `apps/api/` (and `scripts/`) changes
 - `prism-web:` for `apps/web/` changes
-- All commits append ` (Task N)` matching the task number in this plan
+- All commits append `(Task N)` matching the task number in this plan
 - No `Co-Authored-By` lines (per `no-co-author` skill)
 
 **Branch:** all work lands on the current `tfcollins/dev` branch unless directed otherwise. Push once after each task to let CI exercise each step.
@@ -25,12 +26,14 @@
 ## File map
 
 **Created:**
+
 - `package.json` (repo root) — markdownlint-cli2 devDep
 - `package-lock.json` (repo root)
 - `.markdownlint-cli2.jsonc` (repo root)
 - `node_modules/` (repo root, gitignored)
 
 **Modified:**
+
 - `Makefile` — new sub-targets: `lint-api`, `lint-web`, `lint-md`, `lint-actions`, `lint-dockerfiles`; `lint` aggregates them.
 - `.github/workflows/lint.yml` — extend `api` job; add `markdown`, `actions`, `dockerfile` jobs.
 - `clients/python-pytest/pyproject.toml` — ruff `select` aligned with api; add `[tool.ruff.lint.per-file-ignores]` and `ignore` lists.
@@ -49,6 +52,7 @@
 ### Task 1: Set up markdownlint at repo root + Makefile sub-targets
 
 **Files:**
+
 - Create: `package.json`, `package-lock.json`, `.markdownlint-cli2.jsonc`
 - Modify: `Makefile`
 
@@ -70,9 +74,11 @@ Create `package.json` at the repo root (NOT inside `apps/web/`):
 - [ ] **Step 2: Install markdownlint-cli2 at the root**
 
 Run from the repo root:
+
 ```bash
 npm install
 ```
+
 Expected: creates `node_modules/` and `package-lock.json` at repo root.
 
 - [ ] **Step 3: Create `.markdownlint-cli2.jsonc`**
@@ -112,35 +118,35 @@ Read the current Makefile first (`Makefile` at repo root). Replace the `.PHONY` 
 lint: lint-api lint-web lint-md lint-actions lint-dockerfiles
 
 lint-api:
-	cd apps/api && uv run ruff check . && uv run mypy src
+ cd apps/api && uv run ruff check . && uv run mypy src
 
 lint-web:
-	cd apps/web && npm run lint
+ cd apps/web && npm run lint
 
 lint-md:
-	npx markdownlint-cli2 "**/*.md"
+ npx markdownlint-cli2 "**/*.md"
 
 lint-actions:
-	@if command -v actionlint >/dev/null 2>&1; then \
-		actionlint .github/workflows/*.yml; \
-	else \
-		echo "actionlint not on PATH; skipping (CI will still run it)"; \
-	fi
+ @if command -v actionlint >/dev/null 2>&1; then \
+  actionlint .github/workflows/*.yml; \
+ else \
+  echo "actionlint not on PATH; skipping (CI will still run it)"; \
+ fi
 
 lint-dockerfiles:
-	@if command -v hadolint >/dev/null 2>&1; then \
-		hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
-	else \
-		echo "hadolint not on PATH; skipping (CI will still run it)"; \
-	fi
+ @if command -v hadolint >/dev/null 2>&1; then \
+  hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
+ else \
+  echo "hadolint not on PATH; skipping (CI will still run it)"; \
+ fi
 
 fmt: fmt-api fmt-web
 
 fmt-api:
-	cd apps/api && uv run ruff format .
+ cd apps/api && uv run ruff format .
 
 fmt-web:
-	cd apps/web && npm run fmt
+ cd apps/web && npm run fmt
 ```
 
 Keep the existing `up`, `up-bare`, `down`, `logs`, `build`, `test`, `test-api`, `test-web`, `docs`, `clean` targets unchanged.
@@ -151,6 +157,7 @@ Keep the existing `up`, `up-bare`, `down`, `logs`, `build`, `test`, `test-api`, 
 make lint-api
 make lint-web
 ```
+
 Expected: both pass (this is the same as the previous monolithic `lint` target's behavior).
 
 - [ ] **Step 6: Verify `make lint-md` runs (it will report violations — that's fine, fixed in Task 5)**
@@ -158,6 +165,7 @@ Expected: both pass (this is the same as the previous monolithic `lint` target's
 ```bash
 make lint-md || true
 ```
+
 Expected: command runs to completion. May exit non-zero with markdown violations listed. Note the violation count for the next task's reference.
 
 - [ ] **Step 7: Verify `make lint-actions` and `make lint-dockerfiles` skip cleanly when binaries are absent**
@@ -166,6 +174,7 @@ Expected: command runs to completion. May exit non-zero with markdown violations
 make lint-actions
 make lint-dockerfiles
 ```
+
 Expected: prints "X not on PATH; skipping (CI will still run it)" and exits 0 if the binaries are not installed locally; runs the linter and reports violations otherwise.
 
 - [ ] **Step 8: Commit**
@@ -180,6 +189,7 @@ git commit -m "lint: add markdownlint at repo root + Makefile sub-targets (Task 
 ### Task 2: Add new CI jobs (markdown, actions, dockerfile) with `continue-on-error: true`
 
 **Files:**
+
 - Modify: `.github/workflows/lint.yml`
 
 - [ ] **Step 1: Edit `.github/workflows/lint.yml` to add three new jobs**
@@ -230,6 +240,7 @@ git add .github/workflows/lint.yml
 git commit -m "lint: add markdown/actions/dockerfile CI jobs (continue-on-error) (Task 2)"
 git push
 ```
+
 Expected: GitHub Actions runs all 5 jobs in `lint`. The new three may fail but don't block the workflow because `continue-on-error: true`. The `api` and `web` jobs still pass as before.
 
 ---
@@ -239,6 +250,7 @@ Expected: GitHub Actions runs all 5 jobs in `lint`. The new three may fail but d
 ### Task 3: Fix hadolint findings in Dockerfiles
 
 **Files:**
+
 - Modify: `apps/api/Dockerfile`, `apps/api/Dockerfile.dev`, `apps/web/Dockerfile`, `apps/web/Dockerfile.dev`
 
 - [ ] **Step 1: Run hadolint locally on each Dockerfile**
@@ -253,6 +265,7 @@ done
 ```
 
 Expected output: a list of `DLNNNN`-prefixed warnings/errors per file. Common findings to expect:
+
 - `DL3008` — pin apt versions (`apt-get install -y --no-install-recommends pkg=version`)
 - `DL3009` — `apt-get clean` / `rm -rf /var/lib/apt/lists/*` after install
 - `DL3015` — use `apt-get install --no-install-recommends`
@@ -262,10 +275,12 @@ Expected output: a list of `DLNNNN`-prefixed warnings/errors per file. Common fi
 - [ ] **Step 2: Apply fixes**
 
 For each finding:
+
 - If pinning a version is appropriate, do it. If pinning would break floating-tag intent, add `# hadolint ignore=DL3008` on the `RUN` line with a brief justification comment.
 - For missing `--no-install-recommends`, add it.
 - For missing apt cache cleanup, append `&& rm -rf /var/lib/apt/lists/*` to the `apt-get` `RUN`.
 - Common pattern to combine into a single RUN:
+
   ```dockerfile
   RUN apt-get update \
       && apt-get install -y --no-install-recommends pkg \
@@ -280,6 +295,7 @@ for f in apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/we
   docker run --rm -i hadolint/hadolint:latest-alpine < "$f"
 done
 ```
+
 Expected: each file prints `==> path` with no follow-up lines (clean).
 
 - [ ] **Step 4: Verify Docker images still build**
@@ -287,6 +303,7 @@ Expected: each file prints `==> path` with no follow-up lines (clean).
 ```bash
 make build
 ```
+
 Expected: docker compose builds successfully — pins haven't broken anything.
 
 - [ ] **Step 5: Commit**
@@ -302,6 +319,7 @@ git push
 ### Task 4: Fix actionlint findings in workflows
 
 **Files:**
+
 - Modify: `.github/workflows/*.yml` (any with findings)
 
 - [ ] **Step 1: Run actionlint locally**
@@ -311,6 +329,7 @@ docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color
 ```
 
 Expected output: zero or a small number of findings. Common things actionlint catches:
+
 - Outdated action versions
 - Typos in `${{ }}` expressions
 - Invalid `runs-on` labels
@@ -325,6 +344,7 @@ Fix each finding inline. If a finding is intentional, add an `# actionlint disab
 ```bash
 docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color
 ```
+
 Expected: no output, exit 0.
 
 - [ ] **Step 4: Commit**
@@ -340,6 +360,7 @@ git push
 ### Task 5: Fix markdownlint violations
 
 **Files:**
+
 - Modify: any `**/*.md` files (excluding ignored paths) with violations
 
 - [ ] **Step 1: Run markdownlint with auto-fix**
@@ -347,6 +368,7 @@ git push
 ```bash
 npx markdownlint-cli2 --fix "**/*.md"
 ```
+
 Expected: auto-fixable issues (trailing whitespace, blank-line-around rules, list-style consistency) are repaired in place.
 
 - [ ] **Step 2: Run markdownlint without `--fix` to see remaining issues**
@@ -354,11 +376,13 @@ Expected: auto-fixable issues (trailing whitespace, blank-line-around rules, lis
 ```bash
 npx markdownlint-cli2 "**/*.md"
 ```
+
 Expected: remaining issues are typically those requiring human judgement (heading-level skips, link refs).
 
 - [ ] **Step 3: Apply manual fixes**
 
 Common manual fixes:
+
 - `MD001` — heading levels can only increment by one. Re-level headings.
 - `MD025` — single `# H1` per document. If a doc has two, demote the second.
 - `MD034` — bare URL → wrap in `<>` or convert to `[text](url)`.
@@ -369,6 +393,7 @@ Common manual fixes:
 ```bash
 npx markdownlint-cli2 "**/*.md"
 ```
+
 Expected: exit 0, no output (or just the summary line).
 
 - [ ] **Step 5: Commit**
@@ -384,6 +409,7 @@ git push
 ### Task 6: Align pytest-prism's ruff config with apps/api's
 
 **Files:**
+
 - Modify: `clients/python-pytest/pyproject.toml`
 - Possibly: `clients/python-pytest/src/**/*.py`, `clients/python-pytest/tests/**/*.py` (only if `S` rules surface findings)
 
@@ -416,11 +442,13 @@ Rationale: matches `apps/api/pyproject.toml`'s rule set (api also ignores `B008`
 ```bash
 cd clients/python-pytest && uv run ruff check .
 ```
+
 Expected: clean exit, or a small number of `S` findings to address. The plugin is small (no shell-out, no `pickle`, no `yaml.load`) so 0 findings is the most likely outcome.
 
 - [ ] **Step 3: Fix any findings inline**
 
 If `ruff check` reports issues:
+
 - `S603`/`S607` (subprocess) — verify the call is safe; add `# noqa: S603` with a comment explaining why if it is (e.g., args fully controlled, no shell injection vector).
 - Anything else — fix the underlying code.
 
@@ -431,6 +459,7 @@ If 0 findings, skip to step 5.
 ```bash
 cd clients/python-pytest && uv run ruff check .
 ```
+
 Expected: exit 0, no findings.
 
 - [ ] **Step 5: Verify pytest-prism's own tests still pass**
@@ -438,6 +467,7 @@ Expected: exit 0, no findings.
 ```bash
 cd clients/python-pytest && uv run pytest -q --ignore=tests/contract
 ```
+
 Expected: same pass count as before.
 
 - [ ] **Step 6: Commit**
@@ -449,6 +479,7 @@ git add clients/python-pytest/src clients/python-pytest/tests 2>/dev/null || tru
 git commit -m "pytest-prism: align ruff rules with prism-api (add ASYNC, S) (Task 6)"
 git push
 ```
+
 Expected: CI's `pytest-prism` workflow runs ruff with the new config and stays green.
 
 ---
@@ -456,6 +487,7 @@ Expected: CI's `pytest-prism` workflow runs ruff with the new config and stays g
 ### Task 7: Apply ruff format pass to apps/api and add format-check to api CI
 
 **Files:**
+
 - Modify: any `apps/api/**/*.py` with format drift; `.github/workflows/lint.yml`
 
 - [ ] **Step 1: Run ruff format check (no-fix) to see if there's drift**
@@ -463,6 +495,7 @@ Expected: CI's `pytest-prism` workflow runs ruff with the new config and stays g
 ```bash
 cd apps/api && uv run ruff format --check .
 ```
+
 Expected: either "X files already formatted" (clean — skip to step 4) or a list of files with drift.
 
 - [ ] **Step 2: If drift found, apply formatting**
@@ -470,6 +503,7 @@ Expected: either "X files already formatted" (clean — skip to step 4) or a lis
 ```bash
 cd apps/api && uv run ruff format .
 ```
+
 Expected: lists the files reformatted.
 
 - [ ] **Step 3: Verify tests still pass after formatting**
@@ -477,6 +511,7 @@ Expected: lists the files reformatted.
 ```bash
 cd apps/api && uv run pytest
 ```
+
 Expected: same pass count as before (formatting changes are whitespace-only).
 
 - [ ] **Step 4: If drift was found, commit the format pass first**
@@ -485,6 +520,7 @@ Expected: same pass count as before (formatting changes are whitespace-only).
 git add apps/api/
 git commit -m "prism-api: ruff format pass (Task 7)"
 ```
+
 If there was no drift, skip this commit and proceed to step 5.
 
 - [ ] **Step 5: Edit the `api` job in `.github/workflows/lint.yml`**
@@ -517,6 +553,7 @@ git add .github/workflows/lint.yml
 git commit -m "prism-api: add ruff format-check to CI (Task 7)"
 git push
 ```
+
 Expected: api CI job runs the new format check and stays green.
 
 ---
@@ -524,6 +561,7 @@ Expected: api CI job runs the new format check and stays green.
 ### Task 8: Lint and type-check `scripts/` from the api job
 
 **Files:**
+
 - Modify: `.github/workflows/lint.yml`, possibly `scripts/*.py`
 
 - [ ] **Step 1: Run ruff check against scripts/ via api's pyproject**
@@ -531,6 +569,7 @@ Expected: api CI job runs the new format check and stays green.
 ```bash
 cd apps/api && uv run ruff check ../../scripts
 ```
+
 Expected output: zero or a small number of findings. The scripts are stdlib-only and reasonably well-formed; `S` findings (subprocess use, etc.) are unlikely.
 
 - [ ] **Step 2: Run ruff format check against scripts/**
@@ -538,6 +577,7 @@ Expected output: zero or a small number of findings. The scripts are stdlib-only
 ```bash
 cd apps/api && uv run ruff format --check ../../scripts
 ```
+
 Expected output: either clean or a small drift list.
 
 - [ ] **Step 3: Run mypy strict against scripts/**
@@ -545,7 +585,9 @@ Expected output: either clean or a small drift list.
 ```bash
 cd apps/api && uv run mypy ../../scripts
 ```
+
 Expected output: this is the first time these files are type-checked, so expect a non-trivial number of findings, especially in `upload_run.py` and `seed_demo.py`. Likely categories:
+
 - Missing return-type annotations on functions
 - Untyped `argparse.Namespace` usage (often resolved with `argparse.Namespace` as a type or with `cast`)
 - `urllib`-related calls returning `Any`
@@ -565,6 +607,7 @@ cd apps/api && uv run ruff check ../../scripts \
             && uv run ruff format --check ../../scripts \
             && uv run mypy ../../scripts
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 6: Verify scripts still run (smoke test)**
@@ -575,6 +618,7 @@ The scripts are stdlib-only and meant to run without `pip install`. Smoke-test t
 python3 scripts/upload_run.py --help
 python3 scripts/seed_demo.py --help
 ```
+
 Expected: each prints its argparse help text and exits 0.
 
 - [ ] **Step 7: Add scripts/ commands to api's CI job**
@@ -608,6 +652,7 @@ git add scripts/ .github/workflows/lint.yml
 git commit -m "prism-api: lint and mypy scripts/ via api's pyproject (Task 8)"
 git push
 ```
+
 Expected: api CI job stays green.
 
 ---
@@ -615,6 +660,7 @@ Expected: api CI job stays green.
 ### Task 9: Install jsx-a11y plugin and fix violations
 
 **Files:**
+
 - Modify: `apps/web/package.json`, `apps/web/package-lock.json`, `apps/web/eslint.config.js`, `apps/web/src/**/*.{ts,tsx}`
 
 - [ ] **Step 1: Install eslint-plugin-jsx-a11y**
@@ -622,6 +668,7 @@ Expected: api CI job stays green.
 ```bash
 cd apps/web && npm install -D eslint-plugin-jsx-a11y
 ```
+
 Expected: package added to `devDependencies`, lockfile updated.
 
 - [ ] **Step 2: Edit `apps/web/eslint.config.js` to wire the plugin**
@@ -663,7 +710,9 @@ In the `{ files: ['**/*.{ts,tsx}'], ... }` config block, update `plugins` and `r
 ```bash
 cd apps/web && npm run lint
 ```
+
 Expected: a list of `jsx-a11y/...` violations. Common categories given a Chakra UI v3 app:
+
 - `jsx-a11y/alt-text` — `<img>` without `alt`
 - `jsx-a11y/click-events-have-key-events` — clickable non-button elements
 - `jsx-a11y/no-static-element-interactions` — same family
@@ -675,6 +724,7 @@ Estimate: 5–15 violations across `apps/web/src/components/`, `apps/web/src/pag
 - [ ] **Step 4: Fix violations**
 
 Apply fixes per category:
+
 - Missing `alt`: add descriptive `alt` for content images, `alt=""` for decorative ones.
 - Click on `<div>`/`<span>`: switch to `<button type="button">` (Chakra `<Button>` is preferred where context allows).
 - `<a>` with `onClick` and no real navigation: switch to `<button>` or add proper `href`.
@@ -687,6 +737,7 @@ For genuine false positives, disable the specific rule on the specific line with
 ```bash
 cd apps/web && npm run lint
 ```
+
 Expected: exit 0, no warnings (since `--max-warnings 0` is in the script).
 
 - [ ] **Step 6: Verify tests and build still pass**
@@ -694,6 +745,7 @@ Expected: exit 0, no warnings (since `--max-warnings 0` is in the script).
 ```bash
 cd apps/web && npm test && npm run build
 ```
+
 Expected: tests pass, build succeeds. Component changes (e.g., `<div>` → `<button>`) shouldn't break tests, but verify.
 
 - [ ] **Step 7: Commit and push**
@@ -703,6 +755,7 @@ git add apps/web/package.json apps/web/package-lock.json apps/web/eslint.config.
 git commit -m "prism-web: enable jsx-a11y eslint rules and fix violations (Task 9)"
 git push
 ```
+
 Expected: web CI job passes.
 
 ---
@@ -710,6 +763,7 @@ Expected: web CI job passes.
 ### Task 10: Install simple-import-sort and bulk-sort imports
 
 **Files:**
+
 - Modify: `apps/web/package.json`, `apps/web/package-lock.json`, `apps/web/eslint.config.js`, every `.ts` and `.tsx` file under `apps/web/src/`, `apps/web/tests/`, and `apps/web/e2e/`
 
 - [ ] **Step 1: Install eslint-plugin-simple-import-sort**
@@ -754,6 +808,7 @@ In the `{ files: ['**/*.{ts,tsx}'], ... }` config block, update `plugins` and `r
 git add apps/web/package.json apps/web/package-lock.json apps/web/eslint.config.js
 git commit -m "prism-web: enable simple-import-sort eslint rules (Task 10)"
 ```
+
 **Do not push yet** — pushing now would break web CI. The next step lands the bulk fix in a separate commit per the spec ("committed as a distinct commit from the rule additions for review clarity").
 
 - [ ] **Step 4: Run eslint --fix to bulk-sort imports across the project**
@@ -761,6 +816,7 @@ git commit -m "prism-web: enable simple-import-sort eslint rules (Task 10)"
 ```bash
 cd apps/web && npx eslint . --fix
 ```
+
 Expected: every `.ts`/`.tsx` file with multi-import blocks gets reordered. Exit code may still be non-zero if there are non-fixable issues; review the remaining list and address case-by-case.
 
 - [ ] **Step 5: Verify lint, build, and tests all pass**
@@ -768,6 +824,7 @@ Expected: every `.ts`/`.tsx` file with multi-import blocks gets reordered. Exit 
 ```bash
 cd apps/web && npm run lint && npm run build && npm test
 ```
+
 Expected: all three exit 0. Sort changes are syntactically inert; tests should not regress.
 
 - [ ] **Step 6: Commit the bulk fix and push**
@@ -777,6 +834,7 @@ git add apps/web/src apps/web/tests apps/web/e2e
 git commit -m "prism-web: bulk-sort imports via simple-import-sort --fix (Task 10)"
 git push
 ```
+
 Expected: web CI job stays green now that both commits are landed together.
 
 ---
@@ -786,6 +844,7 @@ Expected: web CI job stays green now that both commits are landed together.
 ### Task 11: Flip new CI jobs from `continue-on-error: true` to gating
 
 **Files:**
+
 - Modify: `.github/workflows/lint.yml`
 
 - [ ] **Step 1: Verify all five lint workflow jobs are currently green**
@@ -801,6 +860,7 @@ For each of the `markdown`, `actions`, and `dockerfile` jobs, delete the `contin
 ```bash
 make lint
 ```
+
 Expected: exits 0, all five sub-targets pass. (`lint-actions` and `lint-dockerfiles` may print "skipping" notices if those binaries aren't installed locally — that's fine, CI is the source of truth for those.)
 
 - [ ] **Step 4: Commit and push**
@@ -810,6 +870,7 @@ git add .github/workflows/lint.yml
 git commit -m "lint: gate markdown/actions/dockerfile CI jobs (remove continue-on-error) (Task 11)"
 git push
 ```
+
 Expected: all five lint jobs run and gate. From this commit onward, any future violation in any of these tools will block merges.
 
 ---

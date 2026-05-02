@@ -30,6 +30,7 @@
 ### Task 0.1: Web Dockerfile uses `npm ci`
 
 **Files:**
+
 - Modify: `apps/web/Dockerfile` (prod)
 - Modify: `apps/web/Dockerfile.dev`
 
@@ -38,7 +39,9 @@
 ```bash
 ls /home/tcollins/dev/prism/apps/web/package-lock.json && cd /home/tcollins/dev/prism && git ls-files apps/web/package-lock.json
 ```
+
 Both should return a path. If not, commit the lockfile first:
+
 ```bash
 cd /home/tcollins/dev/prism && git add apps/web/package-lock.json && git -c user.email=travisfcollins@gmail.com -c user.name="Travis Collins" commit -m "chore(web): commit package-lock.json"
 ```
@@ -46,6 +49,7 @@ cd /home/tcollins/dev/prism && git add apps/web/package-lock.json && git -c user
 - [ ] **Step 2: Update Dockerfiles to copy the lockfile and use `npm ci`**
 
 `apps/web/Dockerfile`:
+
 ```dockerfile
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -61,6 +65,7 @@ EXPOSE 80
 ```
 
 `apps/web/Dockerfile.dev`:
+
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -83,12 +88,14 @@ cd /home/tcollins/dev/prism && git add apps/web/Dockerfile apps/web/Dockerfile.d
 ### Task 1.1: `parsers/waveform.py`
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/parsers/waveform.py`
 - Create: `apps/api/tests/test_parsers_waveform.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_parsers_waveform.py`:
+
 ```python
 """Waveform loader tests: CSV, NPY, HDF5."""
 import io
@@ -147,6 +154,7 @@ cd /home/tcollins/dev/prism/apps/api && uv run pytest tests/test_parsers_wavefor
 - [ ] **Step 3: Implement**
 
 `apps/api/src/prism_api/parsers/waveform.py`:
+
 ```python
 """Waveform loaders for CSV, NPY, HDF5."""
 from __future__ import annotations
@@ -220,6 +228,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 2.1: `dsp/downsample.py`
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/dsp/__init__.py` (empty)
 - Create: `apps/api/src/prism_api/dsp/downsample.py`
 - Create: `apps/api/tests/test_dsp_downsample.py`
@@ -227,6 +236,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_dsp_downsample.py`:
+
 ```python
 import numpy as np
 
@@ -263,6 +273,7 @@ def test_preserves_peaks_with_minmax_pair() -> None:
 `apps/api/src/prism_api/dsp/__init__.py`: empty.
 
 `apps/api/src/prism_api/dsp/downsample.py`:
+
 ```python
 """Downsample a waveform for plotting — preserves min/max within each bucket."""
 from dataclasses import dataclass
@@ -314,12 +325,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 2.2: `dsp/fft.py`
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/dsp/fft.py`
 - Create: `apps/api/tests/test_dsp_fft.py`
 
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_dsp_fft.py`:
+
 ```python
 import hashlib
 
@@ -363,6 +376,7 @@ def test_compute_fft_without_sample_rate_uses_unit_hz() -> None:
 - [ ] **Step 3: Implement**
 
 `apps/api/src/prism_api/dsp/fft.py`:
+
 ```python
 """FFT via Welch's method with stable parameter hashing for derived-artifact caching."""
 from __future__ import annotations
@@ -430,6 +444,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 3.1: Run + case + artifact schemas
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/schemas/run.py` (add `RunDetail`, `RunListItem`)
 - Create: `apps/api/src/prism_api/schemas/case.py` (CaseDetail)
 - Create: `apps/api/src/prism_api/schemas/artifact.py` (ArtifactOut, WaveformResponse, FFTResponse)
@@ -437,6 +452,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Update schemas**
 
 Append to `apps/api/src/prism_api/schemas/run.py`:
+
 ```python
 class SuiteSummary(BaseModel):
     id: str
@@ -467,6 +483,7 @@ class RunListItem(BaseModel):
 ```
 
 `apps/api/src/prism_api/schemas/case.py`:
+
 ```python
 from pydantic import BaseModel, Field
 
@@ -491,6 +508,7 @@ class CaseDetail(BaseModel):
 ```
 
 `apps/api/src/prism_api/schemas/artifact.py`:
+
 ```python
 from pydantic import BaseModel
 
@@ -530,6 +548,7 @@ cd /home/tcollins/dev/prism && git add apps/api/src/prism_api/schemas/ && git -c
 ### Task 3.2: Runs read endpoints
 
 **Files:**
+
 - Modify: `apps/api/src/prism_api/routers/runs.py` (add GET endpoints + list filter)
 - Modify: `apps/api/src/prism_api/repos/runs.py` (add `list_with_filters`, `aggregate_counts_by_run`)
 - Create: `apps/api/tests/test_runs_read.py`
@@ -537,6 +556,7 @@ cd /home/tcollins/dev/prism && git add apps/api/src/prism_api/schemas/ && git -c
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_runs_read.py`:
+
 ```python
 import io
 import json
@@ -622,6 +642,7 @@ def test_run_detail_not_found(client: TestClient, seed_admin) -> None:
 - [ ] **Step 3: Extend `RunRepo`**
 
 Append to `apps/api/src/prism_api/repos/runs.py`:
+
 ```python
 from sqlalchemy import func
 
@@ -814,6 +835,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 3.3: Cases + suites read endpoints
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/routers/cases.py`
 - Create: `apps/api/src/prism_api/routers/suites.py`
 - Modify: `apps/api/src/prism_api/main.py` (include both routers)
@@ -822,6 +844,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_cases_router.py`:
+
 ```python
 import io
 import json
@@ -887,6 +910,7 @@ def test_case_not_found(client: TestClient, seed_admin) -> None:
 - [ ] **Step 3: Implement suites router**
 
 `apps/api/src/prism_api/routers/suites.py`:
+
 ```python
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -923,6 +947,7 @@ def list_cases(
 - [ ] **Step 4: Implement cases router**
 
 `apps/api/src/prism_api/routers/cases.py`:
+
 ```python
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -982,6 +1007,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 3.4: Artifacts router (download + waveform + FFT)
 
 **Files:**
+
 - Create: `apps/api/src/prism_api/routers/artifacts.py`
 - Modify: `apps/api/src/prism_api/main.py` (include artifacts router)
 - Create: `apps/api/tests/test_artifacts_router.py`
@@ -989,6 +1015,7 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 - [ ] **Step 1: Write the failing test**
 
 `apps/api/tests/test_artifacts_router.py`:
+
 ```python
 import io
 import json
@@ -1080,6 +1107,7 @@ def test_artifact_fft_cached_second_call(client: TestClient, seed_admin, patch_i
 - [ ] **Step 3: Implement artifacts router**
 
 `apps/api/src/prism_api/routers/artifacts.py`:
+
 ```python
 """Artifact endpoints: metadata, download, waveform JSON, FFT JSON."""
 from __future__ import annotations
@@ -1229,12 +1257,14 @@ cd /home/tcollins/dev/prism && git add apps/api/ && git -c user.email=travisfcol
 ### Task 4.1: API types and query hooks
 
 **Files:**
+
 - Modify: `apps/web/src/api/types.ts` (add Run / Case / Artifact / Waveform / FFT types)
 - Create: `apps/web/src/api/queries.ts` (TanStack Query hooks)
 
 - [ ] **Step 1: Expand types**
 
 Append to `apps/web/src/api/types.ts`:
+
 ```ts
 export type RunStatus = 'pending' | 'pass' | 'fail' | 'mixed' | 'error';
 
@@ -1326,6 +1356,7 @@ export interface FFTResponse {
 - [ ] **Step 2: Create query hooks**
 
 `apps/web/src/api/queries.ts`:
+
 ```ts
 import { useQuery } from '@tanstack/react-query';
 
@@ -1418,6 +1449,7 @@ cd /home/tcollins/dev/prism && git add apps/web/src/api/ && git -c user.email=tr
 ### Task 5.1: AuthContext split and error handling (I5 + S7)
 
 **Files:**
+
 - Create: `apps/web/src/auth/AuthContext.ts` (just the context + types)
 - Modify: `apps/web/src/auth/AuthProvider.tsx` (use imported context, discriminate errors)
 - Modify: `apps/web/src/auth/useAuth.ts` (import from AuthContext.ts)
@@ -1426,6 +1458,7 @@ cd /home/tcollins/dev/prism && git add apps/web/src/api/ && git -c user.email=tr
 - [ ] **Step 1: Create `AuthContext.ts`**
 
 `apps/web/src/auth/AuthContext.ts`:
+
 ```ts
 import { createContext } from 'react';
 
@@ -1445,6 +1478,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 - [ ] **Step 2: Update `AuthProvider.tsx` to discriminate errors**
 
 `apps/web/src/auth/AuthProvider.tsx`:
+
 ```tsx
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -1527,6 +1561,7 @@ Implement whatever test approach works with the existing `vi.hoisted` mock patte
 ```bash
 cd /home/tcollins/dev/prism/apps/web && npm test
 ```
+
 Expected: all tests pass.
 
 - [ ] **Step 6: Commit**
@@ -1540,6 +1575,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 5.2: AppShell + Sidebar + TopBar
 
 **Files:**
+
 - Create: `apps/web/src/components/AppShell.tsx`
 - Create: `apps/web/src/components/Sidebar.tsx`
 - Create: `apps/web/src/components/TopBar.tsx`
@@ -1547,6 +1583,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 - [ ] **Step 1: Implement the shell**
 
 `apps/web/src/components/AppShell.tsx`:
+
 ```tsx
 import { Box, Flex } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
@@ -1570,6 +1607,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 ```
 
 `apps/web/src/components/Sidebar.tsx`:
+
 ```tsx
 import { Box, Heading, Stack, Text } from '@chakra-ui/react';
 import { NavLink } from 'react-router-dom';
@@ -1621,6 +1659,7 @@ export function Sidebar() {
 ```
 
 `apps/web/src/components/TopBar.tsx`:
+
 ```tsx
 import { Box, Button, Flex, Text } from '@chakra-ui/react';
 import axios from 'axios';
@@ -1680,6 +1719,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 6.1: RunsTable + ProjectDashboardPage + routing
 
 **Files:**
+
 - Create: `apps/web/src/components/RunsTable.tsx`
 - Create: `apps/web/src/pages/ProjectDashboardPage.tsx`
 - Modify: `apps/web/src/App.tsx` (routes: `/projects/:slug` → ProjectDashboardPage)
@@ -1688,6 +1728,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 - [ ] **Step 1: Implement RunsTable**
 
 `apps/web/src/components/RunsTable.tsx`:
+
 ```tsx
 import { Box, Table, Text } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
@@ -1762,6 +1803,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
 - [ ] **Step 2: Implement ProjectDashboardPage**
 
 `apps/web/src/pages/ProjectDashboardPage.tsx`:
+
 ```tsx
 import { Box, Heading, Text } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
@@ -1798,6 +1840,7 @@ export function ProjectDashboardPage() {
 Re-render the existing table cells: each row's `slug` should link to `/projects/:slug`. Wrap the whole page's JSX return in `<AppShell>...</AppShell>`. Keep the creation form.
 
 Key change in `apps/web/src/pages/ProjectsPage.tsx`:
+
 ```tsx
 import { Link } from 'react-router-dom';
 import { AppShell } from '../components/AppShell';
@@ -1843,6 +1886,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 7.1: WaveformPlot + FFTPlot components
 
 **Files:**
+
 - Create: `apps/web/src/components/WaveformPlot.tsx`
 - Create: `apps/web/src/components/FFTPlot.tsx`
 
@@ -1859,6 +1903,7 @@ cd /home/tcollins/dev/prism/apps/web && npm install plotly.js-basic-dist react-p
 - [ ] **Step 2: Implement WaveformPlot**
 
 `apps/web/src/components/WaveformPlot.tsx`:
+
 ```tsx
 import { Box, Text } from '@chakra-ui/react';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -1905,6 +1950,7 @@ export function WaveformPlot({ artifactId }: { artifactId: string }) {
 - [ ] **Step 3: Implement FFTPlot**
 
 `apps/web/src/components/FFTPlot.tsx`:
+
 ```tsx
 import { Box, Text } from '@chakra-ui/react';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -1957,6 +2003,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 ### Task 7.2: RunDetailPage with test tree + plot panel
 
 **Files:**
+
 - Create: `apps/web/src/components/TestTree.tsx`
 - Create: `apps/web/src/pages/RunDetailPage.tsx`
 - Modify: `apps/web/src/App.tsx` (add `/runs/:id` route)
@@ -1964,6 +2011,7 @@ cd /home/tcollins/dev/prism && git add apps/web/ && git -c user.email=travisfcol
 - [ ] **Step 1: Implement TestTree**
 
 `apps/web/src/components/TestTree.tsx`:
+
 ```tsx
 import { Box, Stack, Text } from '@chakra-ui/react';
 
@@ -2035,6 +2083,7 @@ function SuiteNode({
 - [ ] **Step 2: Implement RunDetailPage**
 
 `apps/web/src/pages/RunDetailPage.tsx`:
+
 ```tsx
 import {
   Badge,
