@@ -8,6 +8,7 @@ import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
 import { TestTree } from '../components/TestTree';
 import { WaveformPlot } from '../components/WaveformPlot';
+import { pickInlineArtifact } from '../lib/inlineKinds';
 import { parseTestId } from '../lib/parseTestId';
 
 export function RunDetailPage() {
@@ -24,8 +25,9 @@ export function RunDetailPage() {
   const figureJson = caseQuery.data?.artifacts.find(
     (a) => a.filename.toLowerCase().endsWith('.json') && a.filename.toLowerCase().includes('spectrum'),
   );
+  const inlineArtifact = pickInlineArtifact(caseQuery.data?.artifacts ?? []);
   const otherArtifacts = (caseQuery.data?.artifacts ?? []).filter(
-    (a) => a !== waveform && a !== figureJson,
+    (a) => a !== waveform && a !== figureJson && a !== inlineArtifact,
   );
 
   return (
@@ -96,6 +98,13 @@ export function RunDetailPage() {
                     >
                       {caseQuery.data.failure_message}
                     </Box>
+                  )}
+                  {inlineArtifact && (
+                    <iframe
+                      src={`/api/v1/artifacts/${inlineArtifact.id}/raw`}
+                      title={inlineArtifact.filename}
+                      style={{ width: '100%', height: 600, border: 0 }}
+                    />
                   )}
                   {figureJson && <InlinePlotlyFigure artifactId={figureJson.id} />}
                   {waveform ? (
