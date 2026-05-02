@@ -49,7 +49,7 @@ _JUNIT = (
     b'<?xml version="1.0"?><testsuites>'
     b'<testsuite name="suite_x" tests="1" failures="0" errors="0" skipped="0">'
     b'<testcase classname="cls" name="case_a"/>'
-    b'</testsuite></testsuites>'
+    b"</testsuite></testsuites>"
 )
 
 
@@ -62,40 +62,59 @@ def _setup_run(session: Session) -> str:
 
 
 def test_legacy_archive_no_manifest_yields_null_manifest_kind(
-    session: Session, storage: ObjectStorage,
+    session: Session,
+    storage: ObjectStorage,
 ) -> None:
     run_id = _setup_run(session)
-    archive = _archive({
-        "suite_x__case_a__spectrum.html": b"<html/>",
-    })
-    ingest_run(IngestInputs(run_id=run_id, junit_xml=_JUNIT, archive=archive),
-               session=session, storage=storage)
+    archive = _archive(
+        {
+            "suite_x__case_a__spectrum.html": b"<html/>",
+        }
+    )
+    ingest_run(
+        IngestInputs(run_id=run_id, junit_xml=_JUNIT, archive=archive),
+        session=session,
+        storage=storage,
+    )
     rows = session.query(Artifact).all()
     # All artifacts should have manifest_kind = None (no manifest.json in archive)
     assert all(r.manifest_kind is None for r in rows)
 
 
 def test_v2_archive_with_manifest_kind_sets_manifest_kind(
-    session: Session, storage: ObjectStorage,
+    session: Session,
+    storage: ObjectStorage,
 ) -> None:
     run_id = _setup_run(session)
     manifest = {
-        "schema_version": 2, "run_meta": {}, "run_artifacts": [],
-        "cases": [{
-            "case_nodeid": "cls::case_a",
-            "artifacts": [{
-                "filename": "spectrum.html", "kind": "adi.iq",
-                "rel_path": "cases/cls__case_a/adi.iq/spectrum.html",
-                "size": 7,
-            }],
-        }],
+        "schema_version": 2,
+        "run_meta": {},
+        "run_artifacts": [],
+        "cases": [
+            {
+                "case_nodeid": "cls::case_a",
+                "artifacts": [
+                    {
+                        "filename": "spectrum.html",
+                        "kind": "adi.iq",
+                        "rel_path": "cases/cls__case_a/adi.iq/spectrum.html",
+                        "size": 7,
+                    }
+                ],
+            }
+        ],
     }
-    archive = _archive({
-        "manifest.json": json.dumps(manifest).encode("utf-8"),
-        "suite_x__case_a__adi.iq__spectrum.html": b"<html/>",
-    })
-    ingest_run(IngestInputs(run_id=run_id, junit_xml=_JUNIT, archive=archive),
-               session=session, storage=storage)
+    archive = _archive(
+        {
+            "manifest.json": json.dumps(manifest).encode("utf-8"),
+            "suite_x__case_a__adi.iq__spectrum.html": b"<html/>",
+        }
+    )
+    ingest_run(
+        IngestInputs(run_id=run_id, junit_xml=_JUNIT, archive=archive),
+        session=session,
+        storage=storage,
+    )
     fname = "suite_x__case_a__adi.iq__spectrum.html"
     rows = session.query(Artifact).filter_by(filename=fname).all()
     assert len(rows) == 1
