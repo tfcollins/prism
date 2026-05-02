@@ -1,6 +1,6 @@
 import { Box, Text } from '@chakra-ui/react';
-import Plotly from 'plotly.js-basic-dist';
 import type { Data, Layout } from 'plotly.js';
+import Plotly from 'plotly.js-basic-dist';
 import createPlotlyComponent from 'react-plotly.js/factory';
 
 import { useArtifactJson } from '../api/queries';
