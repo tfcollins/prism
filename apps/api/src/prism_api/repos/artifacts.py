@@ -23,6 +23,7 @@ class ArtifactRepo:
         content_hash: str,
         storage_key: str,
         metadata: dict[str, Any] | None = None,
+        manifest_kind: str | None = None,
     ) -> Artifact:
         artifact = Artifact(
             owner_type=owner_type,
@@ -33,6 +34,7 @@ class ArtifactRepo:
             content_hash=content_hash,
             storage_key=storage_key,
             metadata_json=metadata or {},
+            manifest_kind=manifest_kind,
         )
         self._session.add(artifact)
         self._session.flush()
