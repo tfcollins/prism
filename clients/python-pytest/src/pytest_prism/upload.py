@@ -117,6 +117,17 @@ def upload(
     junit_bytes = (out_dir.root / "junit.xml").read_bytes()
     archive_bytes = _build_artifacts_zip(out_dir.root)
 
+    # The plugin records started_at into run_meta.json at sessionfinish; pull it
+    # through so the run lands with a real timestamp and shows up in
+    # window-scoped dashboard aggregations.
+    started_at: str | None = None
+    run_meta_path = out_dir.root / "run_meta.json"
+    if run_meta_path.exists():
+        try:
+            started_at = _json.loads(run_meta_path.read_text()).get("started_at")
+        except (ValueError, OSError):
+            started_at = None
+
     client = PrismClient(cfg.upload_url)
     try:
         client.login(cfg.upload_email, cfg.upload_password)
@@ -130,6 +141,7 @@ def upload(
             junit_xml=junit_bytes,
             archive_zip=archive_bytes,
             tags=dict(cfg.user_tags),
+            started_at=started_at,
         )
     except RuntimeError as exc:
         raise UploadError(f"run create failed: {exc}") from exc

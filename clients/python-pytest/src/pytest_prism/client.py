@@ -124,6 +124,7 @@ class PrismClient:
         junit_xml: bytes,
         archive_zip: bytes | None = None,
         tags: dict[str, str] | None = None,
+        started_at: str | None = None,
     ) -> dict[str, Any]:
         """POST /api/v1/runs with a hand-built multipart body.
 
@@ -148,7 +149,13 @@ class PrismClient:
             parts.append(content)
             parts.append(b"\r\n")
 
-        metadata = {"project_slug": project_slug, "name": run_name, "tags": tags or {}}
+        metadata: dict[str, Any] = {
+            "project_slug": project_slug,
+            "name": run_name,
+            "tags": tags or {},
+        }
+        if started_at is not None:
+            metadata["started_at"] = started_at
         _add_field("metadata", json.dumps(metadata))
         _add_file("junit", "junit.xml", "application/xml", junit_xml)
         if archive_zip is not None:

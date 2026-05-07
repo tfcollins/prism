@@ -100,6 +100,50 @@ def test_fail_on_upload_error_propagates(
         upload(od, cfg, poll_timeout_s=2.0, poll_interval_s=0.05)
 
 
+def test_started_at_from_run_meta_is_forwarded_in_metadata(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]
+) -> None:
+    """upload() reads run_meta.json's started_at and includes it in the POST metadata."""
+    import json as _json
+
+    url, record = fake_prism
+    od = OutputDir(tmp_path / "out")
+    od.initialize()
+    (od.root / "junit.xml").write_text(
+        '<testsuite name="s"><testcase classname="c" name="a"/></testsuite>'
+    )
+    od.finalize(run_meta={"plugin_version": "0.1.0", "started_at": "2026-05-07T12:00:00+00:00"})
+
+    cfg = _cfg(url)
+    upload(od, cfg, poll_timeout_s=2.0, poll_interval_s=0.05)
+
+    body = record.multipart_bodies[0]
+    marker = b'name="metadata"\r\n\r\n'
+    start = body.index(marker) + len(marker)
+    end = body.index(b"\r\n--", start)
+    meta = _json.loads(body[start:end].decode("utf-8"))
+    assert meta["started_at"] == "2026-05-07T12:00:00+00:00"
+
+
+def test_started_at_omitted_when_run_meta_missing_field(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]
+) -> None:
+    """Legacy run_meta.json without started_at uploads cleanly with no started_at field."""
+    import json as _json
+
+    url, record = fake_prism
+    od = _seeded_out(tmp_path)  # this helper finalizes with no started_at in run_meta
+    cfg = _cfg(url)
+    upload(od, cfg, poll_timeout_s=2.0, poll_interval_s=0.05)
+
+    body = record.multipart_bodies[0]
+    marker = b'name="metadata"\r\n\r\n'
+    start = body.index(marker) + len(marker)
+    end = body.index(b"\r\n--", start)
+    meta = _json.loads(body[start:end].decode("utf-8"))
+    assert "started_at" not in meta
+
+
 def test_polls_until_ready(tmp_path: Path, fake_prism: tuple[str, FakePrismRecord]) -> None:
     """Status starts pending, then flips to ready on a later poll."""
     import threading
