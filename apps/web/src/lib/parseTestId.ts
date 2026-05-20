@@ -42,8 +42,7 @@ export function parseTestId(name: string): ParsedTestId {
   for (let i = 0; i < positions.length; i++) {
     const start = positions[i].idx + positions[i].key.length + 1; // skip "key="
     // -1 to drop the `-` separator preceding the next key, when there is one.
-    const end =
-      i + 1 < positions.length ? positions[i + 1].idx - 1 : inside.length;
+    const end = i + 1 < positions.length ? positions[i + 1].idx - 1 : inside.length;
     params.push({ key: positions[i].key, value: inside.slice(start, end) });
   }
   return { baseName, params, raw: name };

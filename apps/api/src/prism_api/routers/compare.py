@@ -8,8 +8,14 @@ from prism_api.models import ArtifactKind
 from prism_api.models.user import User
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.runs import RunRepo
-from prism_api.repos.suites import CaseRepo, SuiteRepo
-from prism_api.schemas.compare import CaseDiff, CompareRequest, CompareResponse, RunHeader
+from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
+from prism_api.schemas.compare import (
+    CaseDiff,
+    CompareRequest,
+    CompareResponse,
+    MeasurementDiff,
+    RunHeader,
+)
 
 router = APIRouter(prefix="/api/v1/compare", tags=["compare"])
 
@@ -96,4 +102,40 @@ def compare_runs(
     else:
         pr_delta = (runs[-1].pass_count / last_total) - (runs[0].pass_count / first_total)
 
-    return CompareResponse(runs=runs, cases=cases, pass_rate_delta=pr_delta)
+    measurement_diffs = _measurement_diffs(MeasurementRepo(session), body.run_ids)
+
+    return CompareResponse(
+        runs=runs, cases=cases, pass_rate_delta=pr_delta, measurement_diffs=measurement_diffs
+    )
+
+
+def _measurement_diffs(repo: MeasurementRepo, run_ids: list[str]) -> list[MeasurementDiff]:
+    """Per-measurement values aligned across runs, with a first→last delta.
+
+    When a measurement name occurs in more than one case within a run, the first
+    occurrence (by name-sorted order) is used — compare is a run-level summary,
+    not a per-case view.
+    """
+    # name -> {unit, per-run value}
+    per_run: list[dict[str, float]] = []
+    units: dict[str, str | None] = {}
+    names: list[str] = []
+    seen: set[str] = set()
+    for run_id in run_ids:
+        values: dict[str, float] = {}
+        for m in repo.list_by_run(run_id):
+            if m.name not in values:  # keep first occurrence
+                values[m.name] = m.value
+                units.setdefault(m.name, m.unit)
+            if m.name not in seen:
+                seen.add(m.name)
+                names.append(m.name)
+        per_run.append(values)
+
+    diffs: list[MeasurementDiff] = []
+    for name in sorted(names):
+        row: list[float | None] = [run_values.get(name) for run_values in per_run]
+        first, last = row[0], row[-1]
+        delta = last - first if first is not None and last is not None else None
+        diffs.append(MeasurementDiff(name=name, unit=units.get(name), values=row, delta=delta))
+    return diffs

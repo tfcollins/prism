@@ -32,6 +32,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import NamedTuple
 
 # The shared client lives next to this file; use a path-relative import so the
 # script works when invoked from anywhere (e.g. `python3 /repo/scripts/...`).
@@ -55,6 +56,76 @@ def _parse_tag(raw: str) -> tuple[str, str]:
     if not k:
         raise argparse.ArgumentTypeError(f"--tag key is empty in {raw!r}")
     return k, v
+
+
+class Measurement(NamedTuple):
+    name: str
+    value: float
+    unit: str | None
+    spec_min: float | None
+    spec_max: float | None
+
+
+def _parse_measurement(raw: str) -> Measurement:
+    """Parse ``name=value[:unit[:min[:max]]]`` (empty trailing fields allowed)."""
+    if "=" not in raw:
+        raise argparse.ArgumentTypeError(f"--measurement expects name=value, got {raw!r}")
+    name, _, rest = raw.partition("=")
+    name = name.strip()
+    if not name:
+        raise argparse.ArgumentTypeError(f"--measurement name is empty in {raw!r}")
+    fields = rest.split(":")
+    try:
+        value = float(fields[0])
+    except (IndexError, ValueError):
+        raise argparse.ArgumentTypeError(
+            f"--measurement value must be numeric in {raw!r}"
+        ) from None
+
+    def _opt_float(i: int) -> float | None:
+        if len(fields) <= i or fields[i].strip() == "":
+            return None
+        try:
+            return float(fields[i])
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"--measurement field {i} must be numeric in {raw!r}"
+            ) from None
+
+    unit = fields[1].strip() if len(fields) > 1 and fields[1].strip() else None
+    return Measurement(name, value, unit, _opt_float(2), _opt_float(3))
+
+
+def inject_measurements(junit_bytes: bytes, measurements: list[Measurement]) -> bytes:
+    """Add measurement <property> entries to the JUnit's single testcase.
+
+    Measurements attach to a test case in Prism, so this requires the JUnit to
+    contain exactly one <testcase> (the canonical one-suite-one-case shape).
+    With zero or several cases it raises ValueError — emit the measurements from
+    your test instead (pytest's record_property / pytest-prism record_measurement).
+    """
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(junit_bytes)
+    cases = root.findall(".//testcase")
+    if len(cases) != 1:
+        raise ValueError(
+            f"--measurement needs a JUnit with exactly one <testcase>, found {len(cases)}; "
+            "record measurements in your test instead"
+        )
+    case = cases[0]
+    props = case.find("properties")
+    if props is None:
+        props = ET.SubElement(case, "properties")
+    for m in measurements:
+        ET.SubElement(props, "property", name=m.name, value=repr(m.value))
+        if m.unit is not None:
+            ET.SubElement(props, "property", name=f"{m.name}__unit", value=m.unit)
+        if m.spec_min is not None:
+            ET.SubElement(props, "property", name=f"{m.name}__min", value=repr(m.spec_min))
+        if m.spec_max is not None:
+            ET.SubElement(props, "property", name=f"{m.name}__max", value=repr(m.spec_max))
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -104,6 +175,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Optional .zip of measurement artifacts to upload alongside the JUnit.",
+    )
+    p.add_argument(
+        "--measurement",
+        action="append",
+        type=_parse_measurement,
+        default=[],
+        metavar="name=value[:unit[:min[:max]]]",
+        help="Repeatable. Inject a numeric measurement into the JUnit's single "
+        "testcase (e.g. channel_power_dBm=-10.2:dBm::-9.0). Becomes a Prism "
+        "Measurement with pass/fail margin.",
     )
     p.add_argument(
         "--auto-create-project",
@@ -192,6 +273,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Read payloads ---------------------------------------------------- #
     junit_bytes = args.junit.read_bytes()
+    if args.measurement:
+        try:
+            junit_bytes = inject_measurements(junit_bytes, args.measurement)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return EXIT_BAD_INPUT
+        if args.verbose:
+            say(f"→ injected {len(args.measurement)} measurement(s) into the JUnit")
     archive_bytes = args.archive.read_bytes() if args.archive is not None else None
     tags = dict(args.tag)
 

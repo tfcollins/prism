@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { useCompare } from '../api/queries';
-import type { CaseDiff } from '../api/types';
+import type { CaseDiff, CompareResponse } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { OverlayFFTPlot } from '../components/OverlayFFTPlot';
 import { type OverlayTrace, OverlayWaveformPlot } from '../components/OverlayWaveformPlot';
+import { formatEng } from '../lib/measurement';
 
 export function ComparePage() {
   const [params] = useSearchParams();
@@ -51,6 +52,7 @@ export function ComparePage() {
                 : `${(q.data.pass_rate_delta * 100).toFixed(1)}%`}
             </Text>
           </Box>
+          <MeasurementDiffsTable data={q.data} />
           <Table.Root variant="outline" size="sm">
             <Table.Header>
               <Table.Row>
@@ -152,5 +154,64 @@ export function ComparePage() {
         </Stack>
       )}
     </AppShell>
+  );
+}
+
+function MeasurementDiffsTable({ data }: { data: CompareResponse }) {
+  // Largest absolute change first — that's the regression hunter's first look.
+  const rows = data.measurement_diffs
+    .slice()
+    .sort((a, b) => Math.abs(b.delta ?? 0) - Math.abs(a.delta ?? 0));
+  if (rows.length === 0) return null;
+  return (
+    <Box>
+      <Text
+        fontSize="10px"
+        textTransform="uppercase"
+        letterSpacing="1px"
+        color="var(--prism-text-faint)"
+        mb={1}
+      >
+        Measurement deltas
+      </Text>
+      <Table.Root variant="outline" size="sm">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Measurement</Table.ColumnHeader>
+            {data.runs.map((r) => (
+              <Table.ColumnHeader key={r.id} textAlign="end">
+                {r.name}
+              </Table.ColumnHeader>
+            ))}
+            <Table.ColumnHeader textAlign="end">Δ (first→last)</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {rows.map((d) => (
+            <Table.Row key={d.name}>
+              <Table.Cell fontWeight="600">{d.name}</Table.Cell>
+              {d.values.map((v, i) => (
+                <Table.Cell key={i} textAlign="end" fontFamily="mono">
+                  {v === null ? '—' : formatEng(v, d.unit)}
+                </Table.Cell>
+              ))}
+              <Table.Cell
+                textAlign="end"
+                fontFamily="mono"
+                color={
+                  d.delta === null
+                    ? 'var(--prism-text-faint)'
+                    : d.delta === 0
+                      ? 'var(--prism-text-subtle)'
+                      : 'var(--prism-text)'
+                }
+              >
+                {d.delta === null ? '—' : `${d.delta >= 0 ? '+' : ''}${formatEng(d.delta, d.unit)}`}
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Box>
   );
 }

@@ -19,7 +19,8 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
 
   function toggle(id: string) {
     const next = new Set(selected);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelected(next);
   }
 
@@ -58,7 +59,14 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
                 </Checkbox.Root>
               </Table.Cell>
               <Table.Cell>
-                <Box display="inline-block" w="8px" h="8px" borderRadius="50%" bg={STATUS_COLOR[r.status] ?? '#a0aec0'} mr={2} />
+                <Box
+                  display="inline-block"
+                  w="8px"
+                  h="8px"
+                  borderRadius="50%"
+                  bg={STATUS_COLOR[r.status] ?? '#a0aec0'}
+                  mr={2}
+                />
                 {r.status}
               </Table.Cell>
               <Table.Cell>
@@ -102,7 +110,13 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
               </Table.Cell>
               <Table.Cell>
                 {r.tags.map((t) => (
-                  <Text as="span" key={`${t.key}:${t.value}`} mr={2} fontFamily="mono" fontSize="xs">
+                  <Text
+                    as="span"
+                    key={`${t.key}:${t.value}`}
+                    mr={2}
+                    fontFamily="mono"
+                    fontSize="xs"
+                  >
                     {t.key}={t.value}
                   </Text>
                 ))}

@@ -68,9 +68,7 @@ describe('summarizeParams', () => {
   });
 
   it('truncates long values with an ellipsis', () => {
-    const summary = summarizeParams([
-      { key: 'param_set', value: 'a'.repeat(100) },
-    ]);
+    const summary = summarizeParams([{ key: 'param_set', value: 'a'.repeat(100) }]);
     expect(summary.length).toBeLessThanOrEqual(80);
     expect(summary).toContain('…');
   });

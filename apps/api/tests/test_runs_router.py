@@ -87,3 +87,57 @@ def test_upload_unknown_project(client: TestClient, seed_admin, patch_ingest) ->
         headers={"X-Prism-Csrf": csrf},
     )
     assert resp.status_code == 404
+
+
+def _upload_min(client: TestClient, csrf: str, name: str) -> str:
+    junit = (Path(__file__).parent / "fixtures" / "sample-junit.xml").read_bytes()
+    resp = client.post(
+        "/api/v1/runs",
+        files={"junit": ("junit.xml", junit, "application/xml")},
+        data={"metadata": json.dumps({"project_slug": "audio", "name": name})},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+def test_set_and_clear_calibration_run(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    _seed_project(client)
+    meas_id = _upload_min(client, csrf, "measurement")
+    cal_id = _upload_min(client, csrf, "calibration")
+
+    r = client.patch(
+        f"/api/v1/runs/{meas_id}/calibration",
+        json={"calibration_run_id": cal_id},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["calibration_run_id"] == cal_id
+    assert body["calibration_run_name"] == "calibration"
+
+    # detail endpoint reflects it
+    detail = client.get(f"/api/v1/runs/{meas_id}").json()
+    assert detail["calibration_run_id"] == cal_id
+
+    # clear it
+    r = client.patch(
+        f"/api/v1/runs/{meas_id}/calibration",
+        json={"calibration_run_id": None},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 200
+    assert r.json()["calibration_run_id"] is None
+
+
+def test_calibration_self_reference_rejected(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    _seed_project(client)
+    run_id = _upload_min(client, csrf, "run")
+    r = client.patch(
+        f"/api/v1/runs/{run_id}/calibration",
+        json={"calibration_run_id": run_id},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 400

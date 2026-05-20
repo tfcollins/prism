@@ -58,6 +58,38 @@ class SessionHook(Protocol):
     def session_post(self, ctx: SessionContext) -> Mapping[str, Any]: ...
 
 
+def record_measurement(
+    name: str,
+    value: float,
+    *,
+    unit: str | None = None,
+    spec_min: float | None = None,
+    spec_max: float | None = None,
+) -> None:
+    """Record a numeric measurement on the current test.
+
+    Writes the value (and optional unit / spec limits) into the test's JUnit
+    ``<properties>`` using the convention Prism's ingest understands
+    (``{name}``, ``{name}__unit``, ``{name}__min``, ``{name}__max``). Prism
+    turns these into first-class Measurement rows with pass/fail margins.
+
+    No-op when called outside a running test. Must be called during the test
+    body (not in ``makereport``), so the values are captured before pytest
+    serialises the JUnit report.
+    """
+    item = _current_item()
+    if item is None:
+        return
+    props: list[tuple[str, object]] = item.user_properties
+    props.append((name, value))
+    if unit is not None:
+        props.append((f"{name}__unit", unit))
+    if spec_min is not None:
+        props.append((f"{name}__min", spec_min))
+    if spec_max is not None:
+        props.append((f"{name}__max", spec_max))
+
+
 def attach(kind: str, payload: Mapping[str, Any]) -> None:
     """Attach a payload to the current pytest item.
 
@@ -101,4 +133,5 @@ __all__ = [
     "SessionContext",
     "SessionHook",
     "attach",
+    "record_measurement",
 ]

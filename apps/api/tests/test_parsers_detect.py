@@ -12,6 +12,11 @@ def test_waveform_csv() -> None:
     assert detect_kind("sine.csv", b"0.0\n0.1\n0.2\n") == ArtifactKind.WAVEFORM_CSV
 
 
+def test_touchstone() -> None:
+    assert detect_kind("filter.s2p", b"# MHZ S MA R 50\n") == ArtifactKind.SPECTRUM_TOUCHSTONE
+    assert detect_kind("ant.s1p", b"1 0.5 0\n") == ArtifactKind.SPECTRUM_TOUCHSTONE
+
+
 def test_waveform_npy() -> None:
     # magic: \x93NUMPY
     assert detect_kind("wave.npy", b"\x93NUMPY\x01\x00") == ArtifactKind.WAVEFORM_NPY

@@ -14,17 +14,37 @@ from prism_api.config import Settings
 from prism_api.deps import current_user, get_settings_dep, session_dep
 from prism_api.dsp.downsample import downsample_for_plot
 from prism_api.dsp.fft import FFTParams, compute_fft, params_hash
+from prism_api.dsp.spectrum_metrics import channel_metrics, find_spurs
 from prism_api.models import ArtifactKind, DerivedKind
 from prism_api.models.artifact import Artifact
 from prism_api.models.user import User
+from prism_api.parsers.spectrogram import load_spectrogram
+from prism_api.parsers.spectrum import Spectrum, load_spectrum
+from prism_api.parsers.touchstone import load_touchstone
 from prism_api.parsers.waveform import load_waveform
 from prism_api.repos.artifacts import ArtifactRepo, DerivedRepo
-from prism_api.schemas.artifact import ArtifactOut, FFTResponse, WaveformResponse
+from prism_api.schemas.artifact import (
+    ArtifactOut,
+    ChannelMetricsResponse,
+    FFTResponse,
+    SpectrogramResponse,
+    SpectrumResponse,
+    SpurOut,
+    SpursResponse,
+    WaveformResponse,
+)
 from prism_api.storage import build_storage
 
 router = APIRouter(prefix="/api/v1/artifacts", tags=["artifacts"])
 
 _WAVEFORM_KINDS = {ArtifactKind.WAVEFORM_CSV, ArtifactKind.WAVEFORM_NPY, ArtifactKind.WAVEFORM_HDF5}
+_SPECTRUM_KINDS = {ArtifactKind.SPECTRUM_CSV, ArtifactKind.SPECTRUM_TOUCHSTONE}
+
+
+def _parse_spectrum(kind: ArtifactKind, data: bytes) -> Spectrum:
+    if kind == ArtifactKind.SPECTRUM_TOUCHSTONE:
+        return load_touchstone(data)
+    return load_spectrum(data)
 
 
 def _fetch_artifact_or_404(session: Session, artifact_id: str) -> Artifact:
@@ -123,6 +143,111 @@ def get_waveform(
         sample_rate=wf.sample_rate,
         stride=ds.stride,
         total_samples=int(wf.samples.size),
+    )
+
+
+@router.get("/{artifact_id}/spectrum", response_model=SpectrumResponse)
+def get_spectrum(
+    artifact_id: str,
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> SpectrumResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind not in _SPECTRUM_KINDS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a spectrum"
+        )
+    storage = build_storage(settings)
+    data = storage.get_bytes(a.storage_key)
+    spec = _parse_spectrum(a.kind, data)
+    return SpectrumResponse(
+        frequencies=[float(x) for x in spec.frequencies],
+        powers=[float(x) for x in spec.powers],
+        unit=spec.unit,
+        metadata=spec.metadata,
+    )
+
+
+@router.get("/{artifact_id}/spectrogram", response_model=SpectrogramResponse)
+def get_spectrogram(
+    artifact_id: str,
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> SpectrogramResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind != ArtifactKind.SPECTROGRAM:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a spectrogram"
+        )
+    data = build_storage(settings).get_bytes(a.storage_key)
+    sg = load_spectrogram(data)
+    return SpectrogramResponse(
+        frequencies=[float(x) for x in sg.frequencies],
+        times=[float(x) for x in sg.times],
+        powers=[[float(v) for v in row] for row in sg.powers],
+        unit=sg.unit,
+        metadata=sg.metadata,
+    )
+
+
+def _load_spectrum_or_400(session: Session, settings: Settings, artifact_id: str):  # type: ignore[no-untyped-def]
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind not in _SPECTRUM_KINDS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a spectrum"
+        )
+    data = build_storage(settings).get_bytes(a.storage_key)
+    return _parse_spectrum(a.kind, data)
+
+
+@router.get("/{artifact_id}/channel-power", response_model=ChannelMetricsResponse)
+def get_channel_power(
+    artifact_id: str,
+    center: float = Query(...),
+    channel_bw: float = Query(..., gt=0),
+    offset: float | None = Query(default=None, gt=0),
+    adjacent_bw: float | None = Query(default=None, gt=0),
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> ChannelMetricsResponse:
+    spec = _load_spectrum_or_400(session, settings, artifact_id)
+    m = channel_metrics(
+        spec.frequencies,
+        spec.powers,
+        center=center,
+        channel_bw=channel_bw,
+        offset=offset,
+        adjacent_bw=adjacent_bw,
+    )
+    return ChannelMetricsResponse(
+        channel_power_dbm=m.channel_power_dbm,
+        acpr_lower_dbc=m.acpr_lower_dbc,
+        acpr_upper_dbc=m.acpr_upper_dbc,
+        obw_hz=m.obw_hz,
+        channel_band=m.channel_band,
+        lower_band=m.lower_band,
+        upper_band=m.upper_band,
+    )
+
+
+@router.get("/{artifact_id}/spurs", response_model=SpursResponse)
+def get_spurs(
+    artifact_id: str,
+    margin_db: float = Query(default=20.0, ge=0),
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> SpursResponse:
+    spec = _load_spectrum_or_400(session, settings, artifact_id)
+    floor = float(np.median(spec.powers)) if spec.powers.size else 0.0
+    spurs = find_spurs(spec.frequencies, spec.powers, margin_db=margin_db)
+    return SpursResponse(
+        margin_db=margin_db,
+        noise_floor_dbm=floor,
+        spurs=[SpurOut(frequency=s.frequency, power=s.power) for s in spurs],
     )
 
 

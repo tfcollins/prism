@@ -59,6 +59,34 @@ def test_compare_two_runs(client: TestClient, seed_admin, patch_ingest) -> None:
     assert statuses[("dsp", "other")] == ["pass", "fail"]
 
 
+def _junit_cp(value: float) -> bytes:
+    return f"""<?xml version="1.0"?><testsuites>
+<testsuite name="rf" tests="1" failures="0" time="0.1">
+<testcase classname="acpr" name="lower" time="0.05">
+<properties>
+<property name="channel_power_dBm" value="{value}"/>
+<property name="channel_power_dBm__unit" value="dBm"/>
+</properties>
+</testcase>
+</testsuite></testsuites>""".encode()
+
+
+def test_compare_includes_measurement_diffs(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    a = _upload(client, csrf, "a", _junit_cp(-10.0))
+    b = _upload(client, csrf, "b", _junit_cp(-8.5))
+
+    body = client.post(
+        "/api/v1/compare", json={"run_ids": [a, b]}, headers={"X-Prism-Csrf": csrf}
+    ).json()
+    diffs = {d["name"]: d for d in body["measurement_diffs"]}
+    cp = diffs["channel_power_dBm"]
+    assert cp["unit"] == "dBm"
+    assert cp["values"] == [-10.0, -8.5]
+    assert cp["delta"] == 1.5
+
+
 def test_compare_rejects_single_run(client: TestClient, seed_admin) -> None:
     csrf = _login(client)
     resp = client.post(

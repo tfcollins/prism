@@ -7,6 +7,7 @@ from pytest_prism.api import (
     SessionContext,
     SessionHook,
     attach,
+    record_measurement,
 )
 
 __version__ = "0.1.0"
@@ -19,4 +20,5 @@ __all__ = [
     "SessionHook",
     "__version__",
     "attach",
+    "record_measurement",
 ]

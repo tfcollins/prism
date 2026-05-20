@@ -35,6 +35,9 @@ class TestRun(Base, TimestampMixin):
     created_by: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+    calibration_run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("test_runs.id", ondelete="SET NULL"), nullable=True
+    )
 
 
 class RunTag(Base):

@@ -83,10 +83,42 @@ function PrismMark({ size }: { size: number }) {
         strokeLinejoin="round"
       />
       {/* refracted spectrum, top to bottom: red, yellow, green, blue */}
-      <line x1="42" y1="32" x2="62" y2="22" stroke="#f56565" strokeWidth="2" strokeLinecap="round" />
-      <line x1="44" y1="35" x2="62" y2="32" stroke="#ecc94b" strokeWidth="2" strokeLinecap="round" />
-      <line x1="46" y1="38" x2="62" y2="42" stroke="#48bb78" strokeWidth="2" strokeLinecap="round" />
-      <line x1="48" y1="41" x2="62" y2="52" stroke="#4299e1" strokeWidth="2" strokeLinecap="round" />
+      <line
+        x1="42"
+        y1="32"
+        x2="62"
+        y2="22"
+        stroke="#f56565"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="44"
+        y1="35"
+        x2="62"
+        y2="32"
+        stroke="#ecc94b"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="46"
+        y1="38"
+        x2="62"
+        y2="42"
+        stroke="#48bb78"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="48"
+        y1="41"
+        x2="62"
+        y2="52"
+        stroke="#4299e1"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

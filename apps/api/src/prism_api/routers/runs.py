@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -12,19 +13,25 @@ from prism_api.config import Settings
 from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models.run import RunStatus
 from prism_api.models.user import User
+from prism_api.reports.run_report import ReportMeasurement, RunReport, build_run_report_pdf
 from prism_api.repos.artifacts import ArtifactRepo
+from prism_api.repos.audit import AuditRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
-from prism_api.repos.suites import SuiteRepo
+from prism_api.repos.specs import SpecRepo
+from prism_api.repos.suites import MeasurementRepo, SuiteRepo
 from prism_api.schemas.artifact import ArtifactOut
+from prism_api.schemas.case import measurement_margin
 from prism_api.schemas.run import (
     CreateRunMetadata,
     RunDetail,
     RunListItem,
     RunOut,
     RunTagOut,
+    SetCalibrationRequest,
     SuiteSummary,
 )
+from prism_api.schemas.spec import resolve_spec
 from prism_api.storage import ObjectStorage, build_storage
 from prism_api.worker.tasks import run_ingest
 
@@ -76,6 +83,14 @@ async def upload_run(
     )
     for k, v in meta.tags.items():
         runs.add_tag(run.id, k, v)
+    AuditRepo(session).record(
+        user_id=current.id,
+        action="run.upload",
+        project_id=project.id,
+        target_type="run",
+        target_id=run.id,
+        detail={"name": meta.name},
+    )
     session.flush()
 
     # 4) Read payloads
@@ -106,6 +121,8 @@ async def upload_run(
 def list_runs(
     project: str = Query(..., description="Project slug"),
     status_: str | None = Query(default=None, alias="status"),
+    tag_key: str | None = Query(default=None),
+    tag_value: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
@@ -115,7 +132,13 @@ def list_runs(
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"project '{project}' not found")
     runs = RunRepo(session)
     suites_repo = SuiteRepo(session)
-    items = runs.list_with_filters(project_id=proj.id, status=status_, limit=limit)
+    items = runs.list_with_filters(
+        project_id=proj.id,
+        status=status_,
+        tag_key=tag_key,
+        tag_value=tag_value,
+        limit=limit,
+    )
     result: list[RunListItem] = []
     for r in items:
         counts = runs.aggregate_counts_by_run(r.id)
@@ -161,17 +184,58 @@ def get_run(
         for s in SuiteRepo(session).list_by_run(run.id)
     ]
     tags = [RunTagOut(key=t.key, value=t.value) for t in runs.tags_for(run.id)]
+    project = ProjectRepo(session).get_by_id(run.project_id)
+    cal = runs.get_by_id(run.calibration_run_id) if run.calibration_run_id else None
     return RunDetail(
         id=run.id,
         project_id=run.project_id,
+        project_slug=project.slug if project else None,
         name=run.name,
         status=run.status.value,
         started_at=run.started_at,
         finished_at=run.finished_at,
         junit_artifact_id=run.junit_artifact_id,
+        calibration_run_id=run.calibration_run_id,
+        calibration_run_name=cal.name if cal else None,
         tags=tags,
         suites=suites,
     )
+
+
+@router.patch("/{run_id}/calibration", response_model=RunDetail)
+def set_calibration(
+    run_id: str,
+    body: SetCalibrationRequest,
+    user: User = Depends(current_user),
+    __: None = Depends(csrf_protect),
+    session: Session = Depends(session_dep),
+) -> RunDetail:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    cal_id = body.calibration_run_id
+    if cal_id is not None:
+        if cal_id == run_id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "a run cannot calibrate itself")
+        cal = runs.get_by_id(cal_id)
+        if cal is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "calibration run not found")
+        if cal.project_id != run.project_id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "calibration run must be in the same project"
+            )
+    runs.set_calibration_run(run_id, cal_id)
+    AuditRepo(session).record(
+        user_id=user.id,
+        action="run.set_calibration",
+        project_id=run.project_id,
+        target_type="run",
+        target_id=run_id,
+        detail={"calibration_run_id": cal_id},
+    )
+    session.commit()
+    return get_run(run_id, user, session)
 
 
 @router.get("/{run_id}/artifacts", response_model=list[ArtifactOut])
@@ -201,3 +265,62 @@ def list_run_artifacts(
         )
         for a in arts
     ]
+
+
+@router.get("/{run_id}/report.pdf")
+def run_report(
+    run_id: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> Response:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    project = ProjectRepo(session).get_by_id(run.project_id)
+    counts = runs.aggregate_counts_by_run(run.id)
+    tags = {t.key: t.value for t in runs.tags_for(run.id)}
+
+    spec_map = SpecRepo(session).map_for_project(run.project_id)
+    measurements: list[ReportMeasurement] = []
+    for m in MeasurementRepo(session).list_by_run(run.id):
+        ps = spec_map.get(m.name)
+        smin, smax = resolve_spec(
+            m.spec_min, m.spec_max, ps.spec_min if ps else None, ps.spec_max if ps else None
+        )
+        margin = measurement_margin(m.value, smin, smax)
+        measurements.append(
+            ReportMeasurement(
+                name=m.name,
+                value=m.value,
+                unit=m.unit,
+                spec_min=smin,
+                spec_max=smax,
+                in_spec=None if margin is None else margin >= 0,
+                margin=margin,
+            )
+        )
+
+    junit_sha: str | None = None
+    if run.junit_artifact_id:
+        art = ArtifactRepo(session).get_by_id(run.junit_artifact_id)
+        junit_sha = art.content_hash if art else None
+
+    pdf_bytes = build_run_report_pdf(
+        RunReport(
+            run_name=run.name,
+            project_name=project.name if project else run.project_id,
+            status=run.status.value,
+            tags=tags,
+            pass_count=counts["pass_count"],
+            fail_count=counts["fail_count"],
+            measurements=measurements,
+            junit_sha=junit_sha,
+        )
+    )
+    filename = f"{run.name}-report.pdf".replace("/", "_").replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

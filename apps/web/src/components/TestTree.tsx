@@ -212,11 +212,7 @@ function CaseRow({
         bg: selectedCaseId === c.id ? 'var(--prism-bg-sel)' : 'var(--prism-bg-hover)',
       }}
       fontSize="xs"
-      color={
-        selectedCaseId === c.id
-          ? 'var(--prism-sidebar-active-fg)'
-          : 'var(--prism-text-muted)'
-      }
+      color={selectedCaseId === c.id ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-muted)'}
       title={c.name}
       display="flex"
       alignItems="center"

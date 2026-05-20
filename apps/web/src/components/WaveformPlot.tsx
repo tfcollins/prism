@@ -22,7 +22,9 @@ export function WaveformPlot({ artifactId }: { artifactId: string }) {
   return (
     <Box>
       <Plot
-        data={[{ x, y: samples, type: 'scatter', mode: 'lines', line: { color: '#63b3ed', width: 1 } }]}
+        data={[
+          { x, y: samples, type: 'scatter', mode: 'lines', line: { color: '#63b3ed', width: 1 } },
+        ]}
         layout={{
           paper_bgcolor: c.paper,
           plot_bgcolor: c.plot,

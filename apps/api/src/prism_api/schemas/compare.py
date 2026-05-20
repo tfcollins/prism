@@ -22,7 +22,15 @@ class RunHeader(BaseModel):
     fail_count: int
 
 
+class MeasurementDiff(BaseModel):
+    name: str
+    unit: str | None = None
+    values: list[float | None]  # one per requested run, None = measurement absent in that run
+    delta: float | None = None  # last - first when both present, else None
+
+
 class CompareResponse(BaseModel):
     runs: list[RunHeader]
     cases: list[CaseDiff]
     pass_rate_delta: float | None  # (run[-1] - run[0]) / total, or None if zero divides
+    measurement_diffs: list[MeasurementDiff] = Field(default_factory=list)

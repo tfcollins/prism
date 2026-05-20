@@ -52,11 +52,14 @@ export interface SuiteSummary {
 export interface RunDetail {
   id: string;
   project_id: string;
+  project_slug: string | null;
   name: string;
   status: RunStatus;
   started_at: string | null;
   finished_at: string | null;
   junit_artifact_id: string | null;
+  calibration_run_id: string | null;
+  calibration_run_name: string | null;
   tags: RunTag[];
   suites: SuiteSummary[];
 }
@@ -79,6 +82,16 @@ export interface CaseArtifact {
   size_bytes: number;
 }
 
+export interface Measurement {
+  name: string;
+  value: number;
+  unit: string | null;
+  spec_min: number | null;
+  spec_max: number | null;
+  in_spec: boolean | null;
+  margin: number | null;
+}
+
 export interface CaseDetail {
   id: string;
   suite_id: string;
@@ -89,6 +102,7 @@ export interface CaseDetail {
   failure_message: string | null;
   failure_trace: string | null;
   artifacts: CaseArtifact[];
+  measurements: Measurement[];
 }
 
 export interface WaveformResponse {
@@ -103,6 +117,55 @@ export interface FFTResponse {
   magnitudes: number[];
   sample_rate: number;
   params: { window: string; nfft: number; overlap: number };
+}
+
+export interface SpectrumResponse {
+  frequencies: number[];
+  powers: number[];
+  unit: string | null;
+  metadata: Record<string, string | number>;
+}
+
+export interface SpectrogramResponse {
+  frequencies: number[];
+  times: number[];
+  powers: number[][];
+  unit: string | null;
+  metadata: Record<string, string | number>;
+}
+
+export interface ChannelMetricsResponse {
+  channel_power_dbm: number | null;
+  acpr_lower_dbc: number | null;
+  acpr_upper_dbc: number | null;
+  obw_hz: number | null;
+  channel_band: [number, number];
+  lower_band: [number, number] | null;
+  upper_band: [number, number] | null;
+}
+
+export interface Spur {
+  frequency: number;
+  power: number;
+}
+
+export interface SpursResponse {
+  margin_db: number;
+  noise_floor_dbm: number;
+  spurs: Spur[];
+}
+
+export interface MaskSegment {
+  f_start: number;
+  f_end: number;
+  max_dbm: number;
+}
+
+export interface Mask {
+  id: string;
+  project_id: string;
+  name: string;
+  segments: MaskSegment[];
 }
 
 export interface RunHeader {
@@ -121,8 +184,78 @@ export interface CaseDiff {
   waveform_artifact_ids: (string | null)[];
 }
 
+export interface MeasurementDiff {
+  name: string;
+  unit: string | null;
+  values: (number | null)[];
+  delta: number | null;
+}
+
 export interface CompareResponse {
   runs: RunHeader[];
   cases: CaseDiff[];
   pass_rate_delta: number | null;
+  measurement_diffs: MeasurementDiff[];
+}
+
+export interface TrendPoint {
+  run_id: string;
+  run_name: string;
+  created_at: string;
+  case_id: string;
+  case_name: string;
+  value: number;
+  unit: string | null;
+  spec_min: number | null;
+  spec_max: number | null;
+  in_spec: boolean | null;
+  margin: number | null;
+  tags: Record<string, string>;
+}
+
+export interface TrendResponse {
+  measurement_name: string;
+  points: TrendPoint[];
+}
+
+export interface RegressionEvent {
+  measurement_name: string;
+  run_id: string;
+  run_name: string;
+  created_at: string;
+  value: number;
+  unit: string | null;
+  previous_value: number | null;
+  kind: 'crossed_out' | 'still_out';
+}
+
+export interface RegressionsResponse {
+  events: RegressionEvent[];
+}
+
+export interface SpecDefinition {
+  measurement_name: string;
+  spec_min: number | null;
+  spec_max: number | null;
+  unit: string | null;
+}
+
+export interface DashboardViewConfig {
+  tab?: string;
+  measurement?: string | null;
+  tagFilters?: Record<string, string>;
+}
+
+export interface SavedView {
+  name: string;
+  config: DashboardViewConfig;
+}
+
+export interface AuditEvent {
+  action: string;
+  user_email: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
 }

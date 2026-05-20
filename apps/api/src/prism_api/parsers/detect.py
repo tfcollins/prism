@@ -30,8 +30,18 @@ def detect_kind(filename: str, head: bytes) -> ArtifactKind:
     suffix = PurePosixPath(filename).suffix.lower()
     if suffix == ".xml":
         return ArtifactKind.JUNIT_XML
+    if suffix in {".s1p", ".s2p"}:
+        return ArtifactKind.SPECTRUM_TOUCHSTONE
     if suffix == ".csv":
-        return ArtifactKind.WAVEFORM_CSV
+        # Distinguish, by column shape: a wide matrix (>=3 numeric cols, many
+        # rows) is a spectrogram; two columns a (frequency, power) spectrum;
+        # otherwise a single-column waveform.
+        from prism_api.parsers.spectrogram import is_spectrogram_csv
+        from prism_api.parsers.spectrum import is_spectrum_csv
+
+        if is_spectrogram_csv(head):
+            return ArtifactKind.SPECTROGRAM
+        return ArtifactKind.SPECTRUM_CSV if is_spectrum_csv(head) else ArtifactKind.WAVEFORM_CSV
     if suffix in {".npy"}:
         return ArtifactKind.WAVEFORM_NPY
     if suffix in {".h5", ".hdf5"}:

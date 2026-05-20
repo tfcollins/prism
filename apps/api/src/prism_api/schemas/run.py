@@ -39,7 +39,14 @@ class SuiteSummary(BaseModel):
 
 
 class RunDetail(RunOut):
+    project_slug: str | None = None
+    calibration_run_id: str | None = None
+    calibration_run_name: str | None = None
     suites: list[SuiteSummary] = Field(default_factory=list)
+
+
+class SetCalibrationRequest(BaseModel):
+    calibration_run_id: str | None = None
 
 
 class RunListItem(BaseModel):

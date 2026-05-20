@@ -52,7 +52,13 @@ describe('AuthProvider', () => {
 
   it('sets status to unreachable on transport error', async () => {
     const err = new AxiosError('Server error');
-    err.response = { status: 500, data: null, headers: {}, statusText: 'Internal Server Error', config: {} as never };
+    err.response = {
+      status: 500,
+      data: null,
+      headers: {},
+      statusText: 'Internal Server Error',
+      config: {} as never,
+    };
     mockGet.mockRejectedValueOnce(err);
 
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

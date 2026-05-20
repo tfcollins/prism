@@ -16,7 +16,7 @@ from prism_api.parsers.filename import ArtifactOwner, parse_artifact_filename
 from prism_api.parsers.junit import ParsedSuite, parse_junit_xml
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.runs import RunRepo
-from prism_api.repos.suites import CaseRepo, SuiteRepo
+from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,7 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
     runs = RunRepo(session)
     suites_repo = SuiteRepo(session)
     cases_repo = CaseRepo(session)
+    measurements_repo = MeasurementRepo(session)
     artifacts = ArtifactRepo(session)
 
     # 1) Store the JUnit XML as a run-level artifact
@@ -135,6 +136,15 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
                 failure_trace=pc.failure_trace,
             )
             case_by_key[(ps.name, pc.name)] = case
+            for pm in pc.measurements:
+                measurements_repo.create(
+                    case_id=case.id,
+                    name=pm.name,
+                    value=pm.value,
+                    unit=pm.unit,
+                    spec_min=pm.spec_min,
+                    spec_max=pm.spec_max,
+                )
 
     # 4) Extract archive and attach artifacts
     if inputs.archive:

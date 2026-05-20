@@ -1,15 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from './client';
 import type {
+  AuditEvent,
   CaseArtifact,
   CaseDetail,
   CaseListItem,
+  ChannelMetricsResponse,
   CompareResponse,
   FFTResponse,
+  Mask,
   Project,
+  RegressionsResponse,
   RunDetail,
   RunListItem,
+  SavedView,
+  SpecDefinition,
+  SpectrogramResponse,
+  SpectrumResponse,
+  SpursResponse,
+  TrendResponse,
   WaveformResponse,
 } from './types';
 
@@ -32,11 +42,71 @@ export function useRuns(projectSlug: string | undefined, status?: string) {
   });
 }
 
+export function useRunsByTag(
+  projectSlug: string | undefined,
+  tagKey: string | undefined,
+  tagValue: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['runs', projectSlug, 'by-tag', tagKey ?? null, tagValue ?? null],
+    queryFn: async () =>
+      (
+        await api.get<RunListItem[]>('/runs', {
+          params: { project: projectSlug!, tag_key: tagKey!, tag_value: tagValue! },
+        })
+      ).data,
+    enabled: Boolean(projectSlug) && Boolean(tagKey) && Boolean(tagValue),
+  });
+}
+
+export function useTagKeys(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'tag-keys'],
+    queryFn: async () => (await api.get<string[]>(`/projects/${projectSlug}/tag-keys`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export interface TagValueCount {
+  value: string;
+  run_count: number;
+}
+
+export function useTagValues(projectSlug: string | undefined, key: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'tag-values', key ?? null],
+    queryFn: async () =>
+      (
+        await api.get<TagValueCount[]>(`/projects/${projectSlug}/tag-values`, {
+          params: { key: key! },
+        })
+      ).data,
+    enabled: Boolean(projectSlug) && Boolean(key),
+  });
+}
+
 export function useRun(runId: string | undefined) {
   return useQuery({
     queryKey: ['runs', 'detail', runId],
     queryFn: async () => (await api.get<RunDetail>(`/runs/${runId}`)).data,
     enabled: Boolean(runId),
+    // Poll while ingest is still pending so the view (and completion toast)
+    // update without a manual refresh; stop once it reaches a terminal status.
+    refetchInterval: (query) =>
+      (query.state.data as RunDetail | undefined)?.status === 'pending' ? 4000 : false,
+  });
+}
+
+export function useSetCalibration(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (calibrationRunId: string | null) =>
+      (
+        await api.patch<RunDetail>(`/runs/${runId}/calibration`, {
+          calibration_run_id: calibrationRunId,
+        })
+      ).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] }),
   });
 }
 
@@ -60,14 +130,22 @@ export function useWaveform(artifactId: string | undefined, downsample = 2000) {
   return useQuery({
     queryKey: ['artifacts', artifactId, 'waveform', downsample],
     queryFn: async () =>
-      (await api.get<WaveformResponse>(`/artifacts/${artifactId}/waveform`, { params: { downsample } })).data,
+      (
+        await api.get<WaveformResponse>(`/artifacts/${artifactId}/waveform`, {
+          params: { downsample },
+        })
+      ).data,
     enabled: Boolean(artifactId),
   });
 }
 
 export function useFFT(
   artifactId: string | undefined,
-  params: { window: string; nfft: number; overlap: number } = { window: 'hann', nfft: 1024, overlap: 0.5 },
+  params: { window: string; nfft: number; overlap: number } = {
+    window: 'hann',
+    nfft: 1024,
+    overlap: 0.5,
+  },
 ) {
   return useQuery({
     queryKey: ['artifacts', artifactId, 'fft', params],
@@ -77,11 +155,142 @@ export function useFFT(
   });
 }
 
+export function useSpectrum(artifactId: string | undefined) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'spectrum'],
+    queryFn: async () =>
+      (await api.get<SpectrumResponse>(`/artifacts/${artifactId}/spectrum`)).data,
+    enabled: Boolean(artifactId),
+  });
+}
+
+export function useSpectrogram(artifactId: string | undefined) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'spectrogram'],
+    queryFn: async () =>
+      (await api.get<SpectrogramResponse>(`/artifacts/${artifactId}/spectrogram`)).data,
+    enabled: Boolean(artifactId),
+  });
+}
+
+export function useChannelMetrics(
+  artifactId: string | undefined,
+  params: { center: number; channel_bw: number; offset?: number; adjacent_bw?: number } | null,
+) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'channel-power', params],
+    queryFn: async () =>
+      (
+        await api.get<ChannelMetricsResponse>(`/artifacts/${artifactId}/channel-power`, {
+          params: params!,
+        })
+      ).data,
+    enabled: Boolean(artifactId) && params !== null,
+  });
+}
+
+export function useSpurs(artifactId: string | undefined, marginDb: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'spurs', marginDb],
+    queryFn: async () =>
+      (
+        await api.get<SpursResponse>(`/artifacts/${artifactId}/spurs`, {
+          params: { margin_db: marginDb },
+        })
+      ).data,
+    enabled: Boolean(artifactId) && enabled,
+  });
+}
+
+export function useRegressions(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'regressions'],
+    queryFn: async () =>
+      (await api.get<RegressionsResponse>(`/projects/${projectSlug}/regressions`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useSpecs(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'specs'],
+    queryFn: async () => (await api.get<SpecDefinition[]>(`/projects/${projectSlug}/specs`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useUpsertSpec(projectSlug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (spec: SpecDefinition) =>
+      (await api.put<SpecDefinition>(`/projects/${projectSlug}/specs`, spec)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'specs'] });
+      qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'regressions'] });
+    },
+  });
+}
+
+export function useDeleteSpec(projectSlug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (measurementName: string) => {
+      await api.delete(`/projects/${projectSlug}/specs/${encodeURIComponent(measurementName)}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'specs'] });
+      qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'regressions'] });
+    },
+  });
+}
+
+export function useViews(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'views'],
+    queryFn: async () => (await api.get<SavedView[]>(`/projects/${projectSlug}/views`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useUpsertView(projectSlug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (view: SavedView) =>
+      (await api.put<SavedView>(`/projects/${projectSlug}/views`, view)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'views'] }),
+  });
+}
+
+export function useDeleteView(projectSlug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      await api.delete(`/projects/${projectSlug}/views/${encodeURIComponent(name)}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectSlug, 'views'] }),
+  });
+}
+
+export function useAudit(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'audit'],
+    queryFn: async () => (await api.get<AuditEvent[]>(`/projects/${projectSlug}/audit`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useMasks(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'masks'],
+    queryFn: async () => (await api.get<Mask[]>(`/projects/${projectSlug}/masks`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
 export function useRunArtifacts(runId: string | undefined) {
   return useQuery({
     queryKey: ['runs', runId, 'artifacts'],
-    queryFn: async () =>
-      (await api.get<CaseArtifact[]>(`/runs/${runId}/artifacts`)).data,
+    queryFn: async () => (await api.get<CaseArtifact[]>(`/runs/${runId}/artifacts`)).data,
     enabled: Boolean(runId),
   });
 }
@@ -99,5 +308,26 @@ export function useCompare(runIds: string[]) {
     queryKey: ['compare', runIds.slice().sort().join(',')],
     queryFn: async () => (await api.post<CompareResponse>('/compare', { run_ids: runIds })).data,
     enabled: runIds.length >= 2,
+  });
+}
+
+export function useMeasurementNames(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'measurements'],
+    queryFn: async () => (await api.get<string[]>(`/projects/${projectSlug}/measurements`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useMeasurementTrend(projectSlug: string | undefined, name: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'trend', name],
+    queryFn: async () =>
+      (
+        await api.get<TrendResponse>(
+          `/projects/${projectSlug}/measurements/${encodeURIComponent(name!)}/trend`,
+        )
+      ).data,
+    enabled: Boolean(projectSlug) && Boolean(name),
   });
 }

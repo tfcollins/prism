@@ -46,6 +46,7 @@ python3 scripts/upload_run.py results.xml \
 | `--run-name` | `PRISM_RUN_NAME` | Required; the Test Suite Run name shown in the dashboard |
 | `--tag key=value` | — | Repeatable. Becomes a tag chip on the run |
 | `--archive PATH` | — | Optional zip of measurement artifacts (waveforms, logs) |
+| `--measurement name=value[:unit[:min[:max]]]` | — | Repeatable. Inject a numeric measurement into a single-testcase JUnit (e.g. `channel_power_dBm=-10.2:dBm::-9.0`) |
 | `--auto-create-project` | — | Create the project if missing (skip the manual UI step) |
 | `--wait [SECONDS]` | — | Poll `GET /runs/:id` until no longer pending (default 60s) |
 | `--quiet` / `--verbose` | — | Control stdout chatter |
@@ -82,6 +83,25 @@ so CI can grep it for the run ID.
       --tag sha=${{ github.sha }} \
       --wait 120
 ```
+
+## Recording measurements from tests
+
+If you run pytest, emit numeric measurements straight from the test body — they
+flow into the JUnit `<properties>` and become first-class Prism measurements
+with pass/fail margins, no extra upload step:
+
+```python
+from pytest_prism import record_measurement
+
+def test_acpr():
+    record_measurement("channel_power_dBm", -10.2, unit="dBm", spec_max=-9.0)
+    record_measurement("acpr_dBc", -45.3, unit="dBc", spec_max=-40.0)
+```
+
+Plain pytest works too — `record_property("channel_power_dBm", -10.2)` plus the
+optional `channel_power_dBm__unit` / `__min` / `__max` siblings. For non-pytest
+CI, `upload_run.py --measurement` injects the same properties into a
+single-testcase JUnit.
 
 ## Raw HTTP fallback
 

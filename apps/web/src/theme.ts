@@ -29,6 +29,15 @@ export const system = createSystem(defaultConfig, {
       '--prism-danger-fg': '#fecaca',
       '--prism-sidebar-active-bg': '#1e40af',
       '--prism-sidebar-active-fg': '#eff6ff',
+      // Semantic status tokens (pass / warn / fail). Reused by margin chips,
+      // case-status badges, and trend spec lines so status reads identically
+      // across the app. Paired with glyphs in UI so hue is never the sole signal.
+      '--prism-status-pass-bg': '#052e16',
+      '--prism-status-pass-fg': '#86efac',
+      '--prism-status-warn-bg': '#422006',
+      '--prism-status-warn-fg': '#fcd34d',
+      '--prism-status-fail-bg': '#450a0a',
+      '--prism-status-fail-fg': '#fca5a5',
     },
     ':root[data-color-mode="light"]': {
       '--prism-bg-canvas': '#f9fafb',
@@ -48,6 +57,12 @@ export const system = createSystem(defaultConfig, {
       '--prism-danger-fg': '#991b1b',
       '--prism-sidebar-active-bg': '#dbeafe',
       '--prism-sidebar-active-fg': '#1e3a8a',
+      '--prism-status-pass-bg': '#dcfce7',
+      '--prism-status-pass-fg': '#166534',
+      '--prism-status-warn-bg': '#fef3c7',
+      '--prism-status-warn-fg': '#92400e',
+      '--prism-status-fail-bg': '#fee2e2',
+      '--prism-status-fail-fg': '#991b1b',
     },
 
     'html, body': {
@@ -97,6 +112,15 @@ export const system = createSystem(defaultConfig, {
     // Checkbox border.
     '[data-scope="checkbox"][data-part="control"]': {
       borderColor: 'var(--prism-border-strong)',
+    },
+  },
+  theme: {
+    keyframes: {
+      // Shimmer for loading skeletons (PlotSkeleton).
+      'prism-shimmer': {
+        '0%': { backgroundPosition: '200% 0' },
+        '100%': { backgroundPosition: '-200% 0' },
+      },
     },
   },
 });

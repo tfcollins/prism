@@ -52,7 +52,11 @@ function RunCrumb({ runId }: { runId: string }) {
     <Flex align="center">
       <ProjectsCrumb />
       <Sep />
-      {projectSlug ? <Crumb to={`/projects/${projectSlug}`}>{projectSlug}</Crumb> : <Crumb>…</Crumb>}
+      {projectSlug ? (
+        <Crumb to={`/projects/${projectSlug}`}>{projectSlug}</Crumb>
+      ) : (
+        <Crumb>…</Crumb>
+      )}
       <Sep />
       <Crumb>{run.data?.name ?? '…'}</Crumb>
     </Flex>

@@ -3,7 +3,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from prism_api.models.suite import CaseStatus, TestCase, TestSuite
+from prism_api.models.run import TestRun
+from prism_api.models.suite import CaseStatus, Measurement, TestCase, TestSuite
 
 
 class SuiteRepo:
@@ -72,3 +73,73 @@ class CaseRepo:
         return list(
             self._session.execute(select(TestCase).where(TestCase.suite_id == suite_id)).scalars()
         )
+
+
+class MeasurementRepo:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def create(
+        self,
+        *,
+        case_id: str,
+        name: str,
+        value: float,
+        unit: str | None = None,
+        spec_min: float | None = None,
+        spec_max: float | None = None,
+    ) -> Measurement:
+        m = Measurement(
+            case_id=case_id,
+            name=name,
+            value=value,
+            unit=unit,
+            spec_min=spec_min,
+            spec_max=spec_max,
+        )
+        self._session.add(m)
+        self._session.flush()
+        return m
+
+    def list_by_case(self, case_id: str) -> list[Measurement]:
+        return list(
+            self._session.execute(
+                select(Measurement).where(Measurement.case_id == case_id)
+            ).scalars()
+        )
+
+    def list_by_run(self, run_id: str) -> list[Measurement]:
+        rows = self._session.execute(
+            select(Measurement)
+            .join(TestCase, Measurement.case_id == TestCase.id)
+            .join(TestSuite, TestCase.suite_id == TestSuite.id)
+            .where(TestSuite.run_id == run_id)
+            .order_by(Measurement.name)
+        ).scalars()
+        return list(rows)
+
+    def distinct_names_for_project(self, project_id: str) -> list[str]:
+        rows = self._session.execute(
+            select(Measurement.name)
+            .join(TestCase, Measurement.case_id == TestCase.id)
+            .join(TestSuite, TestCase.suite_id == TestSuite.id)
+            .join(TestRun, TestSuite.run_id == TestRun.id)
+            .where(TestRun.project_id == project_id)
+            .distinct()
+            .order_by(Measurement.name)
+        ).scalars()
+        return list(rows)
+
+    def trend_for_project(
+        self, project_id: str, name: str
+    ) -> list[tuple[Measurement, TestCase, TestRun]]:
+        """Measurement occurrences of ``name`` across a project's runs, oldest first."""
+        rows = self._session.execute(
+            select(Measurement, TestCase, TestRun)
+            .join(TestCase, Measurement.case_id == TestCase.id)
+            .join(TestSuite, TestCase.suite_id == TestSuite.id)
+            .join(TestRun, TestSuite.run_id == TestRun.id)
+            .where(TestRun.project_id == project_id, Measurement.name == name)
+            .order_by(TestRun.created_at.asc())
+        ).all()
+        return [(r[0], r[1], r[2]) for r in rows]

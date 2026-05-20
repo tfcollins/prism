@@ -36,6 +36,11 @@ class RunRepo:
         if run is not None:
             run.status = status
 
+    def set_calibration_run(self, run_id: str, calibration_run_id: str | None) -> None:
+        run = self._session.get(TestRun, run_id)
+        if run is not None:
+            run.calibration_run_id = calibration_run_id
+
     def set_junit_artifact(self, run_id: str, artifact_id: str) -> None:
         run = self._session.get(TestRun, run_id)
         if run is not None:
@@ -54,13 +59,39 @@ class RunRepo:
         *,
         project_id: str,
         status: str | None = None,
+        tag_key: str | None = None,
+        tag_value: str | None = None,
         limit: int = 50,
     ) -> list[TestRun]:
         stmt = select(TestRun).where(TestRun.project_id == project_id)
         if status:
             stmt = stmt.where(TestRun.status == RunStatus(status))
+        if tag_key is not None and tag_value is not None:
+            stmt = stmt.join(RunTag, RunTag.run_id == TestRun.id).where(
+                RunTag.key == tag_key, RunTag.value == tag_value
+            )
         stmt = stmt.order_by(TestRun.created_at.desc()).limit(limit)
         return list(self._session.execute(stmt).scalars())
+
+    def distinct_tag_keys(self, project_id: str) -> list[str]:
+        rows = self._session.execute(
+            select(RunTag.key)
+            .join(TestRun, TestRun.id == RunTag.run_id)
+            .where(TestRun.project_id == project_id)
+            .distinct()
+            .order_by(RunTag.key)
+        ).scalars()
+        return list(rows)
+
+    def tag_value_counts(self, project_id: str, key: str) -> list[tuple[str, int]]:
+        rows = self._session.execute(
+            select(RunTag.value, func.count())
+            .join(TestRun, TestRun.id == RunTag.run_id)
+            .where(TestRun.project_id == project_id, RunTag.key == key)
+            .group_by(RunTag.value)
+            .order_by(RunTag.value)
+        ).all()
+        return [(str(v), int(c)) for v, c in rows]
 
     def aggregate_counts_by_run(self, run_id: str) -> dict[str, int]:
         row = self._session.execute(

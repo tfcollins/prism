@@ -1,12 +1,18 @@
 import { Badge, Box, Flex, Grid, Heading, Stack, Tabs, Text } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { useCase, useRun, useRunArtifacts } from '../api/queries';
+import { useCase, useRun, useRunArtifacts, useRuns, useSetCalibration } from '../api/queries';
+import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
+import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
+import { MeasurementsTable } from '../components/MeasurementsTable';
+import { SpectrogramPlot } from '../components/SpectrogramPlot';
+import { SpectrumAnalysis } from '../components/SpectrumAnalysis';
 import { TestTree } from '../components/TestTree';
+import { Toast } from '../components/Toast';
 import { WaveformPlot } from '../components/WaveformPlot';
 import { pickInlineArtifact } from '../lib/inlineKinds';
 import { parseTestId } from '../lib/parseTestId';
@@ -18,39 +24,75 @@ export function RunDetailPage() {
   const runQuery = useRun(id);
   const runArtifactsQuery = useRunArtifacts(id);
   const caseQuery = useCase(selectedCaseId ?? undefined);
+  const [rightOpen, setRightOpen] = useState(true);
+
+  // Toast when ingest finishes: detect a pending → terminal transition.
+  const prevStatus = useRef<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const status = runQuery.data?.status;
+  useEffect(() => {
+    if (!status) return;
+    if (prevStatus.current === 'pending' && status !== 'pending') {
+      const d = runQuery.data;
+      const summary = d
+        ? `${d.suites.reduce((a, s) => a + s.pass_count, 0)} pass, ${d.suites.reduce((a, s) => a + s.fail_count, 0)} fail`
+        : '';
+      setToast(`Ingest complete: ${status}${summary ? ` — ${summary}` : ''}`);
+    }
+    prevStatus.current = status;
+  }, [status, runQuery.data]);
 
   const waveform = caseQuery.data?.artifacts.find((a) => a.kind.startsWith('waveform'));
+  const spectrogram = caseQuery.data?.artifacts.find((a) => a.kind === 'spectrogram');
+  const spectrum = caseQuery.data?.artifacts.find(
+    (a) => a.kind.startsWith('spectrum') && a.kind !== 'spectrogram',
+  );
   // Plotly figure JSON: render inline via react-plotly. Match by filename
   // since `kind` for *.json comes through as log_text from the detector.
   const figureJson = caseQuery.data?.artifacts.find(
-    (a) => a.filename.toLowerCase().endsWith('.json') && a.filename.toLowerCase().includes('spectrum'),
+    (a) =>
+      a.filename.toLowerCase().endsWith('.json') && a.filename.toLowerCase().includes('spectrum'),
   );
   const inlineArtifact = pickInlineArtifact(caseQuery.data?.artifacts ?? []);
   const otherArtifacts = (caseQuery.data?.artifacts ?? []).filter(
-    (a) => a !== waveform && a !== figureJson && a !== inlineArtifact,
+    (a) =>
+      a !== waveform &&
+      a !== figureJson &&
+      a !== inlineArtifact &&
+      a !== spectrum &&
+      a !== spectrogram,
   );
 
   return (
     <AppShell>
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       {runQuery.isLoading && <Text>Loading run…</Text>}
       {runQuery.isError && <Text color="red.400">Failed to load run</Text>}
       {runQuery.data && (
         <Box>
-          <Heading size="lg" mb={2}>
-            {runQuery.data.name}
-          </Heading>
-          <Stack direction="row" gap={2} mb={4}>
-            <Badge colorPalette="blue">{runQuery.data.status}</Badge>
-            {runQuery.data.tags.map((t) => (
-              <Badge key={`${t.key}:${t.value}`} variant="outline">
-                {t.key}={t.value}
-              </Badge>
-            ))}
-          </Stack>
+          <Flex align="center" justify="space-between" mb={3} gap={2}>
+            <Heading size="lg">{runQuery.data.name}</Heading>
+            <Box
+              as="button"
+              onClick={() => setRightOpen((o) => !o)}
+              px={2}
+              py="2px"
+              borderRadius="sm"
+              borderWidth={1}
+              fontSize="xs"
+              cursor="pointer"
+              bg="var(--prism-bg-surface)"
+              color="var(--prism-text-muted)"
+              borderColor="var(--prism-border)"
+            >
+              {rightOpen ? 'hide details ›' : '‹ show details'}
+            </Box>
+          </Flex>
+
           {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
-          <Grid templateColumns="240px 1fr" gap={4} minH="500px">
+          <Grid templateColumns={rightOpen ? '240px 1fr 280px' : '240px 1fr'} gap={4} minH="500px">
             <Box
               borderWidth={1}
               borderColor="var(--prism-border)"
@@ -60,7 +102,14 @@ export function RunDetailPage() {
               overflowY="auto"
             >
               {runQuery.data.suites.length === 1 && (
-                <Flex align="center" gap={2} mb={2} pb={2} borderBottomWidth={1} borderColor="var(--prism-border)">
+                <Flex
+                  align="center"
+                  gap={2}
+                  mb={2}
+                  pb={2}
+                  borderBottomWidth={1}
+                  borderColor="var(--prism-border)"
+                >
                   <Text
                     fontSize="10px"
                     textTransform="uppercase"
@@ -81,12 +130,21 @@ export function RunDetailPage() {
                 flatten={runQuery.data.suites.length === 1}
               />
             </Box>
-            <Box borderWidth={1} borderColor="var(--prism-border)" borderRadius="md" p={3} bg="var(--prism-bg-surface)">
-              {!selectedCaseId && <Text color="var(--prism-text-subtle)">Select a case from the tree</Text>}
+            <Box
+              borderWidth={1}
+              borderColor="var(--prism-border)"
+              borderRadius="md"
+              p={3}
+              bg="var(--prism-bg-surface)"
+            >
+              {!selectedCaseId && (
+                <Text color="var(--prism-text-subtle)">Select a case from the tree</Text>
+              )}
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
                 <Stack gap={3}>
                   <CaseHeader caseData={caseQuery.data} />
+                  <MeasurementsTable measurements={caseQuery.data.measurements} />
                   <CaseParamsTable name={caseQuery.data.name} />
                   {caseQuery.data.failure_message && (
                     <Box
@@ -107,6 +165,13 @@ export function RunDetailPage() {
                     />
                   )}
                   {figureJson && <InlinePlotlyFigure artifactId={figureJson.id} />}
+                  {spectrum && (
+                    <SpectrumAnalysis
+                      artifactId={spectrum.id}
+                      projectSlug={runQuery.data.project_slug ?? undefined}
+                    />
+                  )}
+                  {spectrogram && <SpectrogramPlot artifactId={spectrogram.id} />}
                   {waveform ? (
                     <Tabs.Root defaultValue="time">
                       <Tabs.List>
@@ -121,7 +186,10 @@ export function RunDetailPage() {
                       </Tabs.Content>
                     </Tabs.Root>
                   ) : (
-                    !figureJson && (
+                    !figureJson &&
+                    !spectrum &&
+                    !spectrogram &&
+                    !inlineArtifact && (
                       <Text color="var(--prism-text-subtle)" fontSize="sm">
                         No plottable artifact attached to this case.
                       </Text>
@@ -161,10 +229,117 @@ export function RunDetailPage() {
                 </Stack>
               )}
             </Box>
+            {rightOpen && <RunMetaPane run={runQuery.data} />}
           </Grid>
         </Box>
       )}
     </AppShell>
+  );
+}
+
+function RunMetaPane({ run }: { run: RunDetail }) {
+  const dut = run.tags.find((t) => ['device_serial', 'dut', 'serial', 'sn'].includes(t.key));
+  const label = (text: string) => (
+    <Text
+      fontSize="10px"
+      textTransform="uppercase"
+      letterSpacing="1px"
+      color="var(--prism-text-faint)"
+      mt={3}
+      mb={1}
+    >
+      {text}
+    </Text>
+  );
+  return (
+    <Box
+      borderWidth={1}
+      borderColor="var(--prism-border)"
+      borderRadius="md"
+      p={3}
+      bg="var(--prism-bg-surface)"
+      overflowY="auto"
+    >
+      {label('Status')}
+      <Badge colorPalette="blue">{run.status}</Badge>
+
+      {label('Run ID')}
+      <Flex align="center" gap={2}>
+        <Text fontFamily="mono" fontSize="xs" color="var(--prism-text-muted)" truncate>
+          {run.id}
+        </Text>
+        <CopyButton value={run.id} />
+      </Flex>
+
+      {dut && (
+        <>
+          {label('DUT')}
+          <Text fontFamily="mono" fontSize="sm">
+            {dut.value}
+          </Text>
+        </>
+      )}
+
+      {label('Tags')}
+      {run.tags.length === 0 ? (
+        <Text fontSize="xs" color="var(--prism-text-faint)">
+          none
+        </Text>
+      ) : (
+        <Stack direction="row" gap={1} wrap="wrap">
+          {run.tags.map((t) => (
+            <Badge key={`${t.key}:${t.value}`} variant="outline" size="sm">
+              {t.key}={t.value}
+            </Badge>
+          ))}
+        </Stack>
+      )}
+
+      {label('Calibration')}
+      <CalibrationControl run={run} />
+
+      {label('Report')}
+      <a
+        href={`/api/v1/runs/${run.id}/report.pdf`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ color: 'var(--prism-link)', fontSize: 13 }}
+      >
+        Download compliance PDF
+      </a>
+    </Box>
+  );
+}
+
+function CalibrationControl({ run }: { run: RunDetail }) {
+  const runsQuery = useRuns(run.project_slug ?? undefined);
+  const setCal = useSetCalibration(run.id);
+  const candidates = (runsQuery.data ?? []).filter((r) => r.id !== run.id);
+
+  return (
+    <Flex align="center" gap={2} fontSize="sm">
+      <select
+        className="chakra-input"
+        value={run.calibration_run_id ?? ''}
+        disabled={setCal.isPending}
+        onChange={(e) => setCal.mutate(e.target.value === '' ? null : e.target.value)}
+        style={{
+          padding: '2px 6px',
+          borderRadius: 4,
+          borderWidth: 1,
+          fontFamily: 'monospace',
+          fontSize: 13,
+          maxWidth: 240,
+        }}
+      >
+        <option value="">— none —</option>
+        {candidates.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
+    </Flex>
   );
 }
 
