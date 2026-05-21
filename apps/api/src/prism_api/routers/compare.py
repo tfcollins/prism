@@ -43,10 +43,12 @@ def compare_runs(
     artifacts_repo = ArtifactRepo(session)
 
     runs = []
+    run_project_ids: dict[str, str] = {}
     for run_id in body.run_ids:
         run = runs_repo.get_by_id(run_id)
         if run is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, f"run {run_id} not found")
+        run_project_ids[run.id] = run.project_id
         counts = runs_repo.aggregate_counts_by_run(run.id)
         runs.append(
             RunHeader(
@@ -109,7 +111,10 @@ def compare_runs(
     measurement_diffs = _measurement_diffs(MeasurementRepo(session), body.run_ids)
 
     log_repo = LogRepo(session)
-    boots = [build_boot_summary(log_repo, rid, settings) for rid in body.run_ids]
+    boots = [
+        build_boot_summary(log_repo, rid, settings, run_project_ids.get(rid))
+        for rid in body.run_ids
+    ]
 
     return CompareResponse(
         runs=runs,

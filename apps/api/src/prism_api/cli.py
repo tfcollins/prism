@@ -8,9 +8,26 @@ from sqlalchemy.orm import Session, sessionmaker
 from prism_api.bootstrap import ensure_bootstrap_admin
 from prism_api.config import Settings, get_settings
 from prism_api.models.artifact import Artifact, ArtifactKind
+from prism_api.models.suite import TestCase, TestSuite
 from prism_api.parsers.logs import parse_log
 from prism_api.repos.logs import LogRepo
 from prism_api.storage import ObjectStorage, build_storage
+
+
+def _resolve_run_id(session: Session, artifact: Artifact) -> str | None:
+    """Return the TestRun id that owns *artifact*, following case/suite indirection."""
+    if artifact.owner_type == "run":
+        return artifact.owner_id
+    if artifact.owner_type == "suite":
+        suite = session.get(TestSuite, artifact.owner_id)
+        return suite.run_id if suite is not None else None
+    if artifact.owner_type == "case":
+        case = session.get(TestCase, artifact.owner_id)
+        if case is None:
+            return None
+        suite = session.get(TestSuite, case.suite_id)
+        return suite.run_id if suite is not None else None
+    return None
 
 
 def bootstrap_admin(settings: Settings | None = None) -> None:
@@ -44,11 +61,11 @@ def reparse_logs(
     ).scalars()
     count = 0
     for a in arts:
-        if repo.list_by_run(a.owner_id) and any(
-            r.artifact_id == a.id for r in repo.list_by_run(a.owner_id)
-        ):
+        run_id = _resolve_run_id(session, a)
+        if run_id is None:
             continue
-        run_id = a.owner_id
+        if any(r.artifact_id == a.id for r in repo.list_by_run(run_id)):
+            continue
         data = storage.get_bytes(a.storage_key)
         parsed = parse_log(
             data,

@@ -194,7 +194,7 @@ def get_run(
     tags = [RunTagOut(key=t.key, value=t.value) for t in runs.tags_for(run.id)]
     project = ProjectRepo(session).get_by_id(run.project_id)
     cal = runs.get_by_id(run.calibration_run_id) if run.calibration_run_id else None
-    boot = build_boot_summary(LogRepo(session), run.id, settings)
+    boot = build_boot_summary(LogRepo(session), run.id, settings, run.project_id)
     return RunDetail(
         id=run.id,
         project_id=run.project_id,

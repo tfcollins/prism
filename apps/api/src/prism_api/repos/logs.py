@@ -80,12 +80,21 @@ class LogRepo:
         ).all()
         return [(str(c), int(n)) for c, n in rows]
 
-    def run_ids_for_commit(self, kind: str, commit: str) -> set[str]:
+    def run_ids_for_commit(
+        self, kind: str, commit: str, *, project_id: str | None = None
+    ) -> set[str]:
         col = _COMMIT_COL[kind]
-        rows = self._session.execute(
-            select(distinct(LogReport.run_id)).where(col == commit)
-        ).scalars()
+        stmt = select(distinct(LogReport.run_id)).where(col == commit)
+        if project_id is not None:
+            stmt = stmt.join(TestRun, TestRun.id == LogReport.run_id).where(
+                TestRun.project_id == project_id
+            )
+        rows = self._session.execute(stmt).scalars()
         return set(rows)
 
-    def shared_count(self, kind: str, commit: str, *, exclude_run_id: str) -> int:
-        return len(self.run_ids_for_commit(kind, commit) - {exclude_run_id})
+    def shared_count(
+        self, kind: str, commit: str, *, exclude_run_id: str, project_id: str | None = None
+    ) -> int:
+        return len(
+            self.run_ids_for_commit(kind, commit, project_id=project_id) - {exclude_run_id}
+        )
