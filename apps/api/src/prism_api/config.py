@@ -6,6 +6,12 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from prism_api.parsers.logs import (
+    DEFAULT_FINDINGS_CAP,
+    DEFAULT_HDL_PATTERN,
+    DEFAULT_KERNEL_PATTERN,
+)
+
 
 class Settings(BaseSettings):
     """Environment-driven settings. All vars prefixed with PRISM_."""
@@ -26,6 +32,11 @@ class Settings(BaseSettings):
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     admin_email: str | None = None
     admin_password: str | None = None
+    log_kernel_commit_pattern: str = DEFAULT_KERNEL_PATTERN
+    log_hdl_commit_pattern: str = DEFAULT_HDL_PATTERN
+    log_findings_cap: int = DEFAULT_FINDINGS_CAP
+    kernel_repo_url: str | None = None
+    hdl_repo_url: str | None = None
 
     @field_validator("jwt_secret")
     @classmethod
