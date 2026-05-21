@@ -4,11 +4,13 @@ import { Link as RouterLink, useParams } from 'react-router-dom';
 
 import {
   useAudit,
+  useCommits,
   useDeleteSpec,
   useDeleteView,
   useMeasurementNames,
   useRegressions,
   useRuns,
+  useRunsByCommit,
   useRunsByTag,
   useSpecs,
   useTagKeys,
@@ -30,6 +32,10 @@ export function ProjectDashboardPage() {
   const [tab, setTab] = useState('runs');
   const [measurement, setMeasurement] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<Record<string, string>>({});
+  const [commitFilter, setCommitFilter] = useState<{
+    field: 'kernel_commit' | 'hdl_commit';
+    commit: string;
+  } | null>(null);
 
   const applyView = (config: DashboardViewConfig) => {
     if (config.tab) setTab(config.tab);
@@ -56,15 +62,31 @@ export function ProjectDashboardPage() {
           <Tabs.Trigger value="trends">Trends</Tabs.Trigger>
           <Tabs.Trigger value="regressions">Regressions</Tabs.Trigger>
           <Tabs.Trigger value="specs">Specs</Tabs.Trigger>
+          <Tabs.Trigger value="commits">Commits</Tabs.Trigger>
           <Tabs.Trigger value="audit">Audit</Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="runs">
-          {runsQuery.isLoading && <Text>Loading…</Text>}
-          {runsQuery.isError && (
-            <Text color="red.400">Could not load runs — {String(runsQuery.error)}</Text>
-          )}
-          {runsQuery.data && (
-            <RunsTab runs={runsQuery.data} tagFilters={tagFilters} onTagFilters={setTagFilters} />
+          {commitFilter ? (
+            <CommitFilteredRuns
+              slug={slug ?? ''}
+              field={commitFilter.field}
+              commit={commitFilter.commit}
+              onClear={() => setCommitFilter(null)}
+            />
+          ) : (
+            <>
+              {runsQuery.isLoading && <Text>Loading…</Text>}
+              {runsQuery.isError && (
+                <Text color="red.400">Could not load runs — {String(runsQuery.error)}</Text>
+              )}
+              {runsQuery.data && (
+                <RunsTab
+                  runs={runsQuery.data}
+                  tagFilters={tagFilters}
+                  onTagFilters={setTagFilters}
+                />
+              )}
+            </>
           )}
         </Tabs.Content>
         <Tabs.Content value="duts">{slug && <DutsTab slug={slug} />}</Tabs.Content>
@@ -73,6 +95,17 @@ export function ProjectDashboardPage() {
         </Tabs.Content>
         <Tabs.Content value="regressions">{slug && <RegressionsTab slug={slug} />}</Tabs.Content>
         <Tabs.Content value="specs">{slug && <SpecsTab slug={slug} />}</Tabs.Content>
+        <Tabs.Content value="commits">
+          {slug && (
+            <CommitsTab
+              slug={slug}
+              onFilter={(field, commit) => {
+                setCommitFilter({ field, commit });
+                setTab('runs');
+              }}
+            />
+          )}
+        </Tabs.Content>
         <Tabs.Content value="audit">{slug && <AuditTab slug={slug} />}</Tabs.Content>
       </Tabs.Root>
     </AppShell>
@@ -181,6 +214,109 @@ function RunsByDate({ runs }: { runs: RunListItem[] }) {
           <RunsTable runs={groups.get(day)!} />
         </Box>
       ))}
+    </Box>
+  );
+}
+
+function CommitFilteredRuns({
+  slug,
+  field,
+  commit,
+  onClear,
+}: {
+  slug: string;
+  field: 'kernel_commit' | 'hdl_commit';
+  commit: string;
+  onClear: () => void;
+}) {
+  const q = useRunsByCommit(slug, field, commit);
+  return (
+    <Box>
+      <Flex align="center" gap={2} mb={3}>
+        <Box
+          as="button"
+          onClick={onClear}
+          px={2}
+          py="2px"
+          borderRadius="sm"
+          borderWidth={1}
+          fontSize="xs"
+          cursor="pointer"
+          bg="var(--prism-sidebar-active-bg)"
+          color="var(--prism-sidebar-active-fg)"
+          borderColor="var(--prism-border)"
+        >
+          filtered by {field} {commit.slice(0, 12)} ✕
+        </Box>
+      </Flex>
+      {q.isLoading && <Text>Loading…</Text>}
+      {q.isError && (
+        <Text color="red.400">Could not load runs — {String(q.error)}</Text>
+      )}
+      {q.data && <RunsTable runs={q.data} />}
+    </Box>
+  );
+}
+
+function CommitsTab({
+  slug,
+  onFilter,
+}: {
+  slug: string;
+  onFilter: (field: 'kernel_commit' | 'hdl_commit', commit: string) => void;
+}) {
+  const kernel = useCommits(slug, 'kernel');
+  const hdl = useCommits(slug, 'hdl');
+  const section = (
+    title: string,
+    field: 'kernel_commit' | 'hdl_commit',
+    data: { commit: string; run_count: number }[] | undefined,
+  ) => (
+    <Box mb={4}>
+      <Text
+        fontSize="10px"
+        textTransform="uppercase"
+        letterSpacing="1px"
+        color="var(--prism-text-faint)"
+        mb={1}
+      >
+        {title}
+      </Text>
+      {(!data || data.length === 0) && (
+        <Text fontSize="sm" color="var(--prism-text-subtle)">
+          none
+        </Text>
+      )}
+      <Flex wrap="wrap" gap={2}>
+        {(data ?? []).map((c) => (
+          <Box
+            as="button"
+            key={c.commit}
+            onClick={() => onFilter(field, c.commit)}
+            px={2}
+            py="2px"
+            borderRadius="sm"
+            borderWidth={1}
+            fontSize="xs"
+            fontFamily="mono"
+            cursor="pointer"
+            bg="var(--prism-bg-surface)"
+            color="var(--prism-text-muted)"
+            borderColor="var(--prism-border)"
+          >
+            {c.commit.slice(0, 12)}{' '}
+            <Text as="span" color="var(--prism-text-faint)">
+              ({c.run_count})
+            </Text>
+          </Box>
+        ))}
+      </Flex>
+    </Box>
+  );
+  return (
+    <Box>
+      {section('Kernel commits', 'kernel_commit', kernel.data)}
+      {section('HDL commits', 'hdl_commit', hdl.data)}
     </Box>
   );
 }
