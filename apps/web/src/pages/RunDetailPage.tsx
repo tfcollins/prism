@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useCase, useRun, useRunArtifacts, useRuns, useSetCalibration } from '../api/queries';
 import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
+import { BootPanel } from '../components/BootPanel';
 import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
@@ -270,6 +271,12 @@ function RunMetaPane({ run }: { run: RunDetail }) {
     >
       {label('Status')}
       <Badge colorPalette="blue">{run.status}</Badge>
+
+      {run.boot && (
+        <Box mt={3}>
+          <BootPanel runId={run.id} boot={run.boot} />
+        </Box>
+      )}
 
       {label('Run ID')}
       <Flex align="center" gap={2}>
