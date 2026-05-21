@@ -100,7 +100,7 @@ def parse_log(
                 out.board = b.group(1)
         if out.hdl_commit is None:
             hm = hp.search(body)
-            if hm:
+            if hm and hm.groups():
                 out.hdl_commit = hm.group(1)
 
         sev = _classify(body)
