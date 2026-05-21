@@ -3,6 +3,7 @@
 from prism_api.models.artifact import Artifact, ArtifactKind, DerivedArtifact, DerivedKind
 from prism_api.models.audit import AuditEvent
 from prism_api.models.base import Base
+from prism_api.models.log import LogFinding, LogReport
 from prism_api.models.mask import SpectrumMask
 from prism_api.models.project import Project
 from prism_api.models.run import RunStatus, RunTag, TestRun
@@ -19,6 +20,8 @@ __all__ = [
     "CaseStatus",
     "DerivedArtifact",
     "DerivedKind",
+    "LogFinding",
+    "LogReport",
     "Measurement",
     "Project",
     "RunStatus",
