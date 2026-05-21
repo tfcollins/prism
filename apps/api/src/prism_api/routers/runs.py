@@ -126,6 +126,8 @@ def list_runs(
     status_: str | None = Query(default=None, alias="status"),
     tag_key: str | None = Query(default=None),
     tag_value: str | None = Query(default=None),
+    kernel_commit: str | None = Query(default=None),
+    hdl_commit: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
@@ -140,6 +142,8 @@ def list_runs(
         status=status_,
         tag_key=tag_key,
         tag_value=tag_value,
+        kernel_commit=kernel_commit,
+        hdl_commit=hdl_commit,
         limit=limit,
     )
     result: list[RunListItem] = []

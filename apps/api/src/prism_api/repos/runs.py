@@ -3,6 +3,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from prism_api.models.log import LogReport
 from prism_api.models.run import RunStatus, RunTag, TestRun
 from prism_api.models.suite import TestSuite
 
@@ -61,6 +62,8 @@ class RunRepo:
         status: str | None = None,
         tag_key: str | None = None,
         tag_value: str | None = None,
+        kernel_commit: str | None = None,
+        hdl_commit: str | None = None,
         limit: int = 50,
     ) -> list[TestRun]:
         stmt = select(TestRun).where(TestRun.project_id == project_id)
@@ -69,6 +72,18 @@ class RunRepo:
         if tag_key is not None and tag_value is not None:
             stmt = stmt.join(RunTag, RunTag.run_id == TestRun.id).where(
                 RunTag.key == tag_key, RunTag.value == tag_value
+            )
+        if kernel_commit is not None:
+            stmt = stmt.where(
+                TestRun.id.in_(
+                    select(LogReport.run_id).where(LogReport.kernel_commit == kernel_commit)
+                )
+            )
+        if hdl_commit is not None:
+            stmt = stmt.where(
+                TestRun.id.in_(
+                    select(LogReport.run_id).where(LogReport.hdl_commit == hdl_commit)
+                )
             )
         stmt = stmt.order_by(TestRun.created_at.desc()).limit(limit)
         return list(self._session.execute(stmt).scalars())

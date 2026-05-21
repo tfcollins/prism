@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from prism_api.deps import csrf_protect, current_user, session_dep
 from prism_api.models.user import User
 from prism_api.repos.audit import AuditRepo
+from prism_api.repos.logs import LogRepo
 from prism_api.repos.masks import MaskRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
@@ -17,6 +18,7 @@ from prism_api.repos.suites import MeasurementRepo
 from prism_api.repos.views import ViewRepo
 from prism_api.schemas.audit import AuditEventOut
 from prism_api.schemas.case import measurement_margin
+from prism_api.schemas.log import CommitCount
 from prism_api.schemas.mask import MaskCreate, MaskOut, MaskSegment
 from prism_api.schemas.project import CreateProjectRequest, ProjectOut
 from prism_api.schemas.spec import SpecDefinitionOut, SpecUpsert, resolve_spec
@@ -353,6 +355,22 @@ def list_tag_values(
 ) -> list[dict[str, Any]]:
     p = _project_or_404(session, slug)
     return [{"value": v, "run_count": c} for v, c in RunRepo(session).tag_value_counts(p.id, key)]
+
+
+@router.get("/{slug}/commits")
+def list_commits(
+    slug: str,
+    type: str = "kernel",
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> list[CommitCount]:
+    p = _project_or_404(session, slug)
+    if type not in ("kernel", "hdl"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "type must be kernel or hdl")
+    return [
+        CommitCount(commit=c, run_count=n)
+        for c, n in LogRepo(session).commit_counts_for_project(type, p.id)
+    ]
 
 
 @router.get("/{slug}/views")
