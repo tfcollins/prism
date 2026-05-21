@@ -49,6 +49,45 @@ export interface SuiteSummary {
   duration_ms: number;
 }
 
+export interface BootSummary {
+  kernel_version: string | null;
+  board: string | null;
+  kernel_commit: string | null;
+  hdl_commit: string | null;
+  kernel_commit_url: string | null;
+  hdl_commit_url: string | null;
+  error_count: number;
+  warn_count: number;
+  has_panic: boolean;
+  shared_kernel_count: number;
+  shared_hdl_count: number;
+}
+
+export interface CommitCount {
+  commit: string;
+  run_count: number;
+}
+
+export interface LogFinding {
+  severity: 'error' | 'warn' | 'panic' | 'probe_fail';
+  line_no: number | null;
+  text: string;
+}
+
+export interface LogReport {
+  source: string;
+  kernel_version: string | null;
+  board: string | null;
+  kernel_commit: string | null;
+  hdl_commit: string | null;
+  kernel_commit_url: string | null;
+  hdl_commit_url: string | null;
+  error_count: number;
+  warn_count: number;
+  has_panic: boolean;
+  findings: LogFinding[];
+}
+
 export interface RunDetail {
   id: string;
   project_id: string;
@@ -62,6 +101,7 @@ export interface RunDetail {
   calibration_run_name: string | null;
   tags: RunTag[];
   suites: SuiteSummary[];
+  boot: BootSummary | null;
 }
 
 export type CaseStatus = 'pass' | 'fail' | 'error' | 'skip';
@@ -196,6 +236,7 @@ export interface CompareResponse {
   cases: CaseDiff[];
   pass_rate_delta: number | null;
   measurement_diffs: MeasurementDiff[];
+  boots: (BootSummary | null)[];
 }
 
 export interface TrendPoint {

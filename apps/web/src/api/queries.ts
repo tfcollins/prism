@@ -7,8 +7,10 @@ import type {
   CaseDetail,
   CaseListItem,
   ChannelMetricsResponse,
+  CommitCount,
   CompareResponse,
   FFTResponse,
+  LogReport,
   Mask,
   Project,
   RegressionsResponse,
@@ -329,5 +331,37 @@ export function useMeasurementTrend(projectSlug: string | undefined, name: strin
         )
       ).data,
     enabled: Boolean(projectSlug) && Boolean(name),
+  });
+}
+
+export function useRunLogs(runId: string | undefined) {
+  return useQuery({
+    queryKey: ['runs', runId, 'logs'],
+    queryFn: async () => (await api.get<LogReport[]>(`/runs/${runId}/logs`)).data,
+    enabled: Boolean(runId),
+  });
+}
+
+export function useCommits(projectSlug: string | undefined, type: 'kernel' | 'hdl') {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'commits', type],
+    queryFn: async () =>
+      (await api.get<CommitCount[]>(`/projects/${projectSlug}/commits`, { params: { type } })).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useRunsByCommit(
+  projectSlug: string | undefined,
+  field: 'kernel_commit' | 'hdl_commit',
+  commit: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['runs', projectSlug, 'by-commit', field, commit ?? null],
+    queryFn: async () =>
+      (await api.get<RunListItem[]>('/runs', {
+        params: { project: projectSlug!, [field]: commit! },
+      })).data,
+    enabled: Boolean(projectSlug) && Boolean(commit),
   });
 }
