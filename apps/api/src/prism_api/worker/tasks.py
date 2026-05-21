@@ -23,5 +23,8 @@ def run_ingest(run_id: str, junit_xml_key: str, archive_key: str | None) -> None
             IngestInputs(run_id=run_id, junit_xml=junit_xml, archive=archive),
             session=session,
             storage=storage,
+            kernel_pattern=settings.log_kernel_commit_pattern,
+            hdl_pattern=settings.log_hdl_commit_pattern,
+            findings_cap=settings.log_findings_cap,
         )
         session.commit()

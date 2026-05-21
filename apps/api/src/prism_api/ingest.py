@@ -14,7 +14,14 @@ from prism_api.models import ArtifactKind, CaseStatus, RunStatus, TestCase, Test
 from prism_api.parsers.detect import detect_kind
 from prism_api.parsers.filename import ArtifactOwner, parse_artifact_filename
 from prism_api.parsers.junit import ParsedSuite, parse_junit_xml
+from prism_api.parsers.logs import (
+    DEFAULT_FINDINGS_CAP,
+    DEFAULT_HDL_PATTERN,
+    DEFAULT_KERNEL_PATTERN,
+    parse_log,
+)
 from prism_api.repos.artifacts import ArtifactRepo
+from prism_api.repos.logs import LogRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.storage import ObjectStorage
@@ -83,12 +90,21 @@ def _derive_run_status(suites: list[ParsedSuite]) -> RunStatus:
     return RunStatus.MIXED
 
 
-def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage) -> None:
+def ingest_run(
+    inputs: IngestInputs,
+    *,
+    session: Session,
+    storage: ObjectStorage,
+    kernel_pattern: str = DEFAULT_KERNEL_PATTERN,
+    hdl_pattern: str = DEFAULT_HDL_PATTERN,
+    findings_cap: int = DEFAULT_FINDINGS_CAP,
+) -> None:
     runs = RunRepo(session)
     suites_repo = SuiteRepo(session)
     cases_repo = CaseRepo(session)
     measurements_repo = MeasurementRepo(session)
     artifacts = ArtifactRepo(session)
+    log_repo = LogRepo(session)
 
     # 1) Store the JUnit XML as a run-level artifact
     junit_key = storage.put_raw(inputs.junit_xml, filename="junit.xml")
@@ -165,7 +181,7 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
                 parts = bare.rsplit("__", 1)
                 label = parts[-1] if len(parts) > 1 else bare
                 manifest_kind = kind_map.get(label)
-                artifacts.create(
+                created = artifacts.create(
                     owner_type=owner_type,
                     owner_id=owner_id,
                     kind=kind,
@@ -175,6 +191,22 @@ def ingest_run(inputs: IngestInputs, *, session: Session, storage: ObjectStorage
                     storage_key=key,
                     manifest_kind=manifest_kind,
                 )
+                if kind == ArtifactKind.LOG_TEXT:
+                    try:
+                        parsed = parse_log(
+                            data,
+                            kernel_pattern=kernel_pattern,
+                            hdl_pattern=hdl_pattern,
+                            findings_cap=findings_cap,
+                        )
+                        log_repo.create_report(
+                            run_id=inputs.run_id,
+                            artifact_id=created.id,
+                            source=bare,
+                            parsed=parsed,
+                        )
+                    except Exception as exc:  # best-effort; never fail ingest
+                        logger.warning("log parse failed for %s: %s", name, exc)
 
     # 5) Set final run status
     runs.set_status(inputs.run_id, _derive_run_status(parsed_suites))
