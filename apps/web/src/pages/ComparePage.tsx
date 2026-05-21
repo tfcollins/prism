@@ -53,6 +53,39 @@ export function ComparePage() {
             </Text>
           </Box>
           <MeasurementDiffsTable data={q.data} />
+          {q.data.boots?.some(Boolean) && (
+            <Box overflowX="auto">
+              <Table.Root variant="outline" size="sm">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeader>Run</Table.ColumnHeader>
+                    <Table.ColumnHeader>Kernel</Table.ColumnHeader>
+                    <Table.ColumnHeader>HDL</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="end">Errors</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="end">Warnings</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {q.data.runs.map((r, i) => {
+                    const b = q.data.boots[i];
+                    return (
+                      <Table.Row key={r.id}>
+                        <Table.Cell>{r.name}</Table.Cell>
+                        <Table.Cell fontFamily="mono">
+                          {b?.kernel_commit?.slice(0, 12) ?? '—'}
+                        </Table.Cell>
+                        <Table.Cell fontFamily="mono">
+                          {b?.hdl_commit?.slice(0, 12) ?? '—'}
+                        </Table.Cell>
+                        <Table.Cell textAlign="end">{b?.error_count ?? '—'}</Table.Cell>
+                        <Table.Cell textAlign="end">{b?.warn_count ?? '—'}</Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
+                </Table.Body>
+              </Table.Root>
+            </Box>
+          )}
           <Box overflowX="auto">
             <Table.Root variant="outline" size="sm">
               <Table.Header>
