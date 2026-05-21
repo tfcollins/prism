@@ -16,12 +16,14 @@ from prism_api.models.user import User
 from prism_api.reports.run_report import ReportMeasurement, RunReport, build_run_report_pdf
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.audit import AuditRepo
+from prism_api.repos.logs import LogRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.specs import SpecRepo
 from prism_api.repos.suites import MeasurementRepo, SuiteRepo
 from prism_api.schemas.artifact import ArtifactOut
 from prism_api.schemas.case import measurement_margin
+from prism_api.schemas.log import FindingOut, LogReportOut, commit_url
 from prism_api.schemas.run import (
     CreateRunMetadata,
     RunDetail,
@@ -32,6 +34,7 @@ from prism_api.schemas.run import (
     SuiteSummary,
 )
 from prism_api.schemas.spec import resolve_spec
+from prism_api.services.boot_summary import build_boot_summary
 from prism_api.storage import ObjectStorage, build_storage
 from prism_api.worker.tasks import run_ingest
 
@@ -166,6 +169,7 @@ def get_run(
     run_id: str,
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
+    settings: Settings = Depends(get_settings_dep),
 ) -> RunDetail:
     runs = RunRepo(session)
     run = runs.get_by_id(run_id)
@@ -186,6 +190,7 @@ def get_run(
     tags = [RunTagOut(key=t.key, value=t.value) for t in runs.tags_for(run.id)]
     project = ProjectRepo(session).get_by_id(run.project_id)
     cal = runs.get_by_id(run.calibration_run_id) if run.calibration_run_id else None
+    boot = build_boot_summary(LogRepo(session), run.id, settings)
     return RunDetail(
         id=run.id,
         project_id=run.project_id,
@@ -199,7 +204,42 @@ def get_run(
         calibration_run_name=cal.name if cal else None,
         tags=tags,
         suites=suites,
+        boot=boot,
     )
+
+
+@router.get("/{run_id}/logs", response_model=list[LogReportOut])
+def get_run_logs(
+    run_id: str,
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> list[LogReportOut]:
+    runs = RunRepo(session)
+    if runs.get_by_id(run_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    repo = LogRepo(session)
+    out: list[LogReportOut] = []
+    for r in repo.list_by_run(run_id):
+        out.append(
+            LogReportOut(
+                source=r.source,
+                kernel_version=r.kernel_version,
+                board=r.board,
+                kernel_commit=r.kernel_commit,
+                hdl_commit=r.hdl_commit,
+                kernel_commit_url=commit_url(settings.kernel_repo_url, r.kernel_commit),
+                hdl_commit_url=commit_url(settings.hdl_repo_url, r.hdl_commit),
+                error_count=r.error_count,
+                warn_count=r.warn_count,
+                has_panic=r.has_panic,
+                findings=[
+                    FindingOut(severity=f.severity, line_no=f.line_no, text=f.text)
+                    for f in repo.findings_for(r.id)
+                ],
+            )
+        )
+    return out
 
 
 @router.patch("/{run_id}/calibration", response_model=RunDetail)
@@ -209,6 +249,7 @@ def set_calibration(
     user: User = Depends(current_user),
     __: None = Depends(csrf_protect),
     session: Session = Depends(session_dep),
+    settings: Settings = Depends(get_settings_dep),
 ) -> RunDetail:
     runs = RunRepo(session)
     run = runs.get_by_id(run_id)
@@ -235,7 +276,7 @@ def set_calibration(
         detail={"calibration_run_id": cal_id},
     )
     session.commit()
-    return get_run(run_id, user, session)
+    return get_run(run_id, user, session, settings)
 
 
 @router.get("/{run_id}/artifacts", response_model=list[ArtifactOut])

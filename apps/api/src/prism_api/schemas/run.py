@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from prism_api.schemas.log import BootSummary
+
 
 class RunTagOut(BaseModel):
     key: str
@@ -43,6 +45,7 @@ class RunDetail(RunOut):
     calibration_run_id: str | None = None
     calibration_run_name: str | None = None
     suites: list[SuiteSummary] = Field(default_factory=list)
+    boot: "BootSummary | None" = None
 
 
 class SetCalibrationRequest(BaseModel):
