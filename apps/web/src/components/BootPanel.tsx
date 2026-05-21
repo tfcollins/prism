@@ -3,13 +3,7 @@ import { Box, Flex, Text } from '@chakra-ui/react';
 
 import { useRunLogs } from '../api/queries';
 import type { BootSummary } from '../api/types';
-
-const SEV_FG: Record<string, string> = {
-  panic: 'var(--prism-status-fail-fg)',
-  error: 'var(--prism-status-fail-fg)',
-  probe_fail: 'var(--prism-status-warn-fg)',
-  warn: 'var(--prism-status-warn-fg)',
-};
+import { severityColor } from '../lib/logFindings';
 
 function CommitLine({ label, commit, url, shared }: {
   label: string; commit: string | null; url: string | null; shared: number;
@@ -56,7 +50,7 @@ export function BootPanel({ runId, boot }: { runId: string; boot: BootSummary })
       {logs.data && logs.data.some((r) => r.findings.length > 0) && (
         <Box mt={2} maxH="220px" overflowY="auto" fontFamily="mono" fontSize="xs">
           {logs.data.flatMap((r) => r.findings).map((f, i) => (
-            <Text key={i} color={SEV_FG[f.severity] ?? 'var(--prism-text-muted)'} truncate>
+            <Text key={i} color={severityColor(f.severity)} truncate>
               [{f.severity}] {f.text}
             </Text>
           ))}
