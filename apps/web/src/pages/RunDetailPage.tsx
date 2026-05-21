@@ -92,7 +92,15 @@ export function RunDetailPage() {
           {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
-          <Grid templateColumns={rightOpen ? '240px 1fr 280px' : '240px 1fr'} gap={4} minH="500px">
+          <Grid
+            templateColumns={{
+              base: '1fr',
+              md: '220px 1fr',
+              lg: rightOpen ? '240px 1fr 280px' : '240px 1fr',
+            }}
+            gap={4}
+            minH={{ base: 'auto', md: '500px' }}
+          >
             <Box
               borderWidth={1}
               borderColor="var(--prism-border)"

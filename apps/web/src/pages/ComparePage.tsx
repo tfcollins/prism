@@ -53,70 +53,72 @@ export function ComparePage() {
             </Text>
           </Box>
           <MeasurementDiffsTable data={q.data} />
-          <Table.Root variant="outline" size="sm">
-            <Table.Header>
-              <Table.Row>
-                <Table.ColumnHeader>Suite</Table.ColumnHeader>
-                <Table.ColumnHeader>Case</Table.ColumnHeader>
-                {q.data.runs.map((r) => (
-                  <Table.ColumnHeader key={r.id}>{r.name}</Table.ColumnHeader>
-                ))}
-                <Table.ColumnHeader>Overlay</Table.ColumnHeader>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {q.data.cases.map((c) => {
-                const isSelected =
-                  selected?.suite_name === c.suite_name && selected?.name === c.name;
-                const hasAnyWaveform = c.waveform_artifact_ids.some((id) => id !== null);
-                return (
-                  <Table.Row
-                    key={`${c.suite_name}/${c.name}`}
-                    onClick={() => hasAnyWaveform && setSelected(isSelected ? null : c)}
-                    cursor={hasAnyWaveform ? 'pointer' : 'default'}
-                    bg={isSelected ? 'var(--prism-bg-sel)' : undefined}
-                    _hover={
-                      hasAnyWaveform
-                        ? { bg: isSelected ? 'var(--prism-bg-sel)' : 'var(--prism-bg-hover)' }
-                        : undefined
-                    }
-                  >
-                    <Table.Cell>{c.suite_name}</Table.Cell>
-                    <Table.Cell>{c.name}</Table.Cell>
-                    {c.statuses.map((s, i) => (
-                      <Table.Cell key={i}>
-                        {s ? (
-                          <Badge
-                            colorPalette={s === 'pass' ? 'green' : s === 'skip' ? 'gray' : 'red'}
+          <Box overflowX="auto">
+            <Table.Root variant="outline" size="sm">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>Suite</Table.ColumnHeader>
+                  <Table.ColumnHeader>Case</Table.ColumnHeader>
+                  {q.data.runs.map((r) => (
+                    <Table.ColumnHeader key={r.id}>{r.name}</Table.ColumnHeader>
+                  ))}
+                  <Table.ColumnHeader>Overlay</Table.ColumnHeader>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {q.data.cases.map((c) => {
+                  const isSelected =
+                    selected?.suite_name === c.suite_name && selected?.name === c.name;
+                  const hasAnyWaveform = c.waveform_artifact_ids.some((id) => id !== null);
+                  return (
+                    <Table.Row
+                      key={`${c.suite_name}/${c.name}`}
+                      onClick={() => hasAnyWaveform && setSelected(isSelected ? null : c)}
+                      cursor={hasAnyWaveform ? 'pointer' : 'default'}
+                      bg={isSelected ? 'var(--prism-bg-sel)' : undefined}
+                      _hover={
+                        hasAnyWaveform
+                          ? { bg: isSelected ? 'var(--prism-bg-sel)' : 'var(--prism-bg-hover)' }
+                          : undefined
+                      }
+                    >
+                      <Table.Cell>{c.suite_name}</Table.Cell>
+                      <Table.Cell>{c.name}</Table.Cell>
+                      {c.statuses.map((s, i) => (
+                        <Table.Cell key={i}>
+                          {s ? (
+                            <Badge
+                              colorPalette={s === 'pass' ? 'green' : s === 'skip' ? 'gray' : 'red'}
+                            >
+                              {s}
+                            </Badge>
+                          ) : (
+                            <Text fontSize="xs" color="var(--prism-text-subtle)">
+                              absent
+                            </Text>
+                          )}
+                        </Table.Cell>
+                      ))}
+                      <Table.Cell>
+                        {hasAnyWaveform ? (
+                          <Text
+                            fontSize="xs"
+                            color={isSelected ? 'var(--prism-brand)' : 'var(--prism-text-subtle)'}
                           >
-                            {s}
-                          </Badge>
+                            {isSelected ? '▾ shown below' : 'click to overlay'}
+                          </Text>
                         ) : (
-                          <Text fontSize="xs" color="var(--prism-text-subtle)">
-                            absent
+                          <Text fontSize="xs" color="var(--prism-text-faint)">
+                            no waveform
                           </Text>
                         )}
                       </Table.Cell>
-                    ))}
-                    <Table.Cell>
-                      {hasAnyWaveform ? (
-                        <Text
-                          fontSize="xs"
-                          color={isSelected ? 'var(--prism-brand)' : 'var(--prism-text-subtle)'}
-                        >
-                          {isSelected ? '▾ shown below' : 'click to overlay'}
-                        </Text>
-                      ) : (
-                        <Text fontSize="xs" color="var(--prism-text-faint)">
-                          no waveform
-                        </Text>
-                      )}
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              })}
-            </Table.Body>
-          </Table.Root>
+                    </Table.Row>
+                  );
+                })}
+              </Table.Body>
+            </Table.Root>
+          </Box>
 
           {selected && overlayTraces.length > 0 && (
             <Box
@@ -174,44 +176,48 @@ function MeasurementDiffsTable({ data }: { data: CompareResponse }) {
       >
         Measurement deltas
       </Text>
-      <Table.Root variant="outline" size="sm">
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader>Measurement</Table.ColumnHeader>
-            {data.runs.map((r) => (
-              <Table.ColumnHeader key={r.id} textAlign="end">
-                {r.name}
-              </Table.ColumnHeader>
-            ))}
-            <Table.ColumnHeader textAlign="end">Δ (first→last)</Table.ColumnHeader>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {rows.map((d) => (
-            <Table.Row key={d.name}>
-              <Table.Cell fontWeight="600">{d.name}</Table.Cell>
-              {d.values.map((v, i) => (
-                <Table.Cell key={i} textAlign="end" fontFamily="mono">
-                  {v === null ? '—' : formatEng(v, d.unit)}
-                </Table.Cell>
+      <Box overflowX="auto">
+        <Table.Root variant="outline" size="sm">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader>Measurement</Table.ColumnHeader>
+              {data.runs.map((r) => (
+                <Table.ColumnHeader key={r.id} textAlign="end">
+                  {r.name}
+                </Table.ColumnHeader>
               ))}
-              <Table.Cell
-                textAlign="end"
-                fontFamily="mono"
-                color={
-                  d.delta === null
-                    ? 'var(--prism-text-faint)'
-                    : d.delta === 0
-                      ? 'var(--prism-text-subtle)'
-                      : 'var(--prism-text)'
-                }
-              >
-                {d.delta === null ? '—' : `${d.delta >= 0 ? '+' : ''}${formatEng(d.delta, d.unit)}`}
-              </Table.Cell>
+              <Table.ColumnHeader textAlign="end">Δ (first→last)</Table.ColumnHeader>
             </Table.Row>
-          ))}
-        </Table.Body>
-      </Table.Root>
+          </Table.Header>
+          <Table.Body>
+            {rows.map((d) => (
+              <Table.Row key={d.name}>
+                <Table.Cell fontWeight="600">{d.name}</Table.Cell>
+                {d.values.map((v, i) => (
+                  <Table.Cell key={i} textAlign="end" fontFamily="mono">
+                    {v === null ? '—' : formatEng(v, d.unit)}
+                  </Table.Cell>
+                ))}
+                <Table.Cell
+                  textAlign="end"
+                  fontFamily="mono"
+                  color={
+                    d.delta === null
+                      ? 'var(--prism-text-faint)'
+                      : d.delta === 0
+                        ? 'var(--prism-text-subtle)'
+                        : 'var(--prism-text)'
+                  }
+                >
+                  {d.delta === null
+                    ? '—'
+                    : `${d.delta >= 0 ? '+' : ''}${formatEng(d.delta, d.unit)}`}
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Box>
     </Box>
   );
 }

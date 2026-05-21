@@ -346,57 +346,59 @@ function RegressionsTab({ slug }: { slug: string }) {
     );
   }
   return (
-    <Table.Root variant="outline" size="sm">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeader>Run</Table.ColumnHeader>
-          <Table.ColumnHeader>Measurement</Table.ColumnHeader>
-          <Table.ColumnHeader textAlign="end">Value</Table.ColumnHeader>
-          <Table.ColumnHeader textAlign="end">Previous</Table.ColumnHeader>
-          <Table.ColumnHeader>Status</Table.ColumnHeader>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {q.data.events.map((e) => (
-          <Table.Row key={`${e.run_id}:${e.measurement_name}`}>
-            <Table.Cell>
-              <RouterLink to={`/runs/${e.run_id}`} style={{ color: 'var(--prism-link)' }}>
-                {e.run_name}
-              </RouterLink>
-            </Table.Cell>
-            <Table.Cell fontWeight="600">{e.measurement_name}</Table.Cell>
-            <Table.Cell textAlign="end" fontFamily="mono">
-              {formatEng(e.value, e.unit)}
-            </Table.Cell>
-            <Table.Cell textAlign="end" fontFamily="mono" color="var(--prism-text-faint)">
-              {e.previous_value === null ? '—' : formatEng(e.previous_value, e.unit)}
-            </Table.Cell>
-            <Table.Cell>
-              <Text
-                as="span"
-                fontSize="xs"
-                fontWeight="600"
-                px={2}
-                py="1px"
-                borderRadius="sm"
-                bg={
-                  e.kind === 'crossed_out'
-                    ? 'var(--prism-status-fail-bg)'
-                    : 'var(--prism-status-warn-bg)'
-                }
-                color={
-                  e.kind === 'crossed_out'
-                    ? 'var(--prism-status-fail-fg)'
-                    : 'var(--prism-status-warn-fg)'
-                }
-              >
-                {e.kind === 'crossed_out' ? '✕ crossed out of spec' : '△ still out'}
-              </Text>
-            </Table.Cell>
+    <Box overflowX="auto">
+      <Table.Root variant="outline" size="sm">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Run</Table.ColumnHeader>
+            <Table.ColumnHeader>Measurement</Table.ColumnHeader>
+            <Table.ColumnHeader textAlign="end">Value</Table.ColumnHeader>
+            <Table.ColumnHeader textAlign="end">Previous</Table.ColumnHeader>
+            <Table.ColumnHeader>Status</Table.ColumnHeader>
           </Table.Row>
-        ))}
-      </Table.Body>
-    </Table.Root>
+        </Table.Header>
+        <Table.Body>
+          {q.data.events.map((e) => (
+            <Table.Row key={`${e.run_id}:${e.measurement_name}`}>
+              <Table.Cell>
+                <RouterLink to={`/runs/${e.run_id}`} style={{ color: 'var(--prism-link)' }}>
+                  {e.run_name}
+                </RouterLink>
+              </Table.Cell>
+              <Table.Cell fontWeight="600">{e.measurement_name}</Table.Cell>
+              <Table.Cell textAlign="end" fontFamily="mono">
+                {formatEng(e.value, e.unit)}
+              </Table.Cell>
+              <Table.Cell textAlign="end" fontFamily="mono" color="var(--prism-text-faint)">
+                {e.previous_value === null ? '—' : formatEng(e.previous_value, e.unit)}
+              </Table.Cell>
+              <Table.Cell>
+                <Text
+                  as="span"
+                  fontSize="xs"
+                  fontWeight="600"
+                  px={2}
+                  py="1px"
+                  borderRadius="sm"
+                  bg={
+                    e.kind === 'crossed_out'
+                      ? 'var(--prism-status-fail-bg)'
+                      : 'var(--prism-status-warn-bg)'
+                  }
+                  color={
+                    e.kind === 'crossed_out'
+                      ? 'var(--prism-status-fail-fg)'
+                      : 'var(--prism-status-warn-fg)'
+                  }
+                >
+                  {e.kind === 'crossed_out' ? '✕ crossed out of spec' : '△ still out'}
+                </Text>
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Box>
   );
 }
 
@@ -411,32 +413,34 @@ function AuditTab({ slug }: { slug: string }) {
     );
   }
   return (
-    <Table.Root variant="outline" size="sm">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeader>When</Table.ColumnHeader>
-          <Table.ColumnHeader>Who</Table.ColumnHeader>
-          <Table.ColumnHeader>Action</Table.ColumnHeader>
-          <Table.ColumnHeader>Target</Table.ColumnHeader>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {q.data.map((e, i) => (
-          <Table.Row key={`${e.created_at}:${i}`}>
-            <Table.Cell fontFamily="mono" fontSize="xs" color="var(--prism-text-muted)">
-              {e.created_at.replace('T', ' ').slice(0, 19)}
-            </Table.Cell>
-            <Table.Cell fontSize="sm">{e.user_email ?? '—'}</Table.Cell>
-            <Table.Cell fontFamily="mono" fontSize="xs">
-              {e.action}
-            </Table.Cell>
-            <Table.Cell fontSize="xs" color="var(--prism-text-muted)">
-              {e.target_type ? `${e.target_type}:${e.target_id ?? ''}` : '—'}
-            </Table.Cell>
+    <Box overflowX="auto">
+      <Table.Root variant="outline" size="sm">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>When</Table.ColumnHeader>
+            <Table.ColumnHeader>Who</Table.ColumnHeader>
+            <Table.ColumnHeader>Action</Table.ColumnHeader>
+            <Table.ColumnHeader>Target</Table.ColumnHeader>
           </Table.Row>
-        ))}
-      </Table.Body>
-    </Table.Root>
+        </Table.Header>
+        <Table.Body>
+          {q.data.map((e, i) => (
+            <Table.Row key={`${e.created_at}:${i}`}>
+              <Table.Cell fontFamily="mono" fontSize="xs" color="var(--prism-text-muted)">
+                {e.created_at.replace('T', ' ').slice(0, 19)}
+              </Table.Cell>
+              <Table.Cell fontSize="sm">{e.user_email ?? '—'}</Table.Cell>
+              <Table.Cell fontFamily="mono" fontSize="xs">
+                {e.action}
+              </Table.Cell>
+              <Table.Cell fontSize="xs" color="var(--prism-text-muted)">
+                {e.target_type ? `${e.target_type}:${e.target_id ?? ''}` : '—'}
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Box>
   );
 }
 
@@ -466,22 +470,24 @@ function SpecsTab({ slug }: { slug: string }) {
         Project limits fill in for measurements that arrived without their own. Limits embedded in a
         run at ingest always win, so editing here never rewrites historical pass/fail.
       </Text>
-      <Table.Root variant="outline" size="sm">
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader>Measurement</Table.ColumnHeader>
-            <Table.ColumnHeader>Min</Table.ColumnHeader>
-            <Table.ColumnHeader>Max</Table.ColumnHeader>
-            <Table.ColumnHeader>Unit</Table.ColumnHeader>
-            <Table.ColumnHeader />
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {names.map((name) => (
-            <SpecRow key={name} slug={slug} name={name} existing={specByName.get(name) ?? null} />
-          ))}
-        </Table.Body>
-      </Table.Root>
+      <Box overflowX="auto">
+        <Table.Root variant="outline" size="sm">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader>Measurement</Table.ColumnHeader>
+              <Table.ColumnHeader>Min</Table.ColumnHeader>
+              <Table.ColumnHeader>Max</Table.ColumnHeader>
+              <Table.ColumnHeader>Unit</Table.ColumnHeader>
+              <Table.ColumnHeader />
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {names.map((name) => (
+              <SpecRow key={name} slug={slug} name={name} existing={specByName.get(name) ?? null} />
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Box>
     </Box>
   );
 }

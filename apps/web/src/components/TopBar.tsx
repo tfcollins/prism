@@ -7,7 +7,7 @@ import { useAuth } from '../auth/useAuth';
 import { useColorMode } from '../colorMode';
 import { Breadcrumbs } from './Breadcrumbs';
 
-export function TopBar() {
+export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, refresh } = useAuth();
   const { colorMode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
@@ -28,14 +28,28 @@ export function TopBar() {
       h="56px"
       borderBottomWidth={1}
       borderBottomColor="var(--prism-border)"
-      px={6}
+      px={{ base: 3, md: 6 }}
+      gap={2}
       alignItems="center"
       justifyContent="space-between"
     >
-      <Box flex="1" minW={0}>
-        <Breadcrumbs />
-      </Box>
-      <Flex alignItems="center" gap={3}>
+      <Flex alignItems="center" gap={2} flex="1" minW={0}>
+        <IconButton
+          aria-label="Open menu"
+          size="sm"
+          variant="ghost"
+          display={{ base: 'inline-flex', md: 'none' }}
+          onClick={onMenuClick}
+        >
+          <Box as="span" fontSize="18px" lineHeight="1">
+            ☰
+          </Box>
+        </IconButton>
+        <Box flex="1" minW={0}>
+          <Breadcrumbs />
+        </Box>
+      </Flex>
+      <Flex alignItems="center" gap={{ base: 2, md: 3 }}>
         <IconButton
           aria-label={colorMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           size="sm"
@@ -44,7 +58,13 @@ export function TopBar() {
         >
           {colorMode === 'dark' ? <SunIcon /> : <MoonIcon />}
         </IconButton>
-        <Text fontSize="sm" color="var(--prism-text-subtle)">
+        <Text
+          fontSize="sm"
+          color="var(--prism-text-subtle)"
+          display={{ base: 'none', sm: 'block' }}
+          truncate
+          maxW="180px"
+        >
           {user?.email ?? 'guest'}
         </Text>
         <Button size="sm" variant="outline" onClick={handleLogout}>

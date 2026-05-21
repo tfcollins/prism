@@ -202,7 +202,7 @@ export function SpectrumAnalysis({
           )}
         </Flex>
       )}
-      <Grid templateColumns="repeat(4, 1fr)" gap={2} mt={2}>
+      <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={2} mt={2}>
         <NumField label="Center (Hz)" value={center} onChange={setCenter} />
         <NumField label="Channel BW (Hz)" value={channelBw} onChange={setChannelBw} />
         <NumField label="ACPR offset (Hz)" value={offset} onChange={setOffset} />

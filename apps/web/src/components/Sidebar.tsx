@@ -44,21 +44,35 @@ function readInitialCollapsed(): boolean {
   return window.localStorage.getItem(COLLAPSED_KEY) === 'true';
 }
 
-export function Sidebar() {
+/**
+ * `persistent` (default) is the desktop rail with its collapse toggle.
+ * `drawer` is the mobile variant: always expanded, a close button instead of
+ * collapse, and every nav tap calls `onNavigate` so the overlay can close.
+ */
+export function Sidebar({
+  variant = 'persistent',
+  onNavigate,
+}: {
+  variant?: 'persistent' | 'drawer';
+  onNavigate?: () => void;
+}) {
   const projects = useProjects();
   const { slug: activeSlug } = useParams<{ slug?: string }>();
-  const [collapsed, setCollapsed] = useState<boolean>(readInitialCollapsed);
+  const isDrawer = variant === 'drawer';
+  const [storedCollapsed, setStoredCollapsed] = useState<boolean>(readInitialCollapsed);
+  const collapsed = isDrawer ? false : storedCollapsed;
 
   useEffect(() => {
-    window.localStorage.setItem(COLLAPSED_KEY, String(collapsed));
-  }, [collapsed]);
+    if (!isDrawer) window.localStorage.setItem(COLLAPSED_KEY, String(storedCollapsed));
+  }, [storedCollapsed, isDrawer]);
 
-  const toggle = () => setCollapsed((prev) => !prev);
+  const toggle = () => setStoredCollapsed((prev) => !prev);
 
   return (
     <Box
       as="nav"
-      w={collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH}
+      w={isDrawer ? EXPANDED_WIDTH : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH}
+      h={isDrawer ? '100%' : undefined}
       bg="var(--prism-bg-surface)"
       borderRightWidth={1}
       borderRightColor="var(--prism-border)"
@@ -76,19 +90,19 @@ export function Sidebar() {
         px={collapsed ? 0 : 1}
       >
         {!collapsed && (
-          <Link to="/projects" aria-label="Prism home">
+          <Link to="/projects" aria-label="Prism home" onClick={onNavigate}>
             <Logo size="sm" />
           </Link>
         )}
         <IconButton
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          onClick={toggle}
+          aria-label={isDrawer ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          onClick={isDrawer ? onNavigate : toggle}
           variant="ghost"
           size="xs"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isDrawer ? 'Close menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <Box as="span" fontSize="14px" lineHeight="1">
-            {collapsed ? '›' : '‹'}
+            {isDrawer ? '✕' : collapsed ? '›' : '‹'}
           </Box>
         </IconButton>
       </Box>
@@ -102,6 +116,7 @@ export function Sidebar() {
               end={item.end}
               style={collapsedLinkStyle}
               title={item.label}
+              onClick={onNavigate}
             >
               {item.short}
             </NavLink>
@@ -111,7 +126,13 @@ export function Sidebar() {
         <>
           <Stack gap={1}>
             {PRIMARY_NAV.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.end} style={linkStyle}>
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                style={linkStyle}
+                onClick={onNavigate}
+              >
                 {item.label}
               </NavLink>
             ))}
@@ -135,6 +156,7 @@ export function Sidebar() {
                     key={p.id}
                     to={`/projects/${p.slug}`}
                     style={() => linkStyle({ isActive: p.slug === activeSlug })}
+                    onClick={onNavigate}
                   >
                     {p.slug}
                   </NavLink>

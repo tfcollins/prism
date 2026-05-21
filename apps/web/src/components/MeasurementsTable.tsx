@@ -84,10 +84,15 @@ export function MeasurementsTable({ measurements }: { measurements: Measurement[
             borderColor="var(--prism-border)"
             fontSize="sm"
           >
-            <Text flex="1" color="var(--prism-text-muted)" fontWeight="600">
+            <Text flex="1" minW={0} color="var(--prism-text-muted)" fontWeight="600" truncate>
               {m.name}
             </Text>
-            <Text fontFamily="mono" color="var(--prism-text)" minW="110px" textAlign="right">
+            <Text
+              fontFamily="mono"
+              color="var(--prism-text)"
+              minW={{ base: '70px', md: '110px' }}
+              textAlign="right"
+            >
               {formatEng(m.value, m.unit)}
             </Text>
             <Text
@@ -96,10 +101,11 @@ export function MeasurementsTable({ measurements }: { measurements: Measurement[
               minW="160px"
               textAlign="right"
               fontSize="xs"
+              display={{ base: 'none', md: 'block' }}
             >
               {specText(m)}
             </Text>
-            <Box minW="100px" textAlign="right">
+            <Box minW={{ base: 'auto', md: '100px' }} textAlign="right">
               <MarginChip measurement={m} />
             </Box>
           </Flex>
