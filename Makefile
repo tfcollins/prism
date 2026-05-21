@@ -1,6 +1,11 @@
-.PHONY: up up-bare down logs build test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles fmt fmt-api fmt-web docs clean
+.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles fmt fmt-api fmt-web docs clean
 
 COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env
+
+# Production stack: base compose + the prod overlay (publishes the web port,
+# uses the built nginx/uvicorn images — no Vite, no bind mounts). Intended for a
+# self-hosted host (e.g. a Raspberry Pi). See deploy/docker-compose.prod.yml.
+PROD_COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env
 
 # `make up` brings the stack online and restarts the web container after the
 # initial start. Docker can race the bind mount of apps/web/src into the
@@ -24,6 +29,16 @@ logs:
 
 build:
 	$(COMPOSE) build
+
+# Production deploy (build images + start detached). Run on the host.
+deploy:
+	$(PROD_COMPOSE) up -d --build
+
+deploy-down:
+	$(PROD_COMPOSE) down
+
+deploy-logs:
+	$(PROD_COMPOSE) logs -f
 
 test: test-api test-web
 

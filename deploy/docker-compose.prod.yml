@@ -1,0 +1,15 @@
+# Production overlay for the base deploy/docker-compose.yml.
+#
+# The base stack builds api/web/worker from the production Dockerfiles but
+# publishes no host ports (the dev overlay does that, using Vite + bind mounts
+# which are not for production). This overlay publishes only the web (nginx)
+# port: nginx already proxies /api/ -> api:8000, and artifact downloads stream
+# through /api/..., so Postgres/Redis/MinIO stay internal to the compose network.
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml \
+#     --env-file deploy/.env up -d --build
+services:
+  web:
+    ports:
+      - "${WEB_HOST_PORT:-8080}:80"
