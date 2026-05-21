@@ -155,3 +155,37 @@ def test_compare_includes_waveform_artifact_ids(
     # The "other" case has no waveform attached
     other_case = by_name[("dsp", "other")]
     assert other_case["waveform_artifact_ids"] == [None, None]
+
+
+_BOOT_JUNIT = (
+    b'<?xml version="1.0"?><testsuites>'
+    b'<testsuite name="s" tests="1" failures="0">'
+    b'<testcase classname="c" name="t"/>'
+    b"</testsuite></testsuites>"
+)
+
+
+def test_compare_includes_boot_blocks(client, seed_admin, patch_ingest) -> None:
+    client.post("/api/v1/auth/login", json={"email": "admin@x.com", "password": "pw"})
+    csrf = client.cookies.get("prism_csrf") or ""
+    client.post("/api/v1/projects", json={"slug": "rf", "name": "RF"})
+
+    def up(name: str, kernel: str) -> str:
+        arc = io.BytesIO()
+        with zipfile.ZipFile(arc, "w") as zf:
+            zf.writestr("boot.log", f"Linux version 6.1.0-g{kernel} (j) #1\n")
+        return client.post(
+            "/api/v1/runs",
+            files={
+                "junit": ("j.xml", _BOOT_JUNIT, "application/xml"),
+                "archive": ("a.zip", arc.getvalue(), "application/zip"),
+            },
+            data={"metadata": json.dumps({"project_slug": "rf", "name": name})},
+            headers={"X-Prism-Csrf": csrf},
+        ).json()["id"]
+
+    r1, r2 = up("a", "1111111"), up("b", "2222222")
+    body = client.post(
+        "/api/v1/compare", json={"run_ids": [r1, r2]}, headers={"X-Prism-Csrf": csrf}
+    ).json()
+    assert [b["kernel_commit"] for b in body["boots"]] == ["1111111", "2222222"]

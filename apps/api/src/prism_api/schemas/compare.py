@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 
+from prism_api.schemas.log import BootSummary
+
 
 class CompareRequest(BaseModel):
     run_ids: list[str] = Field(min_length=2, max_length=10)
@@ -34,3 +36,4 @@ class CompareResponse(BaseModel):
     cases: list[CaseDiff]
     pass_rate_delta: float | None  # (run[-1] - run[0]) / total, or None if zero divides
     measurement_diffs: list[MeasurementDiff] = Field(default_factory=list)
+    boots: list[BootSummary | None] = Field(default_factory=list)

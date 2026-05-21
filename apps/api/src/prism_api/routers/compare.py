@@ -3,10 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from prism_api.deps import csrf_protect, current_user, session_dep
+from prism_api.config import Settings
+from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models import ArtifactKind
 from prism_api.models.user import User
 from prism_api.repos.artifacts import ArtifactRepo
+from prism_api.repos.logs import LogRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.schemas.compare import (
@@ -16,6 +18,7 @@ from prism_api.schemas.compare import (
     MeasurementDiff,
     RunHeader,
 )
+from prism_api.services.boot_summary import build_boot_summary
 
 router = APIRouter(prefix="/api/v1/compare", tags=["compare"])
 
@@ -32,6 +35,7 @@ def compare_runs(
     _: User = Depends(current_user),
     __: None = Depends(csrf_protect),
     session: Session = Depends(session_dep),
+    settings: Settings = Depends(get_settings_dep),
 ) -> CompareResponse:
     runs_repo = RunRepo(session)
     suites_repo = SuiteRepo(session)
@@ -104,8 +108,15 @@ def compare_runs(
 
     measurement_diffs = _measurement_diffs(MeasurementRepo(session), body.run_ids)
 
+    log_repo = LogRepo(session)
+    boots = [build_boot_summary(log_repo, rid, settings) for rid in body.run_ids]
+
     return CompareResponse(
-        runs=runs, cases=cases, pass_rate_delta=pr_delta, measurement_diffs=measurement_diffs
+        runs=runs,
+        cases=cases,
+        pass_rate_delta=pr_delta,
+        measurement_diffs=measurement_diffs,
+        boots=boots,
     )
 
 
