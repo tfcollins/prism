@@ -62,6 +62,11 @@ class ObjectStorage:
         body, _ = self.get(key)
         return body.read()
 
+    def list_prefix(self, prefix: str, *, limit: int = 1000) -> list[str]:
+        """Return object keys under a prefix (used to enumerate backup manifests)."""
+        resp = self.client.list_objects_v2(Bucket=self.bucket, Prefix=prefix, MaxKeys=limit)
+        return [obj["Key"] for obj in resp.get("Contents", [])]
+
     def exists(self, key: str) -> bool:
         try:
             self.client.head_object(Bucket=self.bucket, Key=key)

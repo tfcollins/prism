@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     log_findings_cap: int = DEFAULT_FINDINGS_CAP
     kernel_repo_url: str | None = None
     hdl_repo_url: str | None = None
+    # Admin "container logs" viewer reads the Docker Engine API over this socket
+    # (mounted read-only into the api container). Missing socket → feature off.
+    docker_socket: str = "/var/run/docker.sock"
 
     @field_validator("jwt_secret")
     @classmethod

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Dump Postgres (always) and the MinIO bucket (optional), push each to Cloudsmith
-# as a raw package, then prune to the most recent BACKUP_KEEP of each.
+# as a raw package, then prune to the most recent BACKUP_KEEP of each. A manifest
+# describing the run is written to s3://<bucket>/_backups/<ts>.json so the admin
+# panel can show backup history (written even on dry runs and failures).
 #
 # Env (all provided by the compose service):
 #   POSTGRES_DB/USER/PASSWORD, PG_HOST
@@ -11,7 +13,6 @@ set -euo pipefail
 
 ts="$(date -u +%Y%m%dT%H%M%SZ)"
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
 
 pg_host="${PG_HOST:-postgres}"
 db="${POSTGRES_DB:-prism}"
@@ -21,7 +22,37 @@ keep="${BACKUP_KEEP:-7}"
 include_minio="${BACKUP_INCLUDE_MINIO:-true}"
 dry="${BACKUP_DRY_RUN:-0}"
 
+# Manifest fields — pessimistic defaults; flipped to success at the end.
+status="error"
+cloudsmith_status="skipped"
+pg_bytes=""
+minio_bytes=""
+
 log() { echo "[backup] $*"; }
+
+# mc alias for MinIO — used both to mirror the bucket and to store the manifest.
+mc --quiet alias set bk "${MINIO_ENDPOINT:-http://minio:9000}" \
+    "${MINIO_ROOT_USER:-}" "${MINIO_ROOT_PASSWORD:-}" >/dev/null 2>&1 || true
+
+write_manifest() {
+    local minc="false"
+    [ "$include_minio" = "true" ] && minc="true"
+    jq -n \
+        --arg ts "$ts" --arg status "$status" --arg cs "$cloudsmith_status" \
+        --argjson pg "${pg_bytes:-null}" --argjson mb "${minio_bytes:-null}" \
+        --argjson minc "$minc" --argjson keep "${keep:-null}" \
+        '{timestamp:$ts, status:$status, postgres_bytes:$pg, minio_included:$minc,
+          minio_bytes:$mb, cloudsmith:$cs, keep:$keep, error:null}' \
+        >"$work/manifest.json" 2>/dev/null || true
+    mc --quiet cp "$work/manifest.json" "bk/$bucket/_backups/$ts.json" >/dev/null 2>&1 \
+        || log "warn: could not write backup manifest"
+}
+
+cleanup() {
+    write_manifest
+    rm -rf "$work"
+}
+trap cleanup EXIT
 
 log "$ts start (db=$db minio=$include_minio keep=$keep dry=$dry)"
 
@@ -29,28 +60,22 @@ log "$ts start (db=$db minio=$include_minio keep=$keep dry=$dry)"
 pg_file="$work/prism-postgres-$ts.sql.gz"
 PGPASSWORD="${POSTGRES_PASSWORD:-}" pg_dump -h "$pg_host" -U "$pg_user" -d "$db" \
     | gzip -9 >"$pg_file"
+pg_bytes="$(stat -c %s "$pg_file")"
 log "postgres dump $(du -h "$pg_file" | cut -f1)"
 
 # --- 2. MinIO bucket -------------------------------------------------------
 minio_file=""
 if [ "$include_minio" = "true" ]; then
-    mc --quiet alias set bk "${MINIO_ENDPOINT:-http://minio:9000}" \
-        "${MINIO_ROOT_USER:-}" "${MINIO_ROOT_PASSWORD:-}" >/dev/null
     mkdir -p "$work/minio"
     # mirror is a no-op-safe full copy of the bucket's current contents
     mc --quiet mirror --overwrite "bk/$bucket" "$work/minio/$bucket" >/dev/null 2>&1 || true
     minio_file="$work/prism-minio-$ts.tar.gz"
     tar -czf "$minio_file" -C "$work/minio" .
+    minio_bytes="$(stat -c %s "$minio_file")"
     log "minio archive $(du -h "$minio_file" | cut -f1)"
 fi
 
 # --- 3. Push + rotate ------------------------------------------------------
-if [ "$dry" = "1" ] || [ -z "${CLOUDSMITH_API_KEY:-}" ] || [ -z "${CLOUDSMITH_REPO:-}" ]; then
-    log "dry-run or Cloudsmith not configured; skipping upload/rotate"
-    log "$ts done (local only)"
-    exit 0
-fi
-
 push_raw() { # name file
     local name="$1" file="$2"
     log "uploading $name $ts ($(basename "$file"))"
@@ -75,11 +100,18 @@ rotate() { # name — keep the newest $keep versions, delete the rest
     done
 }
 
-push_raw "prism-postgres" "$pg_file"
-rotate "prism-postgres"
-if [ "$include_minio" = "true" ] && [ -n "$minio_file" ]; then
-    push_raw "prism-minio" "$minio_file"
-    rotate "prism-minio"
+if [ "$dry" = "1" ] || [ -z "${CLOUDSMITH_API_KEY:-}" ] || [ -z "${CLOUDSMITH_REPO:-}" ]; then
+    log "dry-run or Cloudsmith not configured; skipping upload/rotate"
+    cloudsmith_status="skipped"
+else
+    push_raw "prism-postgres" "$pg_file"
+    rotate "prism-postgres"
+    if [ "$include_minio" = "true" ] && [ -n "$minio_file" ]; then
+        push_raw "prism-minio" "$minio_file"
+        rotate "prism-minio"
+    fi
+    cloudsmith_status="pushed"
 fi
 
-log "$ts done"
+status="ok"
+log "$ts done ($cloudsmith_status)"

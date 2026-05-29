@@ -68,6 +68,12 @@ services:
       PRISM_LDAP_USER_FILTER: ${LDAP_USER_FILTER:-(mail={email})}
       PRISM_LDAP_EMAIL_ATTRIBUTE: ${LDAP_EMAIL_ATTRIBUTE:-mail}
       PRISM_LDAP_START_TLS: ${LDAP_START_TLS:-false}
+      PRISM_DOCKER_SOCKET: /var/run/docker.sock
+    volumes:
+      # Read-only Docker socket so the admin "container logs" viewer can read
+      # the stack's logs. Grants the api host-level Docker visibility — admins
+      # only (require_admin), read-only. Remove this mount to disable the viewer.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   web:
     build:

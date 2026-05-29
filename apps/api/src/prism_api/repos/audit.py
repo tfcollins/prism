@@ -42,3 +42,11 @@ class AuditRepo:
                 .limit(limit)
             ).scalars()
         )
+
+    def list_recent(self, limit: int = 200) -> list[AuditEvent]:
+        """All audit events, newest first — backs the admin activity feed."""
+        return list(
+            self._session.execute(
+                select(AuditEvent).order_by(AuditEvent.created_at.desc()).limit(limit)
+            ).scalars()
+        )
