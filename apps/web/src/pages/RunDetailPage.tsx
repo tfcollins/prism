@@ -14,6 +14,7 @@ import { SpectrogramPlot } from '../components/SpectrogramPlot';
 import { SpectrumAnalysis } from '../components/SpectrumAnalysis';
 import { TestTree } from '../components/TestTree';
 import { Toast } from '../components/Toast';
+import { Tooltip } from '../components/Tooltip';
 import { WaveformPlot } from '../components/WaveformPlot';
 import { pickInlineArtifact } from '../lib/inlineKinds';
 import { parseTestId } from '../lib/parseTestId';
@@ -73,21 +74,23 @@ export function RunDetailPage() {
         <Box>
           <Flex align="center" justify="space-between" mb={3} gap={2}>
             <Heading size="lg">{runQuery.data.name}</Heading>
-            <Box
-              as="button"
-              onClick={() => setRightOpen((o) => !o)}
-              px={2}
-              py="2px"
-              borderRadius="sm"
-              borderWidth={1}
-              fontSize="xs"
-              cursor="pointer"
-              bg="var(--prism-bg-surface)"
-              color="var(--prism-text-muted)"
-              borderColor="var(--prism-border)"
-            >
-              {rightOpen ? 'hide details ›' : '‹ show details'}
-            </Box>
+            <Tooltip content="Show or hide the run details panel (status, tags, calibration, report).">
+              <Box
+                as="button"
+                onClick={() => setRightOpen((o) => !o)}
+                px={2}
+                py="2px"
+                borderRadius="sm"
+                borderWidth={1}
+                fontSize="xs"
+                cursor="pointer"
+                bg="var(--prism-bg-surface)"
+                color="var(--prism-text-muted)"
+                borderColor="var(--prism-border)"
+              >
+                {rightOpen ? 'hide details ›' : '‹ show details'}
+              </Box>
+            </Tooltip>
           </Flex>
 
           {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
@@ -246,6 +249,14 @@ export function RunDetailPage() {
   );
 }
 
+const STATUS_HELP: Record<string, string> = {
+  pass: 'All test cases passed.',
+  fail: 'One or more test cases failed.',
+  mixed: 'A mix of passing and failing cases.',
+  error: 'The run errored during execution or ingest.',
+  pending: 'Ingest is still in progress.',
+};
+
 function RunMetaPane({ run }: { run: RunDetail }) {
   const dut = run.tags.find((t) => ['device_serial', 'dut', 'serial', 'sn'].includes(t.key));
   const label = (text: string) => (
@@ -270,7 +281,9 @@ function RunMetaPane({ run }: { run: RunDetail }) {
       overflowY="auto"
     >
       {label('Status')}
-      <Badge colorPalette="blue">{run.status}</Badge>
+      <Tooltip content={STATUS_HELP[run.status] ?? 'Overall run status.'}>
+        <Badge colorPalette="blue">{run.status}</Badge>
+      </Tooltip>
 
       {run.boot && (
         <Box mt={3}>
@@ -314,14 +327,16 @@ function RunMetaPane({ run }: { run: RunDetail }) {
       <CalibrationControl run={run} />
 
       {label('Report')}
-      <a
-        href={`/api/v1/runs/${run.id}/report.pdf`}
-        target="_blank"
-        rel="noreferrer"
-        style={{ color: 'var(--prism-link)', fontSize: 13 }}
-      >
-        Download compliance PDF
-      </a>
+      <Tooltip content="Per-run compliance PDF: measurements, margins, pass/fail, and the source JUnit SHA.">
+        <a
+          href={`/api/v1/runs/${run.id}/report.pdf`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: 'var(--prism-link)', fontSize: 13 }}
+        >
+          Download compliance PDF
+        </a>
+      </Tooltip>
     </Box>
   );
 }
@@ -333,27 +348,30 @@ function CalibrationControl({ run }: { run: RunDetail }) {
 
   return (
     <Flex align="center" gap={2} fontSize="sm">
-      <select
-        className="chakra-input"
-        value={run.calibration_run_id ?? ''}
-        disabled={setCal.isPending}
-        onChange={(e) => setCal.mutate(e.target.value === '' ? null : e.target.value)}
-        style={{
-          padding: '2px 6px',
-          borderRadius: 4,
-          borderWidth: 1,
-          fontFamily: 'monospace',
-          fontSize: 13,
-          maxWidth: 240,
-        }}
-      >
-        <option value="">— none —</option>
-        {candidates.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-          </option>
-        ))}
-      </select>
+      <Tooltip content="Link this run to a calibration run whose corrections apply to its measurements.">
+        <select
+          className="chakra-input"
+          aria-label="Calibration run"
+          value={run.calibration_run_id ?? ''}
+          disabled={setCal.isPending}
+          onChange={(e) => setCal.mutate(e.target.value === '' ? null : e.target.value)}
+          style={{
+            padding: '2px 6px',
+            borderRadius: 4,
+            borderWidth: 1,
+            fontFamily: 'monospace',
+            fontSize: 13,
+            maxWidth: 240,
+          }}
+        >
+          <option value="">— none —</option>
+          {candidates.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      </Tooltip>
     </Flex>
   );
 }
