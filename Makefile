@@ -1,4 +1,4 @@
-.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-client lint-web lint-md lint-actions lint-dockerfiles lint-docs fmt fmt-api fmt-web docs docs-build docs-venv docs-shots clean
+.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-client lint-web lint-md lint-actions lint-dockerfiles lint-docs fmt fmt-api fmt-web docs docs-build docs-venv docs-shots backup clean
 
 # Local virtualenv for building the Sphinx docs (adi-doctools "cosmic" theme).
 DOCS_VENV := docs/.venv
@@ -85,7 +85,7 @@ lint-actions:
 
 lint-dockerfiles:
 	@if command -v hadolint >/dev/null 2>&1; then \
-		hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; \
+		hadolint apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev deploy/backup/Dockerfile; \
 	else \
 		echo "hadolint not on PATH; skipping (CI will still run it)"; \
 	fi
@@ -122,6 +122,12 @@ docs-shots: docs-venv
 	uv pip install --python $(DOCS_PY) playwright
 	$(DOCS_VENV)/bin/playwright install chromium
 	$(DOCS_PY) docs/shots.py
+
+# Run a single backup now (Postgres + MinIO → Cloudsmith), instead of waiting
+# for the schedule. Honors deploy/.env; with no CLOUDSMITH_API_KEY it dumps
+# locally and skips the upload (a useful dry run).
+backup:
+	$(COMPOSE) --profile backup run --rm -e BACKUP_RUN_ONCE=1 backup
 
 clean:
 	$(COMPOSE) down -v

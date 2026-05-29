@@ -14,4 +14,5 @@ record-measurements
 compare-runs
 upload-raw-http
 configure-ldap
+configure-backups
 ```
