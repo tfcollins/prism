@@ -10,7 +10,8 @@ async function login(page: import('@playwright/test').Page) {
   await page.fill('input[type=email]', EMAIL);
   await page.fill('input[type=password]', PASSWORD);
   await page.click('button[type=submit]');
-  await page.waitForURL(/\/projects$/);
+  // Login lands on the overview ("/"); wait until we're off the login page.
+  await page.waitForURL((url) => url.pathname === '/');
 }
 
 test('select two runs and open the compare page', async ({ page }) => {
