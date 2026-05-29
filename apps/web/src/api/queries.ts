@@ -28,6 +28,8 @@ import type {
   SpectrogramResponse,
   SpectrumResponse,
   SpursResponse,
+  TestSummary,
+  TestTimelinePoint,
   TokenCreated,
   TrendResponse,
   WaveformResponse,
@@ -438,5 +440,30 @@ export function useRevokeToken() {
       await api.delete(`/tokens/${id}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
+  });
+}
+
+export function useProjectTests(projectSlug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'tests'],
+    queryFn: async () => (await api.get<TestSummary[]>(`/projects/${projectSlug}/tests`)).data,
+    enabled: Boolean(projectSlug),
+  });
+}
+
+export function useTestHistory(
+  projectSlug: string | undefined,
+  classname: string | undefined,
+  name: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['projects', projectSlug, 'tests', 'history', classname, name],
+    queryFn: async () =>
+      (
+        await api.get<TestTimelinePoint[]>(`/projects/${projectSlug}/tests/history`, {
+          params: { classname: classname!, name: name! },
+        })
+      ).data,
+    enabled: Boolean(projectSlug) && Boolean(classname) && Boolean(name),
   });
 }

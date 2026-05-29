@@ -387,3 +387,26 @@ export interface CreateTokenRequest {
 export interface TokenCreated extends ApiToken {
   token: string;
 }
+
+export interface TestSummary {
+  classname: string;
+  name: string;
+  runs: number;
+  pass_count: number;
+  fail_count: number;
+  skip_count: number;
+  fail_rate: number;
+  flaky_score: number;
+  last_status: string;
+  avg_duration_ms: number;
+  last_duration_ms: number;
+  recent_statuses: string[];
+}
+
+export interface TestTimelinePoint {
+  run_id: string;
+  run_name: string;
+  created_at: string;
+  status: string;
+  duration_ms: number;
+}
