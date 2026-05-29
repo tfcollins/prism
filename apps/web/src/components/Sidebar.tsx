@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 
 import { useProjects } from '../api/queries';
+import { useAuth } from '../auth/useAuth';
 import { Logo } from './Logo';
 
-const PRIMARY_NAV = [
+const BASE_NAV = [
   { to: '/projects', label: 'Projects', short: 'P', end: true },
   { to: '/compare', label: 'Compare', short: 'C', end: true },
 ];
+const ADMIN_NAV = { to: '/admin', label: 'Admin', short: 'A', end: true };
 
 const COLLAPSED_KEY = 'prism-sidebar-collapsed';
 const EXPANDED_WIDTH = '220px';
@@ -57,6 +59,8 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   const projects = useProjects();
+  const { user } = useAuth();
+  const navItems = user?.is_admin ? [...BASE_NAV, ADMIN_NAV] : BASE_NAV;
   const { slug: activeSlug } = useParams<{ slug?: string }>();
   const isDrawer = variant === 'drawer';
   const [storedCollapsed, setStoredCollapsed] = useState<boolean>(readInitialCollapsed);
@@ -109,7 +113,7 @@ export function Sidebar({
 
       {collapsed ? (
         <Stack gap={1} align="center">
-          {PRIMARY_NAV.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -125,7 +129,7 @@ export function Sidebar({
       ) : (
         <>
           <Stack gap={1}>
-            {PRIMARY_NAV.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

@@ -12,11 +12,13 @@ from prism_api.deps import (
     SESSION_COOKIE,
     current_user,
     get_settings_dep,
+    is_admin_user,
     issue_csrf_token,
     session_dep,
 )
 from prism_api.ldap_auth import ldap_authenticate
 from prism_api.models.user import User
+from prism_api.repos.audit import AuditRepo
 from prism_api.repos.users import UserRepo
 from prism_api.schemas.auth import LoginRequest, UserOut
 
@@ -47,6 +49,10 @@ def login(
                 session.commit()  # persist the JIT user so later requests resolve it
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")
+    AuditRepo(session).record(
+        user_id=user.id, action="auth.login", detail={"provider": user.auth_provider}
+    )
+    session.commit()
     token = create_access_token(
         subject=user.id,
         secret=settings.jwt_secret,
@@ -72,7 +78,12 @@ def login(
         max_age=settings.jwt_ttl_minutes * 60,
         path="/",
     )
-    return UserOut(id=user.id, email=user.email, auth_provider=user.auth_provider)
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        auth_provider=user.auth_provider,
+        is_admin=is_admin_user(user, settings),
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -89,5 +100,13 @@ def logout(response: Response, settings: Settings = Depends(get_settings_dep)) -
 
 
 @router.get("/me")
-def me(user: User = Depends(current_user)) -> UserOut:
-    return UserOut(id=user.id, email=user.email, auth_provider=user.auth_provider)
+def me(
+    user: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+) -> UserOut:
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        auth_provider=user.auth_provider,
+        is_admin=is_admin_user(user, settings),
+    )

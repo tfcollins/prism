@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from prism_api.auth import hash_password
 from prism_api.deps import current_user, session_dep
 from prism_api.models.user import User
+from prism_api.repos.audit import AuditRepo
 from prism_api.repos.users import UserRepo
 from prism_api.schemas.user import CreateUserRequest, UserOut
 
@@ -27,7 +28,7 @@ def list_users(
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_user(
     body: CreateUserRequest,
-    _: User = Depends(current_user),
+    actor: User = Depends(current_user),
     session: Session = Depends(session_dep),
 ) -> UserOut:
     try:
@@ -39,6 +40,13 @@ def create_user(
         session.flush()
     except IntegrityError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, "email already exists") from exc
+    AuditRepo(session).record(
+        user_id=actor.id,
+        action="user.create",
+        target_type="user",
+        target_id=user.id,
+        detail={"email": user.email},
+    )
     return UserOut(id=user.id, email=user.email, auth_provider=user.auth_provider)
 
 
@@ -58,4 +66,11 @@ def delete_user(
     if total <= 1:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "cannot delete the last remaining user")
     repo.delete(user_id)
+    AuditRepo(session).record(
+        user_id=current.id,
+        action="user.delete",
+        target_type="user",
+        target_id=user_id,
+        detail={"email": target.email},
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

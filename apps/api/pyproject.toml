@@ -18,6 +18,7 @@ dependencies = [
   "email-validator>=2",
   "python-multipart>=0.0.9",
   "boto3>=1.34",
+  "docker>=7",
   "celery[redis]>=5.3",
   "junitparser>=3.1",
   "numpy>=1.26",
@@ -78,7 +79,7 @@ warn_unreachable = true
 # Third-party libs that don't ship type stubs. Suppress at the import
 # boundary so our own code stays strictly checked.
 [[tool.mypy.overrides]]
-module = ["celery", "celery.*", "h5py", "boto3", "boto3.*", "mypy_boto3_s3.*", "scipy", "scipy.*", "ldap3", "ldap3.*"]
+module = ["celery", "celery.*", "h5py", "boto3", "boto3.*", "mypy_boto3_s3.*", "scipy", "scipy.*", "ldap3", "ldap3.*", "docker", "docker.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]

@@ -1,6 +1,44 @@
 export interface User {
   id: string;
   email: string;
+  auth_provider?: string;
+  is_admin?: boolean;
+}
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  auth_provider: string;
+  is_admin: boolean;
+  created_at: string;
+}
+
+export interface BackupRun {
+  timestamp: string;
+  status: string;
+  postgres_bytes: number | null;
+  minio_included: boolean;
+  minio_bytes: number | null;
+  cloudsmith: string;
+  keep: number | null;
+  error: string | null;
+}
+
+export interface ActivityEvent {
+  action: string;
+  user_email: string | null;
+  project_id: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ContainerLogs {
+  service: string;
+  available: boolean;
+  message: string | null;
+  lines: string[];
 }
 
 export interface Project {

@@ -2,13 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from './client';
 import type {
+  ActivityEvent,
+  AdminAccount,
   AuditEvent,
+  BackupRun,
   CaseArtifact,
   CaseDetail,
   CaseListItem,
   ChannelMetricsResponse,
   CommitCount,
   CompareResponse,
+  ContainerLogs,
   FFTResponse,
   LogReport,
   Mask,
@@ -363,5 +367,37 @@ export function useRunsByCommit(
         params: { project: projectSlug!, [field]: commit! },
       })).data,
     enabled: Boolean(projectSlug) && Boolean(commit),
+  });
+}
+
+// --- Admin panel -----------------------------------------------------------
+
+export function useAdminAccounts() {
+  return useQuery({
+    queryKey: ['admin', 'accounts'],
+    queryFn: async () => (await api.get<AdminAccount[]>('/admin/accounts')).data,
+  });
+}
+
+export function useAdminBackups() {
+  return useQuery({
+    queryKey: ['admin', 'backups'],
+    queryFn: async () => (await api.get<BackupRun[]>('/admin/backups')).data,
+  });
+}
+
+export function useAdminActivity(limit = 200) {
+  return useQuery({
+    queryKey: ['admin', 'activity', limit],
+    queryFn: async () =>
+      (await api.get<ActivityEvent[]>('/admin/activity', { params: { limit } })).data,
+  });
+}
+
+export function useAdminLogs(service: string, tail = 200) {
+  return useQuery({
+    queryKey: ['admin', 'logs', service, tail],
+    queryFn: async () =>
+      (await api.get<ContainerLogs>('/admin/logs', { params: { service, tail } })).data,
   });
 }

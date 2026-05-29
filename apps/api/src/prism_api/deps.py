@@ -59,3 +59,18 @@ def current_user(
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user no longer exists")
     return user
+
+
+def is_admin_user(user: User, settings: Settings) -> bool:
+    """The bootstrap admin (ADMIN_EMAIL) is the sole admin. No stored role."""
+    return bool(settings.admin_email) and user.email == settings.admin_email
+
+
+def require_admin(
+    user: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+) -> User:
+    """Gate admin-only endpoints to the bootstrap admin account."""
+    if not is_admin_user(user, settings):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "admin access required")
+    return user
