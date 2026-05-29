@@ -7,6 +7,7 @@ import { useAuth } from '../auth/useAuth';
 import { Logo } from './Logo';
 
 const BASE_NAV = [
+  { to: '/', label: 'Overview', short: 'O', end: true },
   { to: '/projects', label: 'Projects', short: 'P', end: true },
   { to: '/compare', label: 'Compare', short: 'C', end: true },
 ];
@@ -94,7 +95,7 @@ export function Sidebar({
         px={collapsed ? 0 : 1}
       >
         {!collapsed && (
-          <Link to="/projects" aria-label="Prism home" onClick={onNavigate}>
+          <Link to="/" aria-label="Prism home" onClick={onNavigate}>
             <Logo size="sm" />
           </Link>
         )}

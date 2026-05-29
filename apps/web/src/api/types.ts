@@ -338,3 +338,34 @@ export interface AuditEvent {
   detail: Record<string, unknown>;
   created_at: string;
 }
+
+export interface OverviewStats {
+  total_projects: number;
+  total_runs: number;
+  total_tests: number;
+  total_failures: number;
+  pass_rate: number;
+}
+
+export interface RecentRun {
+  id: string;
+  name: string;
+  project_slug: string;
+  project_name: string;
+  status: RunStatus;
+  created_at: string;
+  pass_count: number;
+  fail_count: number;
+}
+
+export interface DailyPoint {
+  date: string;
+  runs: number;
+  failures: number;
+}
+
+export interface OverviewResponse {
+  stats: OverviewStats;
+  recent_runs: RecentRun[];
+  daily: DailyPoint[];
+}

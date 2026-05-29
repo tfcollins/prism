@@ -1,8 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 import { AdminPage } from './pages/AdminPage';
 import { ComparePage } from './pages/ComparePage';
 import { LoginPage } from './pages/LoginPage';
+import { OverviewPage } from './pages/OverviewPage';
 import { ProjectDashboardPage } from './pages/ProjectDashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RunDetailPage } from './pages/RunDetailPage';
@@ -13,7 +14,14 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/projects" replace />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <OverviewPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/projects"
         element={

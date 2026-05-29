@@ -16,6 +16,7 @@ import type {
   FFTResponse,
   LogReport,
   Mask,
+  OverviewResponse,
   Project,
   RegressionsResponse,
   RunDetail,
@@ -399,5 +400,12 @@ export function useAdminLogs(service: string, tail = 200) {
     queryKey: ['admin', 'logs', service, tail],
     queryFn: async () =>
       (await api.get<ContainerLogs>('/admin/logs', { params: { service, tail } })).data,
+  });
+}
+
+export function useOverview() {
+  return useQuery({
+    queryKey: ['overview'],
+    queryFn: async () => (await api.get<OverviewResponse>('/overview')).data,
   });
 }
