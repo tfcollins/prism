@@ -75,7 +75,20 @@ zip -r artifacts.zip waveforms/ logs/
 python3 scripts/upload_run.py results.xml --archive artifacts.zip --wait
 ```
 
-:::{note}
-A long-lived Prism user account for CI is the simplest pattern today. Dedicated
-API tokens are planned for a future release.
-:::
+## Authenticate with an API token (recommended)
+
+Instead of a user email/password, create a revocable **API token** (Tokens page
+in the web UI, or `POST /api/v1/tokens`) and pass it as `--token` /
+`PRISM_TOKEN`. The token is shown once at creation; store it as a CI secret.
+
+```bash
+python3 scripts/upload_run.py results.xml \
+  --url https://prism.internal --token "$PRISM_TOKEN" \
+  --project my-service --run-name "$CI_JOB_ID" --wait
+```
+
+The `pytest-prism` plugin accepts the same via `--prism-token` / `PRISM_TOKEN`.
+Token requests use an `Authorization: Bearer` header (no login round-trip, no
+CSRF), and a token can be revoked from the Tokens page without rotating an
+account password. Provide **either** `--token` **or** `--email`/`--password`.
+

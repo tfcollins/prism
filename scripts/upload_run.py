@@ -161,6 +161,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--password", default=_env("PRISM_PASSWORD"), help="Login password (env: PRISM_PASSWORD)."
     )
     p.add_argument(
+        "--token",
+        default=_env("PRISM_TOKEN"),
+        help="API token for bearer auth (env: PRISM_TOKEN). Use instead of --email/--password.",
+    )
+    p.add_argument(
         "--project", default=_env("PRISM_PROJECT"), help="Target project slug (env: PRISM_PROJECT)."
     )
     p.add_argument(
@@ -235,13 +240,14 @@ def main(argv: list[str] | None = None) -> int:
     # --- Validate required args ------------------------------------------- #
     missing = []
     for attr, env in (
-        ("email", "PRISM_EMAIL"),
-        ("password", "PRISM_PASSWORD"),
         ("project", "PRISM_PROJECT"),
         ("run_name", "PRISM_RUN_NAME"),
     ):
         if not getattr(args, attr, None):
             missing.append(f"--{attr.replace('_', '-')} (or {env})")
+    # Auth: an API token, or an email + password.
+    if not args.token and not (args.email and args.password):
+        missing.append("--token (or PRISM_TOKEN), or --email + --password")
     if missing:
         print("error: missing required argument(s): " + ", ".join(missing), file=sys.stderr)
         return EXIT_BAD_INPUT
@@ -256,14 +262,25 @@ def main(argv: list[str] | None = None) -> int:
     say = (lambda _m: None) if args.quiet else print
 
     # --- Auth ------------------------------------------------------------- #
-    client = PrismClient(args.url)
-    if args.verbose:
-        say(f"→ logging in to {args.url} as {args.email}")
-    try:
-        client.login(args.email, args.password)
-    except RuntimeError as exc:
-        print(f"error: authentication failed — {exc}", file=sys.stderr)
-        return EXIT_AUTH
+    client = PrismClient(args.url, token=args.token)
+    if args.token:
+        if args.verbose:
+            say(f"→ using API token against {args.url}")
+    else:
+        if not args.email or not args.password:
+            print(
+                "error: provide --token (PRISM_TOKEN) or --email/--password "
+                "(PRISM_EMAIL/PRISM_PASSWORD).",
+                file=sys.stderr,
+            )
+            return EXIT_BAD_INPUT
+        if args.verbose:
+            say(f"→ logging in to {args.url} as {args.email}")
+        try:
+            client.login(args.email, args.password)
+        except RuntimeError as exc:
+            print(f"error: authentication failed — {exc}", file=sys.stderr)
+            return EXIT_AUTH
 
     # --- Project ---------------------------------------------------------- #
     if args.auto_create_project:

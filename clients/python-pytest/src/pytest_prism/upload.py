@@ -109,20 +109,19 @@ def upload(
 ) -> RunResult:
     if not cfg.upload_url:
         raise UploadError("upload() called with no upload_url")
-    if not cfg.upload_email:
-        raise UploadError("upload() called with no upload_email")
-    if not cfg.upload_password:
-        raise UploadError("upload() called with no upload_password")
+    if not cfg.upload_token and not (cfg.upload_email and cfg.upload_password):
+        raise UploadError("upload() needs an API token or an email + password")
     if not cfg.upload_project:
         raise UploadError("upload() called with no upload_project")
     junit_bytes = (out_dir.root / "junit.xml").read_bytes()
     archive_bytes = _build_artifacts_zip(out_dir.root)
 
-    client = PrismClient(cfg.upload_url)
-    try:
-        client.login(cfg.upload_email, cfg.upload_password)
-    except Exception as exc:
-        raise UploadError(f"login failed: {exc}") from exc
+    client = PrismClient(cfg.upload_url, token=cfg.upload_token)
+    if not cfg.upload_token:
+        try:
+            client.login(cfg.upload_email or "", cfg.upload_password or "")
+        except Exception as exc:
+            raise UploadError(f"login failed: {exc}") from exc
 
     try:
         result = client.upload_run(

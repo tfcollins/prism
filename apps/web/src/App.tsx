@@ -7,6 +7,7 @@ import { OverviewPage } from './pages/OverviewPage';
 import { ProjectDashboardPage } from './pages/ProjectDashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RunDetailPage } from './pages/RunDetailPage';
+import { TokensPage } from './pages/TokensPage';
 import { AdminRoute } from './routes/AdminRoute';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
@@ -61,6 +62,14 @@ export function App() {
             <AdminRoute>
               <AdminPage />
             </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tokens"
+        element={
+          <ProtectedRoute>
+            <TokensPage />
           </ProtectedRoute>
         }
       />

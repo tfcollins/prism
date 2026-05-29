@@ -22,7 +22,7 @@ __all__ = ["PrismClient"]
 
 
 class PrismClient:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, token: str | None = None) -> None:
         # Reject non-http(s) schemes up front so the noqa: S310 below is true.
         # urllib's default opener handles file://, ftp://, data://, etc., which
         # an attacker who can set PRISM_URL in a CI env could abuse for
@@ -31,6 +31,9 @@ class PrismClient:
         if scheme not in ("http", "https"):
             raise ValueError(f"PrismClient base_url must be http or https; got scheme {scheme!r}")
         self.base_url = base_url.rstrip("/")
+        # When set, authenticate with a bearer API token instead of a cookie
+        # session (no login + no CSRF; the server skips CSRF for bearer auth).
+        self.token = token
         self.jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 
@@ -55,6 +58,8 @@ class PrismClient:
         url = f"{self.base_url}{path}"
         # base_url's scheme is validated to http/https in __init__, so this is safe.
         req = urllib.request.Request(url, data=body, method=method, headers=headers or {})  # noqa: S310
+        if self.token:
+            req.add_header("Authorization", f"Bearer {self.token}")
         csrf = self._read_cookie("prism_csrf")
         if csrf and method in ("POST", "PUT", "PATCH", "DELETE"):
             req.add_header("X-Prism-Csrf", csrf)
@@ -69,6 +74,8 @@ class PrismClient:
     # --------------------------------------------------------------------- #
 
     def login(self, email: str, password: str) -> None:
+        if self.token:
+            return  # bearer token auth: no session login needed
         payload = json.dumps({"email": email, "password": password}).encode("utf-8")
         code, body = self._request(
             "POST",

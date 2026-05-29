@@ -1,5 +1,6 @@
 """SQLAlchemy models."""
 
+from prism_api.models.api_token import ApiToken
 from prism_api.models.artifact import Artifact, ArtifactKind, DerivedArtifact, DerivedKind
 from prism_api.models.audit import AuditEvent
 from prism_api.models.base import Base
@@ -13,6 +14,7 @@ from prism_api.models.user import User
 from prism_api.models.view import SavedView
 
 __all__ = [
+    "ApiToken",
     "Artifact",
     "ArtifactKind",
     "AuditEvent",

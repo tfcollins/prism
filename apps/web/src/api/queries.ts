@@ -4,6 +4,7 @@ import { api } from './client';
 import type {
   ActivityEvent,
   AdminAccount,
+  ApiToken,
   AuditEvent,
   BackupRun,
   CaseArtifact,
@@ -13,6 +14,7 @@ import type {
   CommitCount,
   CompareResponse,
   ContainerLogs,
+  CreateTokenRequest,
   FFTResponse,
   LogReport,
   Mask,
@@ -26,6 +28,7 @@ import type {
   SpectrogramResponse,
   SpectrumResponse,
   SpursResponse,
+  TokenCreated,
   TrendResponse,
   WaveformResponse,
 } from './types';
@@ -364,9 +367,11 @@ export function useRunsByCommit(
   return useQuery({
     queryKey: ['runs', projectSlug, 'by-commit', field, commit ?? null],
     queryFn: async () =>
-      (await api.get<RunListItem[]>('/runs', {
-        params: { project: projectSlug!, [field]: commit! },
-      })).data,
+      (
+        await api.get<RunListItem[]>('/runs', {
+          params: { project: projectSlug!, [field]: commit! },
+        })
+      ).data,
     enabled: Boolean(projectSlug) && Boolean(commit),
   });
 }
@@ -407,5 +412,31 @@ export function useOverview() {
   return useQuery({
     queryKey: ['overview'],
     queryFn: async () => (await api.get<OverviewResponse>('/overview')).data,
+  });
+}
+
+export function useTokens() {
+  return useQuery({
+    queryKey: ['tokens'],
+    queryFn: async () => (await api.get<ApiToken[]>('/tokens')).data,
+  });
+}
+
+export function useCreateToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CreateTokenRequest) =>
+      (await api.post<TokenCreated>('/tokens', body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
+  });
+}
+
+export function useRevokeToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/tokens/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tokens'] }),
   });
 }
