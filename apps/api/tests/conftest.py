@@ -64,6 +64,33 @@ def seed_admin(db_session: Session) -> None:
 
 
 @pytest.fixture
+def mock_ldap_connect():
+    """Factory: given directory entries, return a drop-in for ``ldap_auth.connect``.
+
+    Builds real ldap3 MOCK_SYNC connections (so bind-password checks, search
+    filters and attribute reads behave like a live directory) seeded with the
+    given ``(dn, attributes)`` entries.
+    """
+    from ldap3 import MOCK_SYNC, Connection, Server
+
+    def factory(entries: list[tuple[str, dict[str, object]]]):
+        server = Server("mock_dir")
+
+        def _connect(server_uri, user, password, *, settings):
+            conn = Connection(
+                server, user=user or None, password=password or None, client_strategy=MOCK_SYNC
+            )
+            for dn, attrs in entries:
+                conn.strategy.add_entry(dn, attrs)
+            conn.bind()
+            return conn
+
+        return _connect
+
+    return factory
+
+
+@pytest.fixture
 def patch_ingest(monkeypatch, db_session, storage_fixture):
     """Replace the celery delay with an inline call, and provide the same storage to both sides."""
     from prism_api.ingest import IngestInputs, ingest_run

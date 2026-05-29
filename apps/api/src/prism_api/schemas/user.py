@@ -11,3 +11,4 @@ class CreateUserRequest(BaseModel):
 class UserOut(BaseModel):
     id: str
     email: EmailStr
+    auth_provider: str = "local"
