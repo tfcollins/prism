@@ -81,9 +81,7 @@ class RunRepo:
             )
         if hdl_commit is not None:
             stmt = stmt.where(
-                TestRun.id.in_(
-                    select(LogReport.run_id).where(LogReport.hdl_commit == hdl_commit)
-                )
+                TestRun.id.in_(select(LogReport.run_id).where(LogReport.hdl_commit == hdl_commit))
             )
         stmt = stmt.order_by(TestRun.created_at.desc()).limit(limit)
         return list(self._session.execute(stmt).scalars())

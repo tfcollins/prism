@@ -32,8 +32,10 @@ deploy/.env
 .env
 .env.local
 
-# Docs build
+# Docs build (Sphinx output + build venv are covered by build/ and .venv/ above;
+# site/ is the legacy mkdocs output)
 site/
+docs/build/
 
 # Stub recovery file
 .stub

@@ -5,8 +5,13 @@ from prism_api.repos.logs import LogRepo
 
 def _parsed(kernel: str, hdl: str) -> ParsedLog:
     return ParsedLog(
-        kernel_version="6.1.0", board="ZCU102", kernel_commit=kernel, hdl_commit=hdl,
-        error_count=1, warn_count=2, has_panic=False,
+        kernel_version="6.1.0",
+        board="ZCU102",
+        kernel_commit=kernel,
+        hdl_commit=hdl,
+        error_count=1,
+        warn_count=2,
+        has_panic=False,
         findings=[ParsedFinding(severity="error", line_no=3, text="boom")],
     )
 

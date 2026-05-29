@@ -34,9 +34,18 @@ services:
       - ../apps/api/src:/app/src
     # Hot reload is manual; restart worker on src change during dev if needed
 
+  # Live-reloading Sphinx preview (adi-doctools "cosmic" theme). Installs the
+  # docs requirements on start, then serves with sphinx-autobuild so edits to
+  # docs/source/ rebuild and refresh the browser automatically.
   docs:
-    image: squidfunk/mkdocs-material:latest
+    image: python:3.12-slim
+    working_dir: /docs
     volumes:
       - ../docs:/docs
     ports: ["${DOCS_HOST_PORT:-8181}:8000"]
-    command: ["serve", "--dev-addr=0.0.0.0:8000"]
+    command:
+      - sh
+      - -c
+      - |
+        pip install --no-cache-dir -r requirements.txt &&
+        sphinx-autobuild source /tmp/build/html --host 0.0.0.0 --port 8000

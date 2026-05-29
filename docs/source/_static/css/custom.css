@@ -1,0 +1,25 @@
+/* Prism documentation — light touch-ups on top of the cosmic theme. */
+
+/* The cosmic theme ships an Analog Devices org mark in the top-left corner.
+   Prism is not an ADI project, so hide it; the Prism logo lives in the
+   sidebar via the light_logo / dark_logo theme options. */
+#logo-org {
+  display: none !important;
+}
+
+/* Give screenshots a subtle frame so they read as UI captures. */
+img.prism-shot,
+.prism-shot img {
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+figure.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+figure figcaption {
+  font-size: 0.9em;
+  opacity: 0.8;
+}

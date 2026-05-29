@@ -15,6 +15,11 @@
     "**/node_modules/**",
     "site/**",
     "**/.venv/**",
+    // docs/source is MyST (Sphinx) markdown, not CommonMark — directives, role
+    // syntax and label anchors trip generic markdownlint rules. It is linted
+    // instead by the strict Sphinx build (`make lint-docs`).
+    "docs/source/**",
+    "docs/build/**",
     "apps/web/playwright-report/**",
     "apps/web/test-results/**",
     "apps/web/dist/**",

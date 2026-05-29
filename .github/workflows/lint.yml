@@ -23,6 +23,11 @@ jobs:
           uv run ruff check ../../scripts
           uv run ruff format --check ../../scripts
           uv run mypy ../../scripts
+          # docs/ helper scripts (shots.py, conf.py). mypy is skipped: shots.py
+          # imports playwright, an optional browser-automation dep not installed
+          # in this job.
+          uv run ruff check ../../docs
+          uv run ruff format --check ../../docs
 
   web:
     runs-on: ubuntu-latest

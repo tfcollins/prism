@@ -32,15 +32,13 @@ def build_boot_summary(
         warn_count=sum(r.warn_count for r in reports),
         has_panic=any(r.has_panic for r in reports),
         shared_kernel_count=(
-            repo.shared_count(
-                "kernel", kernel_commit, exclude_run_id=run_id, project_id=project_id
-            )
-            if kernel_commit else 0
+            repo.shared_count("kernel", kernel_commit, exclude_run_id=run_id, project_id=project_id)
+            if kernel_commit
+            else 0
         ),
         shared_hdl_count=(
-            repo.shared_count(
-                "hdl", hdl_commit, exclude_run_id=run_id, project_id=project_id
-            )
-            if hdl_commit else 0
+            repo.shared_count("hdl", hdl_commit, exclude_run_id=run_id, project_id=project_id)
+            if hdl_commit
+            else 0
         ),
     )

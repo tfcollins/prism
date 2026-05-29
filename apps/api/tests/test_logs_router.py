@@ -23,8 +23,10 @@ def _upload(client, csrf, name):
         zf.writestr("boot.log", _BOOT)
     return client.post(
         "/api/v1/runs",
-        files={"junit": ("j.xml", junit, "application/xml"),
-               "archive": ("a.zip", arc.getvalue(), "application/zip")},
+        files={
+            "junit": ("j.xml", junit, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
         data={"metadata": json.dumps({"project_slug": "rf", "name": name})},
         headers={"X-Prism-Csrf": csrf},
     ).json()["id"]
