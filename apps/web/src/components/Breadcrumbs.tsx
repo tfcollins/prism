@@ -67,7 +67,14 @@ export function Breadcrumbs() {
   const { pathname } = useLocation();
   const segments = pathname.split('/').filter(Boolean);
 
-  if (segments.length === 0 || segments[0] === 'projects') {
+  if (segments.length === 0) {
+    return (
+      <Flex align="center">
+        <Crumb>Overview</Crumb>
+      </Flex>
+    );
+  }
+  if (segments[0] === 'projects') {
     if (segments.length >= 2) return <ProjectCrumb slug={segments[1]} />;
     return (
       <Flex align="center">
@@ -82,6 +89,13 @@ export function Breadcrumbs() {
     return (
       <Flex align="center">
         <Crumb>Compare</Crumb>
+      </Flex>
+    );
+  }
+  if (segments[0] === 'admin') {
+    return (
+      <Flex align="center">
+        <Crumb>Admin</Crumb>
       </Flex>
     );
   }
