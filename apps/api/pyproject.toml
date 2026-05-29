@@ -111,4 +111,11 @@ filterwarnings = [
   # SQLAlchemy model classes TestRun/TestCase/TestSuite are domain names (not test classes);
   # pytest incorrectly tries to collect them because of the "Test" prefix.
   "ignore::pytest.PytestCollectionWarning",
+  # In-memory SQLite connections are freed at garbage-collection time, when
+  # sqlite3 emits "ResourceWarning: unclosed database". Under filterwarnings=error
+  # the GC can fire during an unrelated test and fail it (a flaky,
+  # order-dependent PytestUnraisableExceptionWarning). Test fixtures and the CLI
+  # dispose their engines (so this is rare), but ignoring the benign warning
+  # makes the suite deterministic regardless of GC timing.
+  "ignore:unclosed database:ResourceWarning",
 ]

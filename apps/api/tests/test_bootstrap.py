@@ -17,6 +17,7 @@ def session() -> Iterator[Session]:
     Base.metadata.create_all(engine)
     with sessionmaker(bind=engine)() as s:
         yield s
+    engine.dispose()
 
 
 def test_creates_admin_on_empty_db(session: Session) -> None:
