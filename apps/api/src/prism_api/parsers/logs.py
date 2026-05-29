@@ -34,7 +34,7 @@ _WARN_KW = re.compile(r"(?i)warn")
 
 @dataclass
 class ParsedFinding:
-    severity: str          # error | warn | panic | probe_fail
+    severity: str  # error | warn | panic | probe_fail
     line_no: int | None
     text: str
 

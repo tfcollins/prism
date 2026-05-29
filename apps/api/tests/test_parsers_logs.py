@@ -23,8 +23,8 @@ def test_extracts_commits_version_board() -> None:
 def test_tallies_and_flags() -> None:
     p = parse_log(_BOOT, kernel_pattern=None, hdl_pattern=None, findings_cap=200)
     assert p.has_panic is True
-    assert p.error_count == 1          # the <3> mmc0 error
-    assert p.warn_count == 1           # the <4> spi-nor warning
+    assert p.error_count == 1  # the <3> mmc0 error
+    assert p.warn_count == 1  # the <4> spi-nor warning
     sev = sorted(f.severity for f in p.findings)
     assert sev == ["error", "panic", "probe_fail", "warn"]
 
@@ -33,7 +33,7 @@ def test_findings_cap_enforced() -> None:
     many = b"\n".join(b"<3> error line %d" % i for i in range(50))
     p = parse_log(many, kernel_pattern=None, hdl_pattern=None, findings_cap=10)
     assert len(p.findings) == 10
-    assert p.error_count == 50         # count is full, sample is capped
+    assert p.error_count == 50  # count is full, sample is capped
 
 
 def test_missing_commits_is_not_fatal() -> None:

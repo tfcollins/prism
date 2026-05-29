@@ -58,7 +58,7 @@ def test_case_detail(client: TestClient, seed_admin, patch_ingest) -> None:
 
 
 def test_case_not_found(client: TestClient, seed_admin) -> None:
-    _login(client)  # noqa: just need auth
+    _login(client)  # just need auth
     resp = client.get("/api/v1/cases/00000000-0000-0000-0000-000000000000")
     assert resp.status_code == 404
 

@@ -56,9 +56,7 @@ def reparse_logs(
 ) -> int:
     """(Re)build log_reports for every LOG_TEXT artifact that has none. Returns count."""
     repo = LogRepo(session)
-    arts = session.execute(
-        select(Artifact).where(Artifact.kind == ArtifactKind.LOG_TEXT)
-    ).scalars()
+    arts = session.execute(select(Artifact).where(Artifact.kind == ArtifactKind.LOG_TEXT)).scalars()
     count = 0
     for a in arts:
         run_id = _resolve_run_id(session, a)

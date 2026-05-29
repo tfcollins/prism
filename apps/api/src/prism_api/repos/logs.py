@@ -95,6 +95,4 @@ class LogRepo:
     def shared_count(
         self, kind: str, commit: str, *, exclude_run_id: str, project_id: str | None = None
     ) -> int:
-        return len(
-            self.run_ids_for_commit(kind, commit, project_id=project_id) - {exclude_run_id}
-        )
+        return len(self.run_ids_for_commit(kind, commit, project_id=project_id) - {exclude_run_id})

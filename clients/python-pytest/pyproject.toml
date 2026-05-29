@@ -34,8 +34,10 @@ Source = "https://github.com/analogdevicesinc/prism/tree/main/clients/python-pyt
 dev = [
   "pytest>=7.0",
   "httpx>=0.27",
-  "ruff>=0.4",
-  "mypy>=1.10",
+  # Bound the linters to one minor each — see apps/api/pyproject.toml for why
+  # (unbounded ruff lets a new release silently reformat and fail CI).
+  "ruff>=0.15,<0.16",
+  "mypy>=1.20,<1.21",
   "types-defusedxml",
   "pytest-cov>=5",
   "pytest-xdist>=3.6",

@@ -106,7 +106,10 @@ def inject_measurements(junit_bytes: bytes, measurements: list[Measurement]) -> 
     """
     import xml.etree.ElementTree as ET
 
-    root = ET.fromstring(junit_bytes)
+    # junit_bytes is the caller's own local JUnit file (their test output), not
+    # untrusted network input, and this helper is stdlib-only by design (see
+    # CLAUDE.md) so defusedxml is not available. S314 is therefore a non-risk.
+    root = ET.fromstring(junit_bytes)  # noqa: S314
     cases = root.findall(".//testcase")
     if len(cases) != 1:
         raise ValueError(
@@ -125,7 +128,11 @@ def inject_measurements(junit_bytes: bytes, measurements: list[Measurement]) -> 
             ET.SubElement(props, "property", name=f"{m.name}__min", value=repr(m.spec_min))
         if m.spec_max is not None:
             ET.SubElement(props, "property", name=f"{m.name}__max", value=repr(m.spec_max))
-    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    # ET.tostring is typed as returning Any in the stdlib stubs; with
+    # encoding="utf-8" it returns bytes. Bind to a typed local so mypy's
+    # no-any-return is satisfied without a cast or ignore.
+    xml: bytes = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    return xml
 
 
 def _env(name: str, default: str | None = None) -> str | None:

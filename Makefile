@@ -1,4 +1,4 @@
-.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles lint-docs fmt fmt-api fmt-web docs docs-build docs-venv docs-shots clean
+.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-client lint-web lint-md lint-actions lint-dockerfiles lint-docs fmt fmt-api fmt-web docs docs-build docs-venv docs-shots clean
 
 # Local virtualenv for building the Sphinx docs (adi-doctools "cosmic" theme).
 DOCS_VENV := docs/.venv
@@ -52,10 +52,23 @@ test-api:
 test-web:
 	cd apps/web && npm test
 
-lint: lint-api lint-web lint-md lint-actions lint-dockerfiles lint-docs
+lint: lint-api lint-client lint-web lint-md lint-actions lint-dockerfiles lint-docs
 
+# Mirrors the lint/type-check steps in .github/workflows/pytest-prism.yml for
+# the separately-published pytest-prism client (its own uv environment).
+lint-client:
+	cd clients/python-pytest && uv sync --extra dev && \
+		uv run ruff check . && uv run ruff format --check . && \
+		uv run mypy src/pytest_prism tests
+
+# Mirrors the api job in .github/workflows/lint.yml so `make lint-api`
+# reproduces CI exactly: ruff lint + format-check + mypy across apps/api,
+# scripts/, and docs/ (docs is ruff-only — see lint.yml for why).
 lint-api:
-	cd apps/api && uv run ruff check . && uv run mypy src
+	cd apps/api && \
+		uv run ruff check . && uv run ruff format --check . && uv run mypy src && \
+		uv run ruff check ../../scripts && uv run ruff format --check ../../scripts && uv run mypy ../../scripts && \
+		uv run ruff check ../../docs && uv run ruff format --check ../../docs
 
 lint-web:
 	cd apps/web && npm run lint
