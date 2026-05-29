@@ -18,7 +18,10 @@ def list_users(
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
 ) -> list[UserOut]:
-    return [UserOut(id=u.id, email=u.email) for u in UserRepo(session).list_all()]
+    return [
+        UserOut(id=u.id, email=u.email, auth_provider=u.auth_provider)
+        for u in UserRepo(session).list_all()
+    ]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -29,12 +32,14 @@ def create_user(
 ) -> UserOut:
     try:
         user = UserRepo(session).create(
-            email=body.email, password_hash=hash_password(body.password)
+            email=body.email,
+            password_hash=hash_password(body.password),
+            auth_provider="local",
         )
         session.flush()
     except IntegrityError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, "email already exists") from exc
-    return UserOut(id=user.id, email=user.email)
+    return UserOut(id=user.id, email=user.email, auth_provider=user.auth_provider)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

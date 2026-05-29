@@ -10,11 +10,28 @@ class UserRepo:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create(self, *, email: str, password_hash: str) -> User:
-        user = User(email=email, password_hash=password_hash)
+    def create(
+        self,
+        *,
+        email: str,
+        password_hash: str | None = None,
+        auth_provider: str = "local",
+    ) -> User:
+        user = User(email=email, password_hash=password_hash, auth_provider=auth_provider)
         self._session.add(user)
         self._session.flush()
         return user
+
+    def get_or_create_ldap_user(self, *, email: str) -> tuple[User, bool]:
+        """Return the user for ``email``, creating an LDAP-provider row if absent.
+
+        The bool is True when a new row was just created (just-in-time
+        provisioning), so the caller can commit it.
+        """
+        existing = self.get_by_email(email)
+        if existing is not None:
+            return existing, False
+        return self.create(email=email, password_hash=None, auth_provider="ldap"), True
 
     def get_by_id(self, user_id: str) -> User | None:
         return self._session.get(User, user_id)

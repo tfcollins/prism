@@ -13,4 +13,4 @@ def ensure_bootstrap_admin(session: Session, *, email: str | None, password: str
     repo = UserRepo(session)
     if repo.list_all():
         return
-    repo.create(email=email, password_hash=hash_password(password))
+    repo.create(email=email, password_hash=hash_password(password), auth_provider="local")
