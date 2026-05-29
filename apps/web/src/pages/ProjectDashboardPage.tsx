@@ -8,6 +8,7 @@ import {
   useDeleteSpec,
   useDeleteView,
   useMeasurementNames,
+  useProjectTests,
   useRegressions,
   useRuns,
   useRunsByCommit,
@@ -15,6 +16,7 @@ import {
   useSpecs,
   useTagKeys,
   useTagValues,
+  useTestHistory,
   useUpsertSpec,
   useUpsertView,
   useViews,
@@ -59,6 +61,7 @@ export function ProjectDashboardPage() {
       <Tabs.Root value={tab} onValueChange={(e) => setTab(e.value)}>
         <Tabs.List mb={3}>
           <Tabs.Trigger value="runs">Runs</Tabs.Trigger>
+          <Tabs.Trigger value="tests">Tests</Tabs.Trigger>
           <Tabs.Trigger value="duts">DUTs</Tabs.Trigger>
           <Tabs.Trigger value="trends">Trends</Tabs.Trigger>
           <Tabs.Trigger value="regressions">Regressions</Tabs.Trigger>
@@ -90,6 +93,7 @@ export function ProjectDashboardPage() {
             </>
           )}
         </Tabs.Content>
+        <Tabs.Content value="tests">{slug && <TestsTab slug={slug} />}</Tabs.Content>
         <Tabs.Content value="duts">{slug && <DutsTab slug={slug} />}</Tabs.Content>
         <Tabs.Content value="trends">
           {slug && <TrendsTab slug={slug} selected={measurement} onSelect={setMeasurement} />}
@@ -404,6 +408,170 @@ function RunsTab({
         </Flex>
       )}
       <RunsTable runs={filtered} />
+    </Box>
+  );
+}
+
+const TEST_STATUS_COLOR: Record<string, string> = {
+  pass: '#48bb78',
+  fail: '#f56565',
+  error: '#f56565',
+  skip: '#a0aec0',
+};
+
+function StatusDot({ status }: { status: string }) {
+  return (
+    <Box
+      display="inline-block"
+      w="8px"
+      h="8px"
+      borderRadius="50%"
+      bg={TEST_STATUS_COLOR[status] ?? '#a0aec0'}
+      mr={2}
+    />
+  );
+}
+
+function StatusSparkline({ statuses }: { statuses: string[] }) {
+  return (
+    <Flex gap="2px">
+      {statuses.map((s, i) => (
+        <Box
+          key={`${i}-${s}`}
+          w="9px"
+          h="9px"
+          borderRadius="2px"
+          bg={TEST_STATUS_COLOR[s] ?? '#a0aec0'}
+          title={s}
+        />
+      ))}
+    </Flex>
+  );
+}
+
+function TestTimeline({
+  slug,
+  classname,
+  name,
+}: {
+  slug: string;
+  classname: string;
+  name: string;
+}) {
+  const q = useTestHistory(slug, classname, name);
+  if (q.isLoading) return <Text fontSize="sm">Loading…</Text>;
+  if (!q.data) return null;
+  return (
+    <Box mt={4}>
+      <Text
+        fontSize="10px"
+        textTransform="uppercase"
+        letterSpacing="1px"
+        color="var(--prism-text-faint)"
+        mb={1}
+      >
+        {classname} · {name} — per-run history
+      </Text>
+      <Box overflowX="auto">
+        <Table.Root variant="outline" size="sm">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader>Status</Table.ColumnHeader>
+              <Table.ColumnHeader>Run</Table.ColumnHeader>
+              <Table.ColumnHeader>Duration</Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {q.data.map((p) => (
+              <Table.Row key={p.run_id}>
+                <Table.Cell>
+                  <StatusDot status={p.status} />
+                  {p.status}
+                </Table.Cell>
+                <Table.Cell>
+                  <RouterLink to={`/runs/${p.run_id}`} style={{ color: 'var(--prism-brand)' }}>
+                    {p.run_name}
+                  </RouterLink>
+                </Table.Cell>
+                <Table.Cell>{p.duration_ms} ms</Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      </Box>
+    </Box>
+  );
+}
+
+function TestsTab({ slug }: { slug: string }) {
+  const q = useProjectTests(slug);
+  const [sel, setSel] = useState<{ classname: string; name: string } | null>(null);
+
+  if (q.isLoading) return <Text>Loading…</Text>;
+  if (q.isError) return <Text color="red.400">Could not load tests.</Text>;
+  if (!q.data || q.data.length === 0) {
+    return (
+      <Text color="var(--prism-text-subtle)" fontSize="sm">
+        No test results yet.
+      </Text>
+    );
+  }
+
+  return (
+    <Box>
+      <Box overflowX="auto">
+        <Table.Root variant="outline" size="sm">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader>Test</Table.ColumnHeader>
+              <Table.ColumnHeader>Runs</Table.ColumnHeader>
+              <Table.ColumnHeader>Fail rate</Table.ColumnHeader>
+              <Table.ColumnHeader>
+                <Tooltip content="Pass⇄fail flips across the run history — higher means flakier.">
+                  <Box as="span">Flaky</Box>
+                </Tooltip>
+              </Table.ColumnHeader>
+              <Table.ColumnHeader>Last</Table.ColumnHeader>
+              <Table.ColumnHeader>Avg</Table.ColumnHeader>
+              <Table.ColumnHeader>Recent</Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {q.data.map((t) => {
+              const active = sel?.classname === t.classname && sel?.name === t.name;
+              return (
+                <Table.Row
+                  key={`${t.classname}/${t.name}`}
+                  onClick={() => setSel(active ? null : { classname: t.classname, name: t.name })}
+                  cursor="pointer"
+                  bg={active ? 'var(--prism-sidebar-active-bg)' : undefined}
+                >
+                  <Table.Cell>
+                    <Text as="span" fontSize="sm">
+                      {t.name}
+                    </Text>{' '}
+                    <Text as="span" fontSize="xs" color="var(--prism-text-faint)">
+                      {t.classname}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell>{t.runs}</Table.Cell>
+                  <Table.Cell>{(t.fail_rate * 100).toFixed(0)}%</Table.Cell>
+                  <Table.Cell>{t.flaky_score}</Table.Cell>
+                  <Table.Cell>
+                    <StatusDot status={t.last_status} />
+                    {t.last_status}
+                  </Table.Cell>
+                  <Table.Cell>{Math.round(t.avg_duration_ms)} ms</Table.Cell>
+                  <Table.Cell>
+                    <StatusSparkline statuses={t.recent_statuses} />
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+        </Table.Root>
+      </Box>
+      {sel && <TestTimeline slug={slug} classname={sel.classname} name={sel.name} />}
     </Box>
   );
 }

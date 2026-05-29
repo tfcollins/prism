@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,7 @@ from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.specs import SpecRepo
 from prism_api.repos.suites import MeasurementRepo
+from prism_api.repos.tests_history import TestHistoryRepo
 from prism_api.repos.views import ViewRepo
 from prism_api.schemas.audit import AuditEventOut
 from prism_api.schemas.case import measurement_margin
@@ -22,6 +23,7 @@ from prism_api.schemas.log import CommitCount
 from prism_api.schemas.mask import MaskCreate, MaskOut, MaskSegment
 from prism_api.schemas.project import CreateProjectRequest, ProjectOut
 from prism_api.schemas.spec import SpecDefinitionOut, SpecUpsert, resolve_spec
+from prism_api.schemas.test_history import TestSummary, TestTimelinePoint
 from prism_api.schemas.trend import (
     RegressionEvent,
     RegressionsResponse,
@@ -161,6 +163,31 @@ def measurement_regressions(
             prev_value = m.value
     events.sort(key=lambda e: e.created_at, reverse=True)
     return RegressionsResponse(events=events)
+
+
+@router.get("/{slug}/tests")
+def list_tests(
+    slug: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> list[TestSummary]:
+    """Per-test aggregates across the project's runs, sorted flakiest-first."""
+    p = _project_or_404(session, slug)
+    return [TestSummary.model_validate(r) for r in TestHistoryRepo(session).aggregate(p.id)]
+
+
+@router.get("/{slug}/tests/history")
+def test_history(
+    slug: str,
+    classname: str = Query(...),
+    name: str = Query(...),
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> list[TestTimelinePoint]:
+    """Per-run timeline (status + duration) for one test, oldest first."""
+    p = _project_or_404(session, slug)
+    rows = TestHistoryRepo(session).timeline(p.id, classname, name)
+    return [TestTimelinePoint.model_validate(r) for r in rows]
 
 
 def _project_or_404(session: Session, slug: str):  # type: ignore[no-untyped-def]
