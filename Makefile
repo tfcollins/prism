@@ -1,4 +1,8 @@
-.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles fmt fmt-api fmt-web docs clean
+.PHONY: up up-bare down logs build deploy deploy-down deploy-logs test test-api test-web lint lint-api lint-web lint-md lint-actions lint-dockerfiles lint-docs fmt fmt-api fmt-web docs docs-build docs-venv docs-shots clean
+
+# Local virtualenv for building the Sphinx docs (adi-doctools "cosmic" theme).
+DOCS_VENV := docs/.venv
+DOCS_PY := $(DOCS_VENV)/bin/python
 
 COMPOSE := docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --env-file deploy/.env
 
@@ -48,7 +52,7 @@ test-api:
 test-web:
 	cd apps/web && npm test
 
-lint: lint-api lint-web lint-md lint-actions lint-dockerfiles
+lint: lint-api lint-web lint-md lint-actions lint-dockerfiles lint-docs
 
 lint-api:
 	cd apps/api && uv run ruff check . && uv run mypy src
@@ -81,8 +85,30 @@ fmt-api:
 fmt-web:
 	cd apps/web && npm run fmt
 
-docs:
-	cd docs && mkdocs serve
+# Create/refresh the docs build virtualenv from docs/requirements.txt.
+docs-venv:
+	@test -d $(DOCS_VENV) || uv venv $(DOCS_VENV) --python 3.12
+	@uv pip install --python $(DOCS_PY) -r docs/requirements.txt
+
+# Live-reloading preview of the Sphinx docs on http://localhost:8000.
+docs: docs-venv
+	$(DOCS_VENV)/bin/sphinx-autobuild docs/source docs/build/html
+
+# One-shot strict build (warnings are errors) — what CI runs.
+docs-build: docs-venv
+	$(DOCS_VENV)/bin/sphinx-build -b html -W --keep-going docs/source docs/build/html
+
+# Lint the docs: a strict Sphinx build catches broken refs, bad toctrees,
+# unknown directives and MyST syntax errors as hard failures.
+lint-docs: docs-venv
+	$(DOCS_VENV)/bin/sphinx-build -b html -W --keep-going -q docs/source docs/build/html
+
+# Recapture the UI screenshots embedded in the docs. Requires a running,
+# seeded stack (see docs/source/tutorials/getting-started.md) and Playwright.
+docs-shots: docs-venv
+	uv pip install --python $(DOCS_PY) playwright
+	$(DOCS_VENV)/bin/playwright install chromium
+	$(DOCS_PY) docs/shots.py
 
 clean:
 	$(COMPOSE) down -v

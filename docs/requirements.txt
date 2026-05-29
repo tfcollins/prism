@@ -1,0 +1,11 @@
+# Build dependencies for the Prism Sphinx documentation.
+# Pinned-ish to the versions the "cosmic" theme (adi-doctools) supports.
+sphinx>=7,<8
+myst-parser
+linkify-it-py
+sphinxcontrib-mermaid
+pillow
+sphinx-autobuild
+# Analog Devices "cosmic"/"harmonic" theme + Sphinx extensions (same theme as
+# pyadi-iio). Shipped as a release tarball with prebuilt static assets.
+https://github.com/analogdevicesinc/doctools/releases/download/latest/adi-doctools.tar.gz
