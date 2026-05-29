@@ -22,6 +22,7 @@ import {
 import type { DashboardViewConfig, RunListItem, SpecDefinition } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { RunsTable } from '../components/RunsTable';
+import { Tooltip } from '../components/Tooltip';
 import { TrendPlot } from '../components/TrendPlot';
 import { formatEng } from '../lib/measurement';
 
@@ -146,44 +147,54 @@ function DutsTab({ slug }: { slug: string }) {
         >
           DUT tag
         </Text>
-        <select
-          className="chakra-input"
-          aria-label="DUT tag"
-          value={effectiveKey ?? ''}
-          onChange={(e) => {
-            setTagKey(e.target.value);
-            setValue(null);
-          }}
-          style={{ padding: '2px 6px', borderRadius: 4, borderWidth: 1, fontSize: 13 }}
-        >
-          {keys.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
+        <Tooltip content="Choose which run tag identifies the device under test (DUT).">
+          <select
+            className="chakra-input"
+            aria-label="DUT tag"
+            value={effectiveKey ?? ''}
+            onChange={(e) => {
+              setTagKey(e.target.value);
+              setValue(null);
+            }}
+            style={{ padding: '2px 6px', borderRadius: 4, borderWidth: 1, fontSize: 13 }}
+          >
+            {keys.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </Tooltip>
       </Flex>
       <Flex wrap="wrap" gap={2} mb={4}>
         {(valuesQuery.data ?? []).map((v) => (
-          <Box
-            as="button"
+          <Tooltip
             key={v.value}
-            onClick={() => setValue(v.value)}
-            px={3}
-            py={1}
-            borderRadius="md"
-            borderWidth={1}
-            fontSize="sm"
-            cursor="pointer"
-            bg={value === v.value ? 'var(--prism-sidebar-active-bg)' : 'var(--prism-bg-surface)'}
-            color={value === v.value ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-muted)'}
-            borderColor="var(--prism-border)"
+            content={`Show runs tagged ${effectiveKey}=${v.value} (${v.run_count} run${
+              v.run_count === 1 ? '' : 's'
+            }).`}
           >
-            {v.value}{' '}
-            <Text as="span" color="var(--prism-text-faint)">
-              ({v.run_count})
-            </Text>
-          </Box>
+            <Box
+              as="button"
+              onClick={() => setValue(v.value)}
+              px={3}
+              py={1}
+              borderRadius="md"
+              borderWidth={1}
+              fontSize="sm"
+              cursor="pointer"
+              bg={value === v.value ? 'var(--prism-sidebar-active-bg)' : 'var(--prism-bg-surface)'}
+              color={
+                value === v.value ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-muted)'
+              }
+              borderColor="var(--prism-border)"
+            >
+              {v.value}{' '}
+              <Text as="span" color="var(--prism-text-faint)">
+                ({v.run_count})
+              </Text>
+            </Box>
+          </Tooltip>
         ))}
       </Flex>
       {value && runsQuery.data && <RunsByDate runs={runsQuery.data} />}
@@ -234,26 +245,26 @@ function CommitFilteredRuns({
   return (
     <Box>
       <Flex align="center" gap={2} mb={3}>
-        <Box
-          as="button"
-          onClick={onClear}
-          px={2}
-          py="2px"
-          borderRadius="sm"
-          borderWidth={1}
-          fontSize="xs"
-          cursor="pointer"
-          bg="var(--prism-sidebar-active-bg)"
-          color="var(--prism-sidebar-active-fg)"
-          borderColor="var(--prism-border)"
-        >
-          filtered by {field} {commit.slice(0, 12)} ✕
-        </Box>
+        <Tooltip content="Clear the commit filter and show all runs.">
+          <Box
+            as="button"
+            onClick={onClear}
+            px={2}
+            py="2px"
+            borderRadius="sm"
+            borderWidth={1}
+            fontSize="xs"
+            cursor="pointer"
+            bg="var(--prism-sidebar-active-bg)"
+            color="var(--prism-sidebar-active-fg)"
+            borderColor="var(--prism-border)"
+          >
+            filtered by {field} {commit.slice(0, 12)} ✕
+          </Box>
+        </Tooltip>
       </Flex>
       {q.isLoading && <Text>Loading…</Text>}
-      {q.isError && (
-        <Text color="red.400">Could not load runs — {String(q.error)}</Text>
-      )}
+      {q.isError && <Text color="red.400">Could not load runs — {String(q.error)}</Text>}
       {q.data && <RunsTable runs={q.data} />}
     </Box>
   );
@@ -290,26 +301,32 @@ function CommitsTab({
       )}
       <Flex wrap="wrap" gap={2}>
         {(data ?? []).map((c) => (
-          <Box
-            as="button"
+          <Tooltip
             key={c.commit}
-            onClick={() => onFilter(field, c.commit)}
-            px={2}
-            py="2px"
-            borderRadius="sm"
-            borderWidth={1}
-            fontSize="xs"
-            fontFamily="mono"
-            cursor="pointer"
-            bg="var(--prism-bg-surface)"
-            color="var(--prism-text-muted)"
-            borderColor="var(--prism-border)"
+            content={`Show the ${c.run_count} run${c.run_count === 1 ? '' : 's'} built from ${
+              field === 'kernel_commit' ? 'kernel' : 'HDL'
+            } commit ${c.commit}`}
           >
-            {c.commit.slice(0, 12)}{' '}
-            <Text as="span" color="var(--prism-text-faint)">
-              ({c.run_count})
-            </Text>
-          </Box>
+            <Box
+              as="button"
+              onClick={() => onFilter(field, c.commit)}
+              px={2}
+              py="2px"
+              borderRadius="sm"
+              borderWidth={1}
+              fontSize="xs"
+              fontFamily="mono"
+              cursor="pointer"
+              bg="var(--prism-bg-surface)"
+              color="var(--prism-text-muted)"
+              borderColor="var(--prism-border)"
+            >
+              {c.commit.slice(0, 12)}{' '}
+              <Text as="span" color="var(--prism-text-faint)">
+                ({c.run_count})
+              </Text>
+            </Box>
+          </Tooltip>
         ))}
       </Flex>
     </Box>
@@ -357,26 +374,32 @@ function RunsTab({
     <Box>
       {tagPairs(runs).length > 0 && (
         <Flex wrap="wrap" gap={2} mb={3}>
-          <Text fontSize="xs" color="var(--prism-text-faint)" alignSelf="center">
-            Filter by tag:
-          </Text>
+          <Tooltip content="Show only runs carrying every selected tag. Click a tag to toggle it.">
+            <Text fontSize="xs" color="var(--prism-text-faint)" alignSelf="center">
+              Filter by tag:
+            </Text>
+          </Tooltip>
           {tagPairs(runs).map((pair) => (
-            <Box
-              as="button"
+            <Tooltip
               key={pair}
-              onClick={() => toggle(pair)}
-              px={2}
-              py="2px"
-              borderRadius="sm"
-              borderWidth={1}
-              fontSize="xs"
-              cursor="pointer"
-              bg={active(pair) ? 'var(--prism-sidebar-active-bg)' : 'var(--prism-bg-surface)'}
-              color={active(pair) ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-muted)'}
-              borderColor="var(--prism-border)"
+              content={active(pair) ? `Remove filter ${pair}` : `Filter to runs tagged ${pair}`}
             >
-              {pair}
-            </Box>
+              <Box
+                as="button"
+                onClick={() => toggle(pair)}
+                px={2}
+                py="2px"
+                borderRadius="sm"
+                borderWidth={1}
+                fontSize="xs"
+                cursor="pointer"
+                bg={active(pair) ? 'var(--prism-sidebar-active-bg)' : 'var(--prism-bg-surface)'}
+                color={active(pair) ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-muted)'}
+                borderColor="var(--prism-border)"
+              >
+                {pair}
+              </Box>
+            </Tooltip>
           ))}
         </Flex>
       )}
@@ -410,51 +433,41 @@ function SavedViewsBar({
       >
         View
       </Text>
-      <select
-        className="chakra-input"
-        aria-label="Saved view"
-        value={selected}
-        onChange={(e) => {
-          setSelected(e.target.value);
-          const v = views.find((x) => x.name === e.target.value);
-          if (v) onApply(v.config);
-        }}
-        style={{ padding: '2px 6px', borderRadius: 4, borderWidth: 1, fontSize: 13, minWidth: 140 }}
-      >
-        <option value="">— none —</option>
-        {views.map((v) => (
-          <option key={v.name} value={v.name}>
-            {v.name}
-          </option>
-        ))}
-      </select>
-      <Box
-        as="button"
-        onClick={() => {
-          const name = window.prompt('Save current view as:');
-          if (name) {
-            upsert.mutate({ name, config: currentConfig });
-            setSelected(name);
-          }
-        }}
-        px={2}
-        py="2px"
-        borderRadius="sm"
-        borderWidth={1}
-        fontSize="xs"
-        cursor="pointer"
-        bg="var(--prism-sidebar-active-bg)"
-        color="var(--prism-sidebar-active-fg)"
-        borderColor="var(--prism-border)"
-      >
-        save current
-      </Box>
-      {selected && (
+      <Tooltip content="Apply a saved view — restores its tab, tag filters, and selection.">
+        <select
+          className="chakra-input"
+          aria-label="Saved view"
+          value={selected}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            const v = views.find((x) => x.name === e.target.value);
+            if (v) onApply(v.config);
+          }}
+          style={{
+            padding: '2px 6px',
+            borderRadius: 4,
+            borderWidth: 1,
+            fontSize: 13,
+            minWidth: 140,
+          }}
+        >
+          <option value="">— none —</option>
+          {views.map((v) => (
+            <option key={v.name} value={v.name}>
+              {v.name}
+            </option>
+          ))}
+        </select>
+      </Tooltip>
+      <Tooltip content="Save the current tab and tag filters as a named view you can re-apply later.">
         <Box
           as="button"
           onClick={() => {
-            del.mutate(selected);
-            setSelected('');
+            const name = window.prompt('Save current view as:');
+            if (name) {
+              upsert.mutate({ name, config: currentConfig });
+              setSelected(name);
+            }
           }}
           px={2}
           py="2px"
@@ -462,12 +475,34 @@ function SavedViewsBar({
           borderWidth={1}
           fontSize="xs"
           cursor="pointer"
-          bg="var(--prism-bg-surface)"
-          color="var(--prism-text-muted)"
+          bg="var(--prism-sidebar-active-bg)"
+          color="var(--prism-sidebar-active-fg)"
           borderColor="var(--prism-border)"
         >
-          delete
+          save current
         </Box>
+      </Tooltip>
+      {selected && (
+        <Tooltip content="Delete the selected saved view.">
+          <Box
+            as="button"
+            onClick={() => {
+              del.mutate(selected);
+              setSelected('');
+            }}
+            px={2}
+            py="2px"
+            borderRadius="sm"
+            borderWidth={1}
+            fontSize="xs"
+            cursor="pointer"
+            bg="var(--prism-bg-surface)"
+            color="var(--prism-text-muted)"
+            borderColor="var(--prism-border)"
+          >
+            delete
+          </Box>
+        </Tooltip>
       )}
     </Flex>
   );
