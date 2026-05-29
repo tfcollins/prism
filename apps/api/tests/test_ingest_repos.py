@@ -26,6 +26,7 @@ def session() -> Iterator[Session]:
     Base.metadata.create_all(engine)
     with sessionmaker(bind=engine)() as s:
         yield s
+    engine.dispose()
 
 
 def _seed_project(session: Session) -> Project:

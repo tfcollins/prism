@@ -20,3 +20,4 @@ def test_create_user_and_project() -> None:
         assert user.id is not None
         assert project.id is not None
         assert project.slug == "audio"
+    engine.dispose()

@@ -40,6 +40,12 @@ def db_session(settings: Settings) -> Iterator[Session]:
     Session_ = sessionmaker(bind=engine)
     with Session_() as session:
         yield session
+    # Dispose the engine so the StaticPool's single SQLite connection is closed
+    # deterministically. Without this it lingers until GC, and closing it during
+    # garbage collection raises "Exception ignored in: <sqlite3.Connection>",
+    # which `filterwarnings = error` turns into spurious, order-dependent test
+    # failures (PytestUnraisableExceptionWarning) in unrelated tests.
+    engine.dispose()
 
 
 @pytest.fixture

@@ -83,3 +83,4 @@ def test_full_run_tree_round_trip() -> None:
         assert run.id and suite.id and case.id and artifact.id and derived.id
         tags = s.query(RunTag).filter(RunTag.run_id == run.id).all()
         assert {t.key for t in tags} == {"branch", "sha"}
+    engine.dispose()

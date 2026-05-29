@@ -27,6 +27,7 @@ def session() -> Iterator[Session]:
     Base.metadata.create_all(engine)
     with sessionmaker(bind=engine)() as s:
         yield s
+    engine.dispose()
 
 
 @pytest.fixture

@@ -34,9 +34,12 @@ def bootstrap_admin(settings: Settings | None = None) -> None:
     """Create the bootstrap admin if no users exist and credentials are set."""
     s = settings or get_settings()
     engine = create_engine(s.database_url)
-    with sessionmaker(bind=engine)() as session:
-        ensure_bootstrap_admin(session, email=s.admin_email, password=s.admin_password)
-        session.commit()
+    try:
+        with sessionmaker(bind=engine)() as session:
+            ensure_bootstrap_admin(session, email=s.admin_email, password=s.admin_password)
+            session.commit()
+    finally:
+        engine.dispose()
 
 
 def ensure_bucket(settings: Settings | None = None) -> None:
@@ -81,15 +84,18 @@ def reparse_logs_cli(settings: Settings | None = None) -> None:
     s = settings or get_settings()
     engine = create_engine(s.database_url)
     storage = build_storage(s)
-    with sessionmaker(bind=engine)() as session:
-        n = reparse_logs(
-            session=session,
-            storage=storage,
-            kernel_pattern=s.log_kernel_commit_pattern,
-            hdl_pattern=s.log_hdl_commit_pattern,
-            findings_cap=s.log_findings_cap,
-        )
-        session.commit()
+    try:
+        with sessionmaker(bind=engine)() as session:
+            n = reparse_logs(
+                session=session,
+                storage=storage,
+                kernel_pattern=s.log_kernel_commit_pattern,
+                hdl_pattern=s.log_hdl_commit_pattern,
+                findings_cap=s.log_findings_cap,
+            )
+            session.commit()
+    finally:
+        engine.dispose()
     print(f"reparsed {n} log artifact(s)")
 
 
