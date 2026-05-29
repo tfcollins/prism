@@ -148,6 +148,7 @@ function DutsTab({ slug }: { slug: string }) {
         </Text>
         <select
           className="chakra-input"
+          aria-label="DUT tag"
           value={effectiveKey ?? ''}
           onChange={(e) => {
             setTagKey(e.target.value);
@@ -411,6 +412,7 @@ function SavedViewsBar({
       </Text>
       <select
         className="chakra-input"
+        aria-label="Saved view"
         value={selected}
         onChange={(e) => {
           setSelected(e.target.value);
