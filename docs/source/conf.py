@@ -16,6 +16,8 @@ extensions = [
     "myst_parser",
     "sphinxcontrib.mermaid",
     "adi_doctools",
+    # Emits .nojekyll so GitHub Pages serves Sphinx's _static/ (underscore) dirs.
+    "sphinx.ext.githubpages",
 ]
 
 # adi-doctools treats docs as part of a multi-repo system by default; Prism is
