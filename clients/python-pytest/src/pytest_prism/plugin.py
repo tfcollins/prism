@@ -52,6 +52,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     g.addoption("--prism-url", default=None)
     g.addoption("--prism-email", default=None)
     g.addoption("--prism-password", default=None)
+    g.addoption("--prism-token", default=None)
     g.addoption("--prism-project", default=None)
     g.addoption("--prism-run-name", default=None)
     g.addoption("--prism-tag", action="append", default=[])

@@ -10,6 +10,7 @@ const BASE_NAV = [
   { to: '/', label: 'Overview', short: 'O', end: true },
   { to: '/projects', label: 'Projects', short: 'P', end: true },
   { to: '/compare', label: 'Compare', short: 'C', end: true },
+  { to: '/tokens', label: 'Tokens', short: 'T', end: true },
 ];
 const ADMIN_NAV = { to: '/admin', label: 'Admin', short: 'A', end: true };
 

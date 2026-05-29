@@ -369,3 +369,21 @@ export interface OverviewResponse {
   recent_runs: RecentRun[];
   daily: DailyPoint[];
 }
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+}
+
+export interface CreateTokenRequest {
+  name: string;
+  expires_in_days?: number | null;
+}
+
+export interface TokenCreated extends ApiToken {
+  token: string;
+}

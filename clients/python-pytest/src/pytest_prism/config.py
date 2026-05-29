@@ -43,6 +43,7 @@ class Config:
     upload_url: str | None
     upload_email: str | None
     upload_password: str | None
+    upload_token: str | None
     upload_project: str | None
     run_name: str
     user_tags: dict[str, str]
@@ -79,6 +80,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--prism-url", default=None)
     p.add_argument("--prism-email", default=None)
     p.add_argument("--prism-password", default=None)
+    p.add_argument("--prism-token", default=None)
     p.add_argument("--prism-project", default=None)
     p.add_argument("--prism-run-name", default=None)
     p.add_argument("--prism-tag", action="append", default=[])
@@ -119,6 +121,7 @@ def _resolve(ns: argparse.Namespace, env: Mapping[str, str]) -> Config:
             upload_url=None,
             upload_email=None,
             upload_password=None,
+            upload_token=None,
             upload_project=None,
             run_name="",
             user_tags={},
@@ -134,6 +137,7 @@ def _resolve(ns: argparse.Namespace, env: Mapping[str, str]) -> Config:
     upload_url = _pick(ns.prism_url, "PRISM_URL")
     upload_email = _pick(ns.prism_email, "PRISM_EMAIL")
     upload_password = _pick(ns.prism_password, "PRISM_PASSWORD")
+    upload_token = _pick(ns.prism_token, "PRISM_TOKEN")
     upload_project = _pick(ns.prism_project, "PRISM_PROJECT")
     if upload_url and not upload_project:
         raise ConfigError("--prism-project is required when --prism-url is set")
@@ -190,6 +194,7 @@ def _resolve(ns: argparse.Namespace, env: Mapping[str, str]) -> Config:
         upload_url=upload_url,
         upload_email=upload_email,
         upload_password=upload_password,
+        upload_token=upload_token,
         upload_project=upload_project,
         run_name=run_name,
         user_tags=user_tags,
