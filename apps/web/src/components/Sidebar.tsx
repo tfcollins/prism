@@ -78,6 +78,8 @@ export function Sidebar({
       as="nav"
       w={isDrawer ? EXPANDED_WIDTH : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH}
       h={isDrawer ? '100%' : undefined}
+      // Persistent rail fills the full page height (drawer fills its overlay).
+      minH={isDrawer ? '100%' : '100vh'}
       bg="var(--prism-bg-surface)"
       borderRightWidth={1}
       borderRightColor="var(--prism-border)"
