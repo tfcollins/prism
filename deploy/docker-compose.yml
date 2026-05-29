@@ -97,6 +97,33 @@ services:
     entrypoint: []
     command: ["celery", "-A", "prism_api.worker.celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
 
+  # Scheduled database backups pushed to Cloudsmith. Off by default — enable by
+  # adding the "backup" profile (e.g. COMPOSE_PROFILES=backup in .env) and
+  # setting CLOUDSMITH_API_KEY + CLOUDSMITH_REPO. See the configure-backups how-to.
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    profiles: ["backup"]
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      minio:    { condition: service_healthy }
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-prism}
+      POSTGRES_USER: ${POSTGRES_USER:-prism}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PG_HOST: postgres
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-prism}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-prism}
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_INCLUDE_MINIO: ${BACKUP_INCLUDE_MINIO:-true}
+      CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY:-}
+      CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-}
+
 volumes:
   postgres_data:
   minio_data:

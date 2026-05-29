@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run hadolint
         run: |
-          for f in apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev; do
+          for f in apps/api/Dockerfile apps/api/Dockerfile.dev apps/web/Dockerfile apps/web/Dockerfile.dev deploy/backup/Dockerfile; do
             echo "==> $f"
             docker run --rm -i hadolint/hadolint:latest-alpine < "$f"
           done
