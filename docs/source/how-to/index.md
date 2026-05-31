@@ -15,5 +15,6 @@ compare-runs
 upload-raw-http
 configure-ldap
 configure-backups
+prune-old-runs
 admin-panel
 ```
