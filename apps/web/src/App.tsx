@@ -7,6 +7,7 @@ import { OverviewPage } from './pages/OverviewPage';
 import { ProjectDashboardPage } from './pages/ProjectDashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RunDetailPage } from './pages/RunDetailPage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { TokensPage } from './pages/TokensPage';
 import { AdminRoute } from './routes/AdminRoute';
 import { ProtectedRoute } from './routes/ProtectedRoute';
@@ -44,6 +45,14 @@ export function App() {
         element={
           <ProtectedRoute>
             <RunDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <SearchResultsPage />
           </ProtectedRoute>
         }
       />

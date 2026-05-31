@@ -24,6 +24,7 @@ import type {
   RunDetail,
   RunListItem,
   SavedView,
+  SearchHit,
   SpecDefinition,
   SpectrogramResponse,
   SpectrumResponse,
@@ -465,5 +466,14 @@ export function useTestHistory(
         })
       ).data,
     enabled: Boolean(projectSlug) && Boolean(classname) && Boolean(name),
+  });
+}
+
+export function useSearch(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ['search', q],
+    queryFn: async () => (await api.get<SearchHit[]>('/search', { params: { q } })).data,
+    enabled: q.length >= 2,
   });
 }
