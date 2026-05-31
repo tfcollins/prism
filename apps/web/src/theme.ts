@@ -14,7 +14,7 @@ export const system = createSystem(defaultConfig, {
     ':root': {
       '--prism-bg-canvas': '#0b1220',
       '--prism-bg-surface': '#111827',
-      '--prism-bg-plot': '#030712',
+      '--prism-bg-plot': '#04060c',
       '--prism-bg-hover': '#1f2937',
       '--prism-bg-sel': '#1e40af',
       '--prism-border': '#374151',
@@ -27,8 +27,10 @@ export const system = createSystem(defaultConfig, {
       '--prism-brand-strong': '#3b82f6',
       '--prism-danger-bg': '#450a0a',
       '--prism-danger-fg': '#fecaca',
-      '--prism-sidebar-active-bg': '#1e40af',
-      '--prism-sidebar-active-fg': '#eff6ff',
+      // Active rail item: a translucent brand wash (was a heavy solid block).
+      // The saturated cue is carried by a spectral left bar in the Sidebar.
+      '--prism-sidebar-active-bg': 'rgba(96, 165, 250, 0.12)',
+      '--prism-sidebar-active-fg': '#dbeafe',
       // Semantic status tokens (pass / warn / fail). Reused by margin chips,
       // case-status badges, and trend spec lines so status reads identically
       // across the app. Paired with glyphs in UI so hue is never the sole signal.
@@ -38,11 +40,18 @@ export const system = createSystem(defaultConfig, {
       '--prism-status-warn-fg': '#fcd34d',
       '--prism-status-fail-bg': '#450a0a',
       '--prism-status-fail-fg': '#fca5a5',
+      // Card elevation + signature value glow (dark).
+      '--prism-shadow-card':
+        '0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 28px -18px rgba(0,0,0,0.85)',
+      '--prism-glow-brand': '0 0 22px -8px var(--prism-brand)',
+      // Atmosphere: a faint spectral bloom anchored top-left of the canvas.
+      '--prism-canvas-glow':
+        'radial-gradient(900px 500px at 12% -8%, rgba(96,165,250,0.10), transparent 60%), radial-gradient(700px 460px at 92% -12%, rgba(167,139,250,0.07), transparent 55%)',
     },
     ':root[data-color-mode="light"]': {
       '--prism-bg-canvas': '#f9fafb',
       '--prism-bg-surface': '#ffffff',
-      '--prism-bg-plot': '#f3f4f6',
+      '--prism-bg-plot': '#0c1322',
       '--prism-bg-hover': '#f3f4f6',
       '--prism-bg-sel': '#dbeafe',
       '--prism-border': '#e5e7eb',
@@ -55,7 +64,7 @@ export const system = createSystem(defaultConfig, {
       '--prism-brand-strong': '#1d4ed8',
       '--prism-danger-bg': '#fee2e2',
       '--prism-danger-fg': '#991b1b',
-      '--prism-sidebar-active-bg': '#dbeafe',
+      '--prism-sidebar-active-bg': 'rgba(37, 99, 235, 0.10)',
       '--prism-sidebar-active-fg': '#1e3a8a',
       '--prism-status-pass-bg': '#dcfce7',
       '--prism-status-pass-fg': '#166534',
@@ -63,11 +72,48 @@ export const system = createSystem(defaultConfig, {
       '--prism-status-warn-fg': '#92400e',
       '--prism-status-fail-bg': '#fee2e2',
       '--prism-status-fail-fg': '#991b1b',
+      '--prism-shadow-card': '0 1px 2px rgba(16,24,40,0.06), 0 12px 28px -20px rgba(16,24,40,0.22)',
+      '--prism-glow-brand': '0 0 0 transparent',
+      '--prism-canvas-glow':
+        'radial-gradient(900px 500px at 12% -8%, rgba(37,99,235,0.05), transparent 60%)',
+    },
+
+    // Spectral ramp — the "Prism" refraction signature. Mode-independent hues
+    // (they read on both canvases); used for the shell hairline, sidebar active
+    // bar, and as a saturated accent. The gradient is the brand's one bold move.
+    ':root, :root[data-color-mode="light"]': {
+      '--prism-spectrum-r': '#f87171',
+      '--prism-spectrum-o': '#fb923c',
+      '--prism-spectrum-y': '#fbbf24',
+      '--prism-spectrum-g': '#34d399',
+      '--prism-spectrum-c': '#22d3ee',
+      '--prism-spectrum-b': '#60a5fa',
+      '--prism-spectrum-v': '#a78bfa',
+      '--prism-spectrum-gradient':
+        'linear-gradient(90deg, #f87171, #fb923c, #fbbf24, #34d399, #22d3ee, #60a5fa, #a78bfa)',
+      '--prism-font-sans': "'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif",
+      '--prism-font-mono': "'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace",
     },
 
     'html, body': {
       backgroundColor: 'var(--prism-bg-canvas)',
+      backgroundImage: 'var(--prism-canvas-glow)',
+      backgroundAttachment: 'fixed',
       color: 'var(--prism-text)',
+      fontFamily: 'var(--prism-font-sans)',
+    },
+
+    // Headings: same family, tightened tracking for an engineered look.
+    '.chakra-heading, h1, h2, h3, h4': {
+      fontFamily: 'var(--prism-font-sans)',
+      letterSpacing: '-0.015em',
+    },
+
+    // Numerics readout: tabular mono. Applied to metrics, run ids, counts.
+    '.prism-num': {
+      fontFamily: 'var(--prism-font-mono)',
+      fontVariantNumeric: 'tabular-nums',
+      letterSpacing: '-0.01em',
     },
 
     // Force Chakra-composed components to adopt our foreground when they'd
@@ -76,6 +122,15 @@ export const system = createSystem(defaultConfig, {
     '.chakra-table__row > .chakra-table__cell, .chakra-table__row > .chakra-table__header': {
       color: 'var(--prism-text)',
       borderColor: 'var(--prism-border)',
+    },
+    // Column headers read like an instrument channel legend.
+    '.chakra-table__row > .chakra-table__header': {
+      textTransform: 'uppercase',
+      fontSize: '10.5px',
+      letterSpacing: '0.08em',
+      fontWeight: '600',
+      fontFamily: 'var(--prism-font-mono)',
+      color: 'var(--prism-text-faint)',
     },
     '.chakra-input, input.chakra-input, .chakra-textarea': {
       color: 'var(--prism-text)',
@@ -115,6 +170,16 @@ export const system = createSystem(defaultConfig, {
     },
   },
   theme: {
+    tokens: {
+      // Make Chakra's own font tokens resolve to our self-hosted IBM Plex faces,
+      // so every `fontFamily="mono"` / heading / body across the app picks up
+      // the instrument typography without per-call edits.
+      fonts: {
+        body: { value: "'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif" },
+        heading: { value: "'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif" },
+        mono: { value: "'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace" },
+      },
+    },
     keyframes: {
       // Shimmer for loading skeletons (PlotSkeleton).
       'prism-shimmer': {
