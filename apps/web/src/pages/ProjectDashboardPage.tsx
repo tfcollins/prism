@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Table, Tabs, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Table, Tabs, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
@@ -48,9 +48,21 @@ export function ProjectDashboardPage() {
 
   return (
     <AppShell>
-      <Heading size="lg" mb={4}>
-        {slug}
-      </Heading>
+      <Flex mb={4} alignItems="center" justifyContent="space-between" gap={3}>
+        <Heading size="lg">{slug}</Heading>
+        {slug &&
+          ((runsQuery.data?.length ?? 0) > 0 ? (
+            <Tooltip content="Download every case and measurement in this project as CSV">
+              <Button asChild size="sm" variant="outline">
+                <a href={`/api/v1/projects/${slug}/export.csv`}>Export CSV</a>
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button size="sm" variant="outline" disabled>
+              Export CSV
+            </Button>
+          ))}
+      </Flex>
       {slug && (
         <SavedViewsBar
           slug={slug}

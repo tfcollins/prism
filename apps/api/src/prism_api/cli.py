@@ -1,6 +1,7 @@
 """Command-line entry points for ops tasks."""
 
 import sys
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -11,6 +12,7 @@ from prism_api.models.artifact import Artifact, ArtifactKind
 from prism_api.models.suite import TestCase, TestSuite
 from prism_api.parsers.logs import parse_log
 from prism_api.repos.logs import LogRepo
+from prism_api.services.retention import prune_runs
 from prism_api.storage import ObjectStorage, build_storage
 
 
@@ -99,9 +101,35 @@ def reparse_logs_cli(settings: Settings | None = None) -> None:
     print(f"reparsed {n} log artifact(s)")
 
 
+def prune_cli(
+    settings: Settings | None = None, *, days: int | None = None, dry_run: bool = False
+) -> None:
+    """CLI wrapper: delete runs older than PRISM_RETENTION_DAYS (or --days)."""
+    s = settings or get_settings()
+    keep = days if days is not None else s.retention_days
+    if keep <= 0:
+        print("retention disabled (set PRISM_RETENTION_DAYS or --days); nothing to prune")
+        return
+    cutoff = datetime.now(UTC) - timedelta(days=keep)
+    engine = create_engine(s.database_url)
+    storage = build_storage(s)
+    try:
+        with sessionmaker(bind=engine)() as session:
+            stats = prune_runs(session, storage, cutoff=cutoff, dry_run=dry_run)
+    finally:
+        engine.dispose()
+    verb = "would prune" if dry_run else "pruned"
+    print(
+        f"{verb}: runs={stats['runs']} artifacts={stats['artifacts']} "
+        f"blobs={stats['blobs']} (older than {keep}d)"
+    )
+
+
 def main() -> int:
     if len(sys.argv) < 2:
-        print("usage: prism-api <bootstrap-admin|ensure-bucket|reparse-logs>", file=sys.stderr)
+        print(
+            "usage: prism-api <bootstrap-admin|ensure-bucket|reparse-logs|prune>", file=sys.stderr
+        )
         return 2
     cmd = sys.argv[1]
     if cmd == "bootstrap-admin":
@@ -112,6 +140,13 @@ def main() -> int:
         return 0
     if cmd == "reparse-logs":
         reparse_logs_cli()
+        return 0
+    if cmd == "prune":
+        args = sys.argv[2:]
+        days = None
+        if "--days" in args:
+            days = int(args[args.index("--days") + 1])
+        prune_cli(days=days, dry_run="--dry-run" in args)
         return 0
     print(f"unknown command: {cmd}", file=sys.stderr)
     return 2

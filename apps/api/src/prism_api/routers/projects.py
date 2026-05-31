@@ -1,14 +1,19 @@
 """Project endpoints."""
 
+import csv
+import io
+from collections.abc import Iterator
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from prism_api.deps import csrf_protect, current_user, session_dep
 from prism_api.models.user import User
 from prism_api.repos.audit import AuditRepo
+from prism_api.repos.export import EXPORT_COLUMNS, ExportRepo
 from prism_api.repos.logs import LogRepo
 from prism_api.repos.masks import MaskRepo
 from prism_api.repos.projects import ProjectRepo
@@ -188,6 +193,39 @@ def test_history(
     p = _project_or_404(session, slug)
     rows = TestHistoryRepo(session).timeline(p.id, classname, name)
     return [TestTimelinePoint.model_validate(r) for r in rows]
+
+
+@router.get("/{slug}/export.csv")
+def export_csv(
+    slug: str,
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> StreamingResponse:
+    """Stream every case (+ measurements) in the project as CSV."""
+    p = _project_or_404(session, slug)
+    rows = ExportRepo(session).rows(p.id)
+
+    def generate() -> Iterator[str]:
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+
+        def flush() -> str:
+            out = buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+            return out
+
+        writer.writerow(EXPORT_COLUMNS)
+        yield flush()
+        for r in rows:
+            writer.writerow(["" if v is None else v for v in r])
+            yield flush()
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{slug}-export.csv"'},
+    )
 
 
 def _project_or_404(session: Session, slug: str):  # type: ignore[no-untyped-def]

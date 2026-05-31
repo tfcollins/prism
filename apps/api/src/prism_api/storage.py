@@ -67,6 +67,10 @@ class ObjectStorage:
         resp = self.client.list_objects_v2(Bucket=self.bucket, Prefix=prefix, MaxKeys=limit)
         return [obj["Key"] for obj in resp.get("Contents", [])]
 
+    def delete(self, key: str) -> None:
+        """Delete an object (used by retention/prune)."""
+        self.client.delete_object(Bucket=self.bucket, Key=key)
+
     def exists(self, key: str) -> bool:
         try:
             self.client.head_object(Bucket=self.bucket, Key=key)

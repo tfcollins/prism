@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # Admin "container logs" viewer reads the Docker Engine API over this socket
     # (mounted read-only into the api container). Missing socket → feature off.
     docker_socket: str = "/var/run/docker.sock"
+    # Retention: `prism-api prune` deletes runs older than this many days (and
+    # their orphaned artifact blobs). 0 disables pruning.
+    retention_days: int = 0
 
     @field_validator("jwt_secret")
     @classmethod

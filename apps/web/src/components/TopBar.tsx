@@ -1,5 +1,6 @@
-import { Box, Button, Flex, IconButton, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, IconButton, Input, Text } from '@chakra-ui/react';
 import axios from 'axios';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api } from '../api/client';
@@ -11,6 +12,13 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, refresh } = useAuth();
   const { colorMode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = search.trim();
+    if (q.length >= 2) navigate(`/search?q=${encodeURIComponent(q)}`);
+  }
 
   async function handleLogout() {
     try {
@@ -50,6 +58,16 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
         </Box>
       </Flex>
       <Flex alignItems="center" gap={{ base: 2, md: 3 }}>
+        <Box as="form" onSubmit={submitSearch} display={{ base: 'none', sm: 'block' }}>
+          <Input
+            aria-label="Search"
+            placeholder="Search…"
+            size="sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            w={{ sm: '160px', md: '240px' }}
+          />
+        </Box>
         <IconButton
           aria-label={colorMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           size="sm"

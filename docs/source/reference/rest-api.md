@@ -31,6 +31,7 @@ header `X-Prism-Csrf` echoing the `prism_csrf` cookie set at login — see
 | `GET /api/v1/projects` | List |
 | `POST /api/v1/projects` | Create |
 | `GET /api/v1/projects/{slug}` | Detail |
+| `GET /api/v1/projects/{slug}/export.csv` | Stream every case (+ measurements) as CSV |
 
 ## Runs
 
@@ -62,3 +63,9 @@ header `X-Prism-Csrf` echoing the `prism_csrf` cookie set at login — see
 | Method & path | Purpose |
 |---|---|
 | `POST /api/v1/compare` | Body `{run_ids: [a, b, …]}` (CSRF-protected) |
+
+## Search
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/search?q=` | Global search across projects, runs, cases, and commits (min. 2 chars; capped per kind) |

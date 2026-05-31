@@ -410,3 +410,11 @@ export interface TestTimelinePoint {
   status: string;
   duration_ms: number;
 }
+
+export interface SearchHit {
+  kind: 'project' | 'run' | 'case' | 'commit';
+  title: string;
+  subtitle: string;
+  project_slug: string | null;
+  run_id: string | null;
+}
