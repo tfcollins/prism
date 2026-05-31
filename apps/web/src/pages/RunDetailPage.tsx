@@ -9,6 +9,7 @@ import { BootPanel } from '../components/BootPanel';
 import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
+import { Logo } from '../components/Logo';
 import { MeasurementsTable } from '../components/MeasurementsTable';
 import { SpectrogramPlot } from '../components/SpectrogramPlot';
 import { SpectrumAnalysis } from '../components/SpectrumAnalysis';
@@ -108,9 +109,10 @@ export function RunDetailPage() {
             <Box
               borderWidth={1}
               borderColor="var(--prism-border)"
-              borderRadius="md"
+              borderRadius="lg"
               p={3}
               bg="var(--prism-bg-surface)"
+              boxShadow="var(--prism-shadow-card)"
               overflowY="auto"
             >
               {runQuery.data.suites.length === 1 && (
@@ -145,12 +147,33 @@ export function RunDetailPage() {
             <Box
               borderWidth={1}
               borderColor="var(--prism-border)"
-              borderRadius="md"
+              borderRadius="lg"
               p={3}
               bg="var(--prism-bg-surface)"
+              boxShadow="var(--prism-shadow-card)"
             >
               {!selectedCaseId && (
-                <Text color="var(--prism-text-subtle)">Select a case from the tree</Text>
+                <Flex
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  minH={{ base: '180px', md: '440px' }}
+                  gap={3}
+                  textAlign="center"
+                >
+                  <Logo size="md" showWordmark={false} />
+                  <Text color="var(--prism-text-subtle)" fontSize="sm">
+                    Select a case from the tree to inspect
+                  </Text>
+                  <Text
+                    fontFamily="var(--prism-font-mono)"
+                    fontSize="11px"
+                    color="var(--prism-text-faint)"
+                    letterSpacing="0.06em"
+                  >
+                    measurements · waveforms · spectra
+                  </Text>
+                </Flex>
               )}
               {selectedCaseId && caseQuery.isLoading && <Text>Loading case…</Text>}
               {caseQuery.data && (
@@ -249,6 +272,14 @@ export function RunDetailPage() {
   );
 }
 
+const STATUS_PALETTE: Record<string, string> = {
+  pass: 'green',
+  fail: 'red',
+  error: 'red',
+  mixed: 'orange',
+  pending: 'gray',
+};
+
 const STATUS_HELP: Record<string, string> = {
   pass: 'All test cases passed.',
   fail: 'One or more test cases failed.',
@@ -275,14 +306,15 @@ function RunMetaPane({ run }: { run: RunDetail }) {
     <Box
       borderWidth={1}
       borderColor="var(--prism-border)"
-      borderRadius="md"
+      borderRadius="lg"
       p={3}
       bg="var(--prism-bg-surface)"
+      boxShadow="var(--prism-shadow-card)"
       overflowY="auto"
     >
       {label('Status')}
       <Tooltip content={STATUS_HELP[run.status] ?? 'Overall run status.'}>
-        <Badge colorPalette="blue">{run.status}</Badge>
+        <Badge colorPalette={STATUS_PALETTE[run.status] ?? 'gray'}>{run.status}</Badge>
       </Tooltip>
 
       {run.boot && (

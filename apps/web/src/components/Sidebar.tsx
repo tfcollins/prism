@@ -23,9 +23,13 @@ const linkStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '6px 10px',
   borderRadius: '6px',
   fontSize: '13px',
+  fontWeight: isActive ? 600 : 400,
   color: isActive ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-subtle)',
   background: isActive ? 'var(--prism-sidebar-active-bg)' : 'transparent',
+  // Active items carry a spectral-cyan readout bar on the leading edge.
+  boxShadow: isActive ? 'inset 3px 0 0 0 var(--prism-spectrum-c)' : 'none',
   textDecoration: 'none',
+  transition: 'background 0.12s ease, color 0.12s ease',
 });
 
 const collapsedLinkStyle = ({ isActive }: { isActive: boolean }) => ({
@@ -39,6 +43,8 @@ const collapsedLinkStyle = ({ isActive }: { isActive: boolean }) => ({
   fontWeight: 600,
   color: isActive ? 'var(--prism-sidebar-active-fg)' : 'var(--prism-text-subtle)',
   background: isActive ? 'var(--prism-sidebar-active-bg)' : 'transparent',
+  boxShadow: isActive ? 'inset 2px 0 0 0 var(--prism-spectrum-c)' : 'none',
+  fontFamily: 'var(--prism-font-mono)',
   textDecoration: 'none',
   margin: '0 auto',
 });
@@ -151,7 +157,8 @@ export function Sidebar({
               <Text
                 fontSize="10px"
                 textTransform="uppercase"
-                letterSpacing="1px"
+                letterSpacing="0.12em"
+                fontFamily="var(--prism-font-mono)"
                 color="var(--prism-text-faint)"
                 mb={2}
                 px={2}
@@ -163,7 +170,11 @@ export function Sidebar({
                   <NavLink
                     key={p.id}
                     to={`/projects/${p.slug}`}
-                    style={() => linkStyle({ isActive: p.slug === activeSlug })}
+                    style={() => ({
+                      ...linkStyle({ isActive: p.slug === activeSlug }),
+                      fontFamily: 'var(--prism-font-mono)',
+                      fontSize: '12px',
+                    })}
                     onClick={onNavigate}
                   >
                     {p.slug}
@@ -173,7 +184,14 @@ export function Sidebar({
             </Box>
           )}
 
-          <Text mt={8} fontSize="xs" color="var(--prism-text-faint)" textTransform="uppercase">
+          <Text
+            mt={8}
+            fontSize="10px"
+            fontFamily="var(--prism-font-mono)"
+            letterSpacing="0.12em"
+            color="var(--prism-text-faint)"
+            textTransform="uppercase"
+          >
             v0.4
           </Text>
         </>

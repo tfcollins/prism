@@ -22,7 +22,11 @@ interface LogoProps {
  * refracted colored rays on the right — a visual rhyme with the FFT
  * decomposition the app exists to render.
  */
-export function Logo({ size = 'sm', showWordmark = true, markColor = '#63b3ed' }: LogoProps) {
+export function Logo({
+  size = 'sm',
+  showWordmark = true,
+  markColor = 'var(--prism-brand)',
+}: LogoProps) {
   const { mark, wordmark, gap } = SIZES[size];
 
   return (
@@ -33,9 +37,9 @@ export function Logo({ size = 'sm', showWordmark = true, markColor = '#63b3ed' }
       {showWordmark && (
         <Text
           fontSize={`${wordmark}px`}
-          fontWeight={600}
-          letterSpacing="0.05em"
-          color="#e2e8f0"
+          fontWeight={700}
+          letterSpacing="-0.01em"
+          color="var(--prism-text)"
           lineHeight={1}
         >
           Prism
