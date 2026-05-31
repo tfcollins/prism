@@ -49,7 +49,20 @@ export function ProjectDashboardPage() {
   return (
     <AppShell>
       <Flex mb={4} alignItems="center" justifyContent="space-between" gap={3}>
-        <Heading size="lg">{slug}</Heading>
+        <Box>
+          <Text
+            fontSize="10px"
+            textTransform="uppercase"
+            letterSpacing="0.12em"
+            fontFamily="var(--prism-font-mono)"
+            color="var(--prism-text-faint)"
+          >
+            Project
+          </Text>
+          <Heading size="lg" fontFamily="var(--prism-font-mono)" letterSpacing="-0.01em">
+            {slug}
+          </Heading>
+        </Box>
         {slug &&
           ((runsQuery.data?.length ?? 0) > 0 ? (
             <Tooltip content="Download every case and measurement in this project as CSV">
