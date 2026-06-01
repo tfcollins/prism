@@ -5,6 +5,20 @@ export interface User {
   is_admin?: boolean;
 }
 
+export interface AdminProject {
+  id: string;
+  slug: string;
+  name: string;
+  run_count: number;
+}
+
+export interface ProjectDeleted {
+  slug: string;
+  runs: number;
+  artifacts: number;
+  blobs: number;
+}
+
 export interface AdminAccount {
   id: string;
   email: string;

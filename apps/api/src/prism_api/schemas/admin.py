@@ -40,3 +40,17 @@ class ContainerLogsOut(BaseModel):
     available: bool
     message: str | None = None
     lines: list[str] = Field(default_factory=list)
+
+
+class AdminProjectOut(BaseModel):
+    id: str
+    slug: str
+    name: str
+    run_count: int
+
+
+class ProjectDeletedOut(BaseModel):
+    slug: str
+    runs: int
+    artifacts: int
+    blobs: int

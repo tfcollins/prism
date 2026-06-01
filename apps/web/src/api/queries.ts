@@ -4,6 +4,7 @@ import { api } from './client';
 import type {
   ActivityEvent,
   AdminAccount,
+  AdminProject,
   ApiToken,
   AuditEvent,
   BackupRun,
@@ -20,6 +21,7 @@ import type {
   Mask,
   OverviewResponse,
   Project,
+  ProjectDeleted,
   RegressionsResponse,
   RunDetail,
   RunListItem,
@@ -385,6 +387,26 @@ export function useAdminAccounts() {
   return useQuery({
     queryKey: ['admin', 'accounts'],
     queryFn: async () => (await api.get<AdminAccount[]>('/admin/accounts')).data,
+  });
+}
+
+export function useAdminProjects() {
+  return useQuery({
+    queryKey: ['admin', 'projects'],
+    queryFn: async () => (await api.get<AdminProject[]>('/admin/projects')).data,
+  });
+}
+
+export function useDeleteProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (slug: string) =>
+      (await api.delete<ProjectDeleted>(`/admin/projects/${slug}`)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'projects'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['overview'] });
+    },
   });
 }
 
