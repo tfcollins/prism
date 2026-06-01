@@ -1,7 +1,15 @@
-import { Badge, Box, Heading, Stack, Table, Tabs, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Heading, Input, Stack, Table, Tabs, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 
-import { useAdminAccounts, useAdminActivity, useAdminBackups, useAdminLogs } from '../api/queries';
+import {
+  useAdminAccounts,
+  useAdminActivity,
+  useAdminBackups,
+  useAdminLogs,
+  useAdminProjects,
+  useDeleteProject,
+} from '../api/queries';
+import type { AdminProject } from '../api/types';
 import { AppShell } from '../components/AppShell';
 
 const LOG_SERVICES = ['api', 'worker', 'web', 'postgres', 'redis', 'minio'];
@@ -25,7 +33,8 @@ function fmtTime(iso: string): string {
 }
 
 function StatusBadge({ value }: { value: string }) {
-  const palette = value === 'ok' || value === 'pushed' ? 'green' : value === 'error' ? 'red' : 'gray';
+  const palette =
+    value === 'ok' || value === 'pushed' ? 'green' : value === 'error' ? 'red' : 'gray';
   return (
     <Badge colorPalette={palette} variant="subtle">
       {value}
@@ -62,6 +71,94 @@ function AccountsTab() {
         ))}
       </Table.Body>
     </Table.Root>
+  );
+}
+
+function DeleteProjectRow({ project }: { project: AdminProject }) {
+  const [confirming, setConfirming] = useState(false);
+  const [typed, setTyped] = useState('');
+  const del = useDeleteProject();
+  const armed = typed === project.slug;
+
+  return (
+    <Table.Row>
+      <Table.Cell fontFamily="var(--prism-font-mono)">{project.slug}</Table.Cell>
+      <Table.Cell>{project.name}</Table.Cell>
+      <Table.Cell className="prism-num">{project.run_count}</Table.Cell>
+      <Table.Cell>
+        {!confirming ? (
+          <Button
+            size="xs"
+            colorPalette="red"
+            variant="outline"
+            onClick={() => {
+              setConfirming(true);
+              setTyped('');
+            }}
+          >
+            Delete
+          </Button>
+        ) : (
+          <Stack direction="row" gap={2} align="center" wrap="wrap">
+            <Input
+              size="xs"
+              w="160px"
+              placeholder={`type "${project.slug}"`}
+              aria-label={`Confirm slug for ${project.slug}`}
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+            />
+            <Button
+              size="xs"
+              colorPalette="red"
+              disabled={!armed || del.isPending}
+              loading={del.isPending}
+              onClick={() =>
+                del.mutate(project.slug, {
+                  onSettled: () => setConfirming(false),
+                })
+              }
+            >
+              Confirm delete
+            </Button>
+            <Button size="xs" variant="ghost" onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+          </Stack>
+        )}
+      </Table.Cell>
+    </Table.Row>
+  );
+}
+
+export function ProjectsTab() {
+  const q = useAdminProjects();
+  if (q.isLoading) return <Text>Loading…</Text>;
+  if (q.isError) return <Text color="red.400">Failed to load projects.</Text>;
+  if (!q.data || q.data.length === 0)
+    return <Text color="var(--prism-text-subtle)">No projects yet.</Text>;
+  return (
+    <Stack gap={3}>
+      <Text fontSize="sm" color="var(--prism-text-subtle)">
+        Deleting a project permanently removes all of its runs, artifacts, measurements, specs,
+        saved views, and masks. This cannot be undone.
+      </Text>
+      <Table.Root variant="outline">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>Slug</Table.ColumnHeader>
+            <Table.ColumnHeader>Name</Table.ColumnHeader>
+            <Table.ColumnHeader>Runs</Table.ColumnHeader>
+            <Table.ColumnHeader>Actions</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {q.data.map((p) => (
+            <DeleteProjectRow key={p.id} project={p} />
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Stack>
   );
 }
 
@@ -189,12 +286,16 @@ export function AdminPage() {
         <Tabs.Root defaultValue="accounts">
           <Tabs.List>
             <Tabs.Trigger value="accounts">Accounts</Tabs.Trigger>
+            <Tabs.Trigger value="projects">Projects</Tabs.Trigger>
             <Tabs.Trigger value="backups">Backups</Tabs.Trigger>
             <Tabs.Trigger value="activity">Activity</Tabs.Trigger>
             <Tabs.Trigger value="logs">Container logs</Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="accounts">
             <AccountsTab />
+          </Tabs.Content>
+          <Tabs.Content value="projects">
+            <ProjectsTab />
           </Tabs.Content>
           <Tabs.Content value="backups">
             <BackupsTab />
