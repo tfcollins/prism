@@ -12,7 +12,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from prism_api.config import Settings
-from prism_api.deps import get_settings_dep, is_admin_user, require_admin, session_dep
+from prism_api.deps import (
+    csrf_protect,
+    get_settings_dep,
+    is_admin_user,
+    require_admin,
+    session_dep,
+)
 from prism_api.models.project import Project
 from prism_api.models.run import TestRun
 from prism_api.models.user import User
@@ -130,6 +136,7 @@ def delete_project_endpoint(
     user: User = Depends(require_admin),
     session: Session = Depends(session_dep),
     settings: Settings = Depends(get_settings_dep),
+    _: None = Depends(csrf_protect),
 ) -> ProjectDeletedOut:
     """Permanently delete a project and every run/artifact/spec/view under it."""
     project = ProjectRepo(session).get_by_slug(slug)

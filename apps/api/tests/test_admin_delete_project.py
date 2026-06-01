@@ -137,13 +137,15 @@ def client_for(db_session: Session, monkeypatch: pytest.MonkeyPatch) -> Iterator
     app.dependency_overrides.clear()
 
 
-def _login(client: TestClient, db_session: Session, email: str) -> None:
+def _login(client: TestClient, db_session: Session, email: str) -> str:
+    """Log in and return the CSRF token (echo as X-Prism-Csrf on mutations)."""
     UserRepo(db_session).create(email=email, password_hash=auth_module.hash_password("pw"))
     db_session.commit()
     assert (
         client.post("/api/v1/auth/login", json={"email": email, "password": "pw"}).status_code
         == 200
     )
+    return client.cookies.get("prism_csrf") or ""
 
 
 def test_delete_requires_admin(client_for: TestClient, db_session: Session) -> None:
@@ -163,13 +165,23 @@ def test_admin_lists_projects_with_run_counts(client_for: TestClient, db_session
     assert alpha["run_count"] == 1
 
 
+def test_delete_without_csrf_is_rejected(client_for: TestClient, db_session: Session) -> None:
+    _project_with_run(db_session, "p")
+    db_session.commit()
+    _login(client_for, db_session, ADMIN_EMAIL)  # cookie set, but no CSRF header sent
+    assert client_for.delete("/api/v1/admin/projects/p").status_code == 403
+    # the destructive op did not run
+    assert db_session.query(Project).filter(Project.slug == "p").count() == 1
+
+
 def test_admin_deletes_project(client_for: TestClient, db_session: Session) -> None:
     pid, run_id, case_id = _project_with_run(db_session, "doomed")
     _art(db_session, "case", case_id, "blob-1")
     db_session.commit()
-    _login(client_for, db_session, ADMIN_EMAIL)
+    csrf = _login(client_for, db_session, ADMIN_EMAIL)
+    headers = {"X-Prism-Csrf": csrf}
 
-    resp = client_for.delete("/api/v1/admin/projects/doomed")
+    resp = client_for.delete("/api/v1/admin/projects/doomed", headers=headers)
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body == {"slug": "doomed", "runs": 1, "artifacts": 1, "blobs": 1}
@@ -181,4 +193,4 @@ def test_admin_deletes_project(client_for: TestClient, db_session: Session) -> N
     assert len(events) == 1
     assert events[0].project_id == pid
     # 404 on a second delete
-    assert client_for.delete("/api/v1/admin/projects/doomed").status_code == 404
+    assert client_for.delete("/api/v1/admin/projects/doomed", headers=headers).status_code == 404
