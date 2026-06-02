@@ -28,9 +28,10 @@ test('select two runs and open the compare page', async ({ page }) => {
   // Axe check 1: runs table is fully rendered.
   await expectNoSeriousAxeViolations(page);
 
-  // Button appears once ≥2 selected.
+  // Buttons appear once ≥2 selected: Export PDF + Compare.
   const compareBtn = page.locator('button:has-text("Compare 2 runs")');
   await expect(compareBtn).toBeVisible();
+  await expect(page.getByRole('link', { name: /export pdf/i })).toBeVisible();
   await compareBtn.click();
 
   await page.waitForURL(/\/compare\?runs=/);
@@ -39,6 +40,11 @@ test('select two runs and open the compare page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^compare$/i })).toBeVisible();
   await expect(page.getByText(/pass rate/i)).toBeVisible();
   await expect(page.locator('table')).toBeVisible();
+
+  // Export PDF link points at the multi-run report for the selected runs.
+  const pdfLink = page.getByRole('link', { name: /export pdf/i });
+  await expect(pdfLink).toBeVisible();
+  await expect(pdfLink).toHaveAttribute('href', /\/api\/v1\/compare\/report\.pdf\?runs=/);
 
   // Axe check 2: compare panel / overlay UI is visible.
   await expectNoSeriousAxeViolations(page);

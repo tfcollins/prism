@@ -1,4 +1,4 @@
-import { Badge, Box, Heading, Stack, Table, Tabs, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Heading, Stack, Table, Tabs, Text } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -30,9 +30,19 @@ export function ComparePage() {
 
   return (
     <AppShell>
-      <Heading size="lg" mb={2}>
-        Compare
-      </Heading>
+      <Flex align="center" justify="space-between" gap={3} mb={2}>
+        <Heading size="lg">Compare</Heading>
+        {runIds.length >= 2 && (
+          <a
+            href={`/api/v1/compare/report.pdf?runs=${runIds.join(',')}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: 'var(--prism-brand)', fontSize: 13 }}
+          >
+            Export PDF
+          </a>
+        )}
+      </Flex>
       <Text fontSize="sm" color="var(--prism-text-subtle)" mb={4}>
         {runIds.length} runs selected
       </Text>

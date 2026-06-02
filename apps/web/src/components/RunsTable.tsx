@@ -128,7 +128,16 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
         </Table.Root>
       </Box>
       {selected.size >= 2 && (
-        <Flex mt={3} justify="flex-end">
+        <Flex mt={3} justify="flex-end" gap={2} align="center">
+          <Button asChild size="sm" variant="outline">
+            <a
+              href={`/api/v1/compare/report.pdf?runs=${Array.from(selected).join(',')}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Export PDF
+            </a>
+          </Button>
           <Button
             colorPalette="blue"
             size="sm"
