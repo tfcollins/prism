@@ -28,10 +28,13 @@ test('select two runs and open the compare page', async ({ page }) => {
   // Axe check 1: runs table is fully rendered.
   await expectNoSeriousAxeViolations(page);
 
-  // Buttons appear once ≥2 selected: Export PDF + Compare.
+  // Buttons appear once selected: Export PDF (combined report) + Compare.
   const compareBtn = page.locator('button:has-text("Compare 2 runs")');
   await expect(compareBtn).toBeVisible();
-  await expect(page.getByRole('link', { name: /export pdf/i })).toBeVisible();
+  // The dashboard Export PDF is the COMBINED test-results report, not a comparison.
+  const dashPdf = page.getByRole('link', { name: /export pdf/i });
+  await expect(dashPdf).toBeVisible();
+  await expect(dashPdf).toHaveAttribute('href', /\/api\/v1\/runs\/report\.pdf\?runs=/);
   await compareBtn.click();
 
   await page.waitForURL(/\/compare\?runs=/);

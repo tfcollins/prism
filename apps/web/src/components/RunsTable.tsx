@@ -15,7 +15,6 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function RunsTable({ runs }: { runs: RunListItem[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const navigate = useNavigate();
 
   function toggle(id: string) {
     const next = new Set(selected);
@@ -127,26 +126,32 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
           </Table.Body>
         </Table.Root>
       </Box>
-      {selected.size >= 2 && (
-        <Flex mt={3} justify="flex-end" gap={2} align="center">
-          <Button asChild size="sm" variant="outline">
-            <a
-              href={`/api/v1/compare/report.pdf?runs=${Array.from(selected).join(',')}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Export PDF
-            </a>
-          </Button>
-          <Button
-            colorPalette="blue"
-            size="sm"
-            onClick={() => navigate(`/compare?runs=${Array.from(selected).join(',')}`)}
-          >
-            Compare {selected.size} runs
-          </Button>
-        </Flex>
-      )}
+      <RunSelectionActions ids={Array.from(selected)} />
     </Box>
+  );
+}
+
+/**
+ * Action bar shown when run rows are selected. "Export PDF" downloads a combined
+ * test-results report (flat tables, not a comparison) for the selected run(s) —
+ * available for a single run too. "Compare" needs at least two runs.
+ */
+export function RunSelectionActions({ ids }: { ids: string[] }) {
+  const navigate = useNavigate();
+  if (ids.length === 0) return null;
+  const runs = ids.join(',');
+  return (
+    <Flex mt={3} justify="flex-end" gap={2} align="center">
+      <Button asChild size="sm" variant="outline">
+        <a href={`/api/v1/runs/report.pdf?runs=${runs}`} target="_blank" rel="noreferrer">
+          Export PDF ({ids.length})
+        </a>
+      </Button>
+      {ids.length >= 2 && (
+        <Button colorPalette="blue" size="sm" onClick={() => navigate(`/compare?runs=${runs}`)}>
+          Compare {ids.length} runs
+        </Button>
+      )}
+    </Flex>
   );
 }
