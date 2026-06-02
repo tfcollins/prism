@@ -47,6 +47,9 @@ dev = [
   "pytest-xdist>=3.6",
   "pytest-randomly>=3.15",
   "pytest-clarity>=1.0",
+  # Read back generated PDFs in tests to assert the rendered text content
+  # (not just the %PDF magic bytes), so a blank/empty report can't pass.
+  "pypdf>=5.0",
 ]
 
 [build-system]
