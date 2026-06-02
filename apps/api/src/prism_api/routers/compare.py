@@ -1,14 +1,19 @@
 """Compare runs."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from prism_api.config import Settings
 from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models import ArtifactKind
 from prism_api.models.user import User
+from prism_api.reports.compare_report import build_compare_report_pdf
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.logs import LogRepo
+from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.schemas.compare import (
@@ -28,6 +33,8 @@ _WAVEFORM_KINDS = {
     ArtifactKind.WAVEFORM_HDF5,
 }
 
+_MAX_REPORT_RUNS = 20
+
 
 @router.post("", response_model=CompareResponse)
 def compare_runs(
@@ -37,6 +44,51 @@ def compare_runs(
     session: Session = Depends(session_dep),
     settings: Settings = Depends(get_settings_dep),
 ) -> CompareResponse:
+    return assemble_comparison(session, body.run_ids, settings)
+
+
+@router.get("/report.pdf")
+def compare_report(
+    runs: str = Query(..., description="Comma-separated run ids"),
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+    settings: Settings = Depends(get_settings_dep),
+) -> Response:
+    """Render a multi-run comparison as a downloadable landscape-A4 PDF."""
+    run_ids = [r for r in runs.split(",") if r]
+    if not run_ids:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "no run ids provided")
+    if len(run_ids) > _MAX_REPORT_RUNS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"too many runs (max {_MAX_REPORT_RUNS})")
+
+    data = assemble_comparison(session, run_ids, settings)  # 404s on unknown id
+
+    runs_repo = RunRepo(session)
+    project_repo = ProjectRepo(session)
+    project_names: list[str] = []
+    seen: set[str] = set()
+    for rid in run_ids:
+        run = runs_repo.get_by_id(rid)
+        if run is None or run.project_id in seen:
+            continue
+        seen.add(run.project_id)
+        proj = project_repo.get_by_id(run.project_id)
+        project_names.append(proj.name if proj is not None else run.project_id)
+
+    pdf_bytes = build_compare_report_pdf(
+        data=data, project_names=project_names, generated_at=datetime.now(UTC)
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="comparison-report.pdf"'},
+    )
+
+
+def assemble_comparison(
+    session: Session, run_ids: list[str], settings: Settings
+) -> CompareResponse:
+    """Assemble the cross-run comparison shared by the JSON and PDF endpoints."""
     runs_repo = RunRepo(session)
     suites_repo = SuiteRepo(session)
     cases_repo = CaseRepo(session)
@@ -44,7 +96,7 @@ def compare_runs(
 
     runs = []
     run_project_ids: dict[str, str] = {}
-    for run_id in body.run_ids:
+    for run_id in run_ids:
         run = runs_repo.get_by_id(run_id)
         if run is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, f"run {run_id} not found")
@@ -64,7 +116,7 @@ def compare_runs(
     per_run_status: list[dict[tuple[str, str], str]] = []
     per_run_case_id: list[dict[tuple[str, str], str]] = []
     all_keys: set[tuple[str, str]] = set()
-    for run_id in body.run_ids:
+    for run_id in run_ids:
         status_map: dict[tuple[str, str], str] = {}
         case_id_map: dict[tuple[str, str], str] = {}
         for suite in suites_repo.list_by_run(run_id):
@@ -108,12 +160,11 @@ def compare_runs(
     else:
         pr_delta = (runs[-1].pass_count / last_total) - (runs[0].pass_count / first_total)
 
-    measurement_diffs = _measurement_diffs(MeasurementRepo(session), body.run_ids)
+    measurement_diffs = _measurement_diffs(MeasurementRepo(session), run_ids)
 
     log_repo = LogRepo(session)
     boots = [
-        build_boot_summary(log_repo, rid, settings, run_project_ids.get(rid))
-        for rid in body.run_ids
+        build_boot_summary(log_repo, rid, settings, run_project_ids.get(rid)) for rid in run_ids
     ]
 
     return CompareResponse(
