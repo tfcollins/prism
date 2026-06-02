@@ -143,7 +143,10 @@ export function RunSelectionActions({ ids }: { ids: string[] }) {
   return (
     <Flex mt={3} justify="flex-end" gap={2} align="center">
       <Button asChild size="sm" variant="outline">
-        <a href={`/api/v1/runs/report.pdf?runs=${runs}`} target="_blank" rel="noreferrer">
+        {/* Plain download anchor (no target=_blank): the response is an
+            attachment, so it downloads in place without opening a blank tab —
+            which some browsers/popup-blockers would otherwise cancel. */}
+        <a href={`/api/v1/runs/report.pdf?runs=${runs}`} download="combined-report.pdf">
           Export PDF ({ids.length})
         </a>
       </Button>

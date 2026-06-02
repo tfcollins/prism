@@ -35,8 +35,7 @@ export function ComparePage() {
         {runIds.length >= 2 && (
           <a
             href={`/api/v1/compare/report.pdf?runs=${runIds.join(',')}`}
-            target="_blank"
-            rel="noreferrer"
+            download="comparison-report.pdf"
             style={{ color: 'var(--prism-brand)', fontSize: 13 }}
           >
             Export PDF
