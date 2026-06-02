@@ -40,7 +40,8 @@ header `X-Prism-Csrf` echoing the `prism_csrf` cookie set at login — see
 | `GET /api/v1/runs?project=&status=&limit=` | Paginated list |
 | `POST /api/v1/runs` | Multipart upload (CSRF-protected) |
 | `GET /api/v1/runs/{id}` | Detail with suites |
-| `GET /api/v1/runs/{id}/report.pdf` | Per-run compliance PDF |
+| `GET /api/v1/runs/{id}/report.pdf` | Per-run compliance PDF (test cases + measurements) |
+| `GET /api/v1/runs/report.pdf?runs=a,b,…` | Combined test-results PDF for the given runs |
 
 ## Suites & cases
 
@@ -63,9 +64,23 @@ header `X-Prism-Csrf` echoing the `prism_csrf` cookie set at login — see
 | Method & path | Purpose |
 |---|---|
 | `POST /api/v1/compare` | Body `{run_ids: [a, b, …]}` (CSRF-protected) |
+| `GET /api/v1/compare/report.pdf?runs=a,b,…` | Comparison report as a PDF |
 
 ## Search
 
 | Method & path | Purpose |
 |---|---|
 | `GET /api/v1/search?q=` | Global search across projects, runs, cases, and commits (min. 2 chars; capped per kind) |
+
+## Admin
+
+Admin-only (`require_admin`). See {doc}`../how-to/admin-panel`.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /api/v1/admin/accounts` | List user accounts |
+| `GET /api/v1/admin/projects` | Projects with run counts |
+| `DELETE /api/v1/admin/projects/{slug}` | Permanently delete a project + all its runs/artifacts (CSRF-protected) |
+| `GET /api/v1/admin/backups` | Recent backup manifests |
+| `GET /api/v1/admin/activity` | Global audit feed |
+| `GET /api/v1/admin/logs?service=` | Recent container logs |

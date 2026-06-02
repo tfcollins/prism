@@ -59,6 +59,16 @@ PRISM_EMAIL=admin@example.com PRISM_PASSWORD='<your password>' \
   python3 scripts/seed_demo.py --reset
 ```
 
+After logging in you land on the **Overview**: instance-wide stats, a 30-day
+activity chart, and the most recent runs.
+
+```{image} ../_static/img/screenshots/overview.png
+:alt: The Prism overview landing page with stats, activity chart and recent runs
+:class: prism-shot
+:align: center
+:width: 720px
+```
+
 Refresh the **Projects** page and you'll see an `audio` project appear.
 
 ```{image} ../_static/img/screenshots/projects.png

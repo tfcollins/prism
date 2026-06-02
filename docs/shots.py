@@ -75,11 +75,16 @@ def main() -> int:
         page.wait_for_timeout(500)
         shot(page, "login")
 
-        # authenticate
+        # authenticate — login lands on the Overview landing page
         page.fill('input[type="email"]', EMAIL)
         page.fill('input[type="password"]', PASSWORD)
         page.click('button[type="submit"]')
-        page.wait_for_url("**/projects", timeout=15000)
+        page.get_by_role("heading", name="Overview").wait_for(timeout=15000)
+        page.wait_for_timeout(1000)
+        shot(page, "overview")
+
+        # --- projects list ---
+        page.goto(f"{BASE}/projects", wait_until="networkidle")
         page.wait_for_timeout(800)
         shot(page, "projects")
 
@@ -87,6 +92,16 @@ def main() -> int:
         page.goto(f"{BASE}/projects/{PROJECT}", wait_until="networkidle")
         page.wait_for_timeout(1500)
         shot(page, "dashboard")
+
+        # --- export actions: select two runs to reveal Export PDF / Compare ---
+        rows = page.locator("tbody tr")
+        if rows.count() >= 2:
+            for i in (0, 1):
+                box = rows.nth(i).locator('label[data-scope="checkbox"]')
+                if box.count() > 0:
+                    box.click()
+            page.wait_for_timeout(600)
+            shot(page, "export-actions")
 
         # --- run detail with waveform plot ---
         page.goto(f"{BASE}/runs/{run_id}", wait_until="networkidle")
