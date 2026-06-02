@@ -21,7 +21,12 @@ from prism_api.reports.combined_report import (
     CombinedRunSummary,
     build_combined_report_pdf,
 )
-from prism_api.reports.run_report import ReportMeasurement, RunReport, build_run_report_pdf
+from prism_api.reports.run_report import (
+    ReportCase,
+    ReportMeasurement,
+    RunReport,
+    build_run_report_pdf,
+)
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.audit import AuditRepo
 from prism_api.repos.logs import LogRepo
@@ -456,6 +461,18 @@ def run_report(
             )
         )
 
+    cases: list[ReportCase] = []
+    for suite in SuiteRepo(session).list_by_run(run.id):
+        for case in CaseRepo(session).list_by_suite(suite.id):
+            cases.append(
+                ReportCase(
+                    suite=suite.name,
+                    classname=case.classname,
+                    name=case.name,
+                    status=case.status.value,
+                )
+            )
+
     junit_sha: str | None = None
     if run.junit_artifact_id:
         art = ArtifactRepo(session).get_by_id(run.junit_artifact_id)
@@ -470,6 +487,7 @@ def run_report(
             pass_count=counts["pass_count"],
             fail_count=counts["fail_count"],
             measurements=measurements,
+            cases=cases,
             junit_sha=junit_sha,
         )
     )

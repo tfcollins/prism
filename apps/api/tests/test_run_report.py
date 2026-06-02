@@ -18,13 +18,16 @@ def _login(client: TestClient) -> str:
 
 def _junit() -> bytes:
     return b"""<?xml version="1.0"?><testsuites>
-<testsuite name="rf" tests="1" failures="0" time="0.1">
+<testsuite name="rf" tests="2" failures="1" time="0.1">
 <testcase classname="acpr" name="lower" time="0.05">
 <properties>
 <property name="channel_power_dBm" value="-10.5"/>
 <property name="channel_power_dBm__unit" value="dBm"/>
 <property name="channel_power_dBm__max" value="-9.0"/>
 </properties>
+</testcase>
+<testcase classname="acpr" name="upper" time="0.05">
+<failure message="too hot">x</failure>
 </testcase>
 </testsuite></testsuites>"""
 
@@ -52,6 +55,12 @@ def test_run_report_pdf(client: TestClient, seed_admin, patch_ingest) -> None:
     text = _pdf_text(resp.content)
     assert "Compliance report" in text
     assert "build-1" in text  # run name
+    # Test cases table: every test run, with its suite + status.
+    assert "Test cases" in text
+    assert "rf" in text  # suite name
+    assert "lower" in text and "upper" in text  # both case names
+    assert "fail" in text  # the failing case's status
+    # Measurements table.
     assert "channel_power_dBm" in text  # measurement name from the JUnit
     assert "-10.5" in text  # its value
     assert "PASS" in text  # in-spec result (value -10.5 <= max -9.0)
