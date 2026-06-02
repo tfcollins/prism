@@ -362,8 +362,7 @@ function RunMetaPane({ run }: { run: RunDetail }) {
       <Tooltip content="Per-run compliance PDF: measurements, margins, pass/fail, and the source JUnit SHA.">
         <a
           href={`/api/v1/runs/${run.id}/report.pdf`}
-          target="_blank"
-          rel="noreferrer"
+          download={`${run.name}-report.pdf`}
           style={{ color: 'var(--prism-link)', fontSize: 13 }}
         >
           Download compliance PDF
