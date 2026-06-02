@@ -8,7 +8,7 @@ source JUnit by SHA.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from fpdf import FPDF
 
@@ -25,6 +25,14 @@ class ReportMeasurement:
 
 
 @dataclass
+class ReportCase:
+    suite: str
+    classname: str
+    name: str
+    status: str
+
+
+@dataclass
 class RunReport:
     run_name: str
     project_name: str
@@ -33,6 +41,7 @@ class RunReport:
     pass_count: int
     fail_count: int
     measurements: list[ReportMeasurement]
+    cases: list[ReportCase] = field(default_factory=list)
     junit_sha: str | None = None
 
 
@@ -70,6 +79,27 @@ def build_run_report_pdf(report: RunReport) -> bytes:
     if report.tags:
         tag_str = ", ".join(f"{k}={v}" for k, v in sorted(report.tags.items()))
         pdf.cell(0, 6, _safe(f"Tags: {tag_str}"), new_x="LMARGIN", new_y="NEXT")
+
+    # --- test cases: every test run, with its status ---
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, "Test cases", new_x="LMARGIN", new_y="NEXT")
+    case_cols = [("Suite", 50), ("Case", 110), ("Status", 30)]
+    pdf.set_font("Helvetica", "B", 9)
+    for label, w in case_cols:
+        pdf.cell(w, 7, label, border=1)
+    pdf.ln(7)
+    pdf.set_font("Helvetica", "", 9)
+    if not report.cases:
+        pdf.cell(0, 7, "No test cases recorded for this run.", new_x="LMARGIN", new_y="NEXT")
+    for c in report.cases:
+        for text, w in (
+            (_safe(c.suite[:28]), 50),
+            (_safe(c.name[:64]), 110),
+            (c.status, 30),
+        ):
+            pdf.cell(w, 6, text, border=1)
+        pdf.ln(6)
 
     pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
