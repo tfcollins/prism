@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -12,7 +13,14 @@ from sqlalchemy.orm import Session
 from prism_api.config import Settings
 from prism_api.deps import csrf_protect, current_user, get_settings_dep, session_dep
 from prism_api.models.run import RunStatus
+from prism_api.models.spec import SpecDefinition
 from prism_api.models.user import User
+from prism_api.reports.combined_report import (
+    CombinedCaseRow,
+    CombinedMeasurementRow,
+    CombinedRunSummary,
+    build_combined_report_pdf,
+)
 from prism_api.reports.run_report import ReportMeasurement, RunReport, build_run_report_pdf
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.audit import AuditRepo
@@ -20,7 +28,7 @@ from prism_api.repos.logs import LogRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.specs import SpecRepo
-from prism_api.repos.suites import MeasurementRepo, SuiteRepo
+from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.schemas.artifact import ArtifactOut
 from prism_api.schemas.case import measurement_margin
 from prism_api.schemas.log import FindingOut, LogReportOut, commit_url
@@ -166,6 +174,108 @@ def list_runs(
             )
         )
     return result
+
+
+_MAX_REPORT_RUNS = 50
+
+
+# NOTE: declared before `GET /{run_id}` so the literal `/report.pdf` path is
+# matched first (otherwise it would bind to run_id="report.pdf").
+@router.get("/report.pdf")
+def combined_report(
+    runs: str = Query(..., description="Comma-separated run ids"),
+    _: User = Depends(current_user),
+    session: Session = Depends(session_dep),
+) -> Response:
+    """Combined test-results report (flat Run-column tables) for the given runs."""
+    run_ids = [r for r in runs.split(",") if r]
+    if not run_ids:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "no run ids provided")
+    if len(run_ids) > _MAX_REPORT_RUNS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"too many runs (max {_MAX_REPORT_RUNS})")
+
+    runs_repo = RunRepo(session)
+    suites_repo = SuiteRepo(session)
+    cases_repo = CaseRepo(session)
+    meas_repo = MeasurementRepo(session)
+    project_repo = ProjectRepo(session)
+    spec_repo = SpecRepo(session)
+
+    summaries: list[CombinedRunSummary] = []
+    case_rows: list[CombinedCaseRow] = []
+    measurement_rows: list[CombinedMeasurementRow] = []
+    project_names: list[str] = []
+    seen_projects: set[str] = set()
+    spec_maps: dict[str, dict[str, SpecDefinition]] = {}
+
+    for run_id in run_ids:
+        run = runs_repo.get_by_id(run_id)
+        if run is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, f"run {run_id} not found")
+
+        if run.project_id not in seen_projects:
+            seen_projects.add(run.project_id)
+            proj = project_repo.get_by_id(run.project_id)
+            project_names.append(proj.name if proj is not None else run.project_id)
+
+        counts = runs_repo.aggregate_counts_by_run(run.id)
+        summaries.append(
+            CombinedRunSummary(
+                run_name=run.name,
+                status=run.status.value,
+                pass_count=counts["pass_count"],
+                fail_count=counts["fail_count"],
+            )
+        )
+
+        for suite in suites_repo.list_by_run(run.id):
+            for case in cases_repo.list_by_suite(suite.id):
+                case_rows.append(
+                    CombinedCaseRow(
+                        run_name=run.name,
+                        suite=suite.name,
+                        case=case.name,
+                        status=case.status.value,
+                    )
+                )
+
+        if run.project_id not in spec_maps:
+            spec_maps[run.project_id] = spec_repo.map_for_project(run.project_id)
+        spec_map = spec_maps[run.project_id]
+        for m in meas_repo.list_by_run(run.id):
+            ps = spec_map.get(m.name)
+            smin, smax = resolve_spec(
+                m.spec_min,
+                m.spec_max,
+                ps.spec_min if ps else None,
+                ps.spec_max if ps else None,
+            )
+            margin = measurement_margin(m.value, smin, smax)
+            measurement_rows.append(
+                CombinedMeasurementRow(
+                    run_name=run.name,
+                    name=m.name,
+                    value=m.value,
+                    unit=m.unit,
+                    spec_min=smin,
+                    spec_max=smax,
+                    margin=margin,
+                    in_spec=None if margin is None else margin >= 0,
+                )
+            )
+
+    pdf_bytes = build_combined_report_pdf(
+        project_names=project_names,
+        summaries=summaries,
+        case_rows=case_rows,
+        measurement_rows=measurement_rows,
+        generated_at=datetime.now(UTC),
+    )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="combined-report.pdf"'},
+    )
 
 
 @router.get("/{run_id}", response_model=RunDetail)
