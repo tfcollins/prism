@@ -16,6 +16,7 @@ def _pdf_text(content: bytes) -> str:
     reader = PdfReader(io.BytesIO(content))
     return "\n".join(page.extract_text() for page in reader.pages)
 
+
 _JUNIT = b"""<?xml version="1.0"?><testsuites>
 <testsuite name="dsp" tests="2" failures="0" time="0.1">
 <testcase classname="codec" name="ok" time="0.05">
