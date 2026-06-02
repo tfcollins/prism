@@ -1,6 +1,14 @@
+import io
 import json
 
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
+
+
+def _pdf_text(content: bytes) -> str:
+    """Extract the rendered text from a generated PDF (asserts content, not just bytes)."""
+    reader = PdfReader(io.BytesIO(content))
+    return "\n".join(page.extract_text() for page in reader.pages)
 
 
 def _login(client: TestClient) -> str:
@@ -39,6 +47,14 @@ def test_run_report_pdf(client: TestClient, seed_admin, patch_ingest) -> None:
     assert resp.headers["content-type"] == "application/pdf"
     assert resp.content[:5] == b"%PDF-"
     assert "attachment" in resp.headers["content-disposition"]
+
+    # The report must actually render the run's content, not be a blank page.
+    text = _pdf_text(resp.content)
+    assert "Compliance report" in text
+    assert "build-1" in text  # run name
+    assert "channel_power_dBm" in text  # measurement name from the JUnit
+    assert "-10.5" in text  # its value
+    assert "PASS" in text  # in-spec result (value -10.5 <= max -9.0)
 
 
 def test_run_report_unknown_run_404(client: TestClient, seed_admin) -> None:

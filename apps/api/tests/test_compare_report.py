@@ -1,12 +1,21 @@
-"""Multi-run comparison PDF: endpoint (auth, validation, %PDF) + builder unit."""
+"""Multi-run comparison PDF: endpoint (auth, validation) + rendered content."""
 
+import io
 import json
 import uuid
 
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
 
 from prism_api.reports.compare_report import build_compare_report_pdf
 from prism_api.schemas.compare import CaseDiff, CompareResponse, MeasurementDiff, RunHeader
+
+
+def _pdf_text(content: bytes) -> str:
+    """Extract the rendered text from a generated PDF (asserts content, not just bytes)."""
+    reader = PdfReader(io.BytesIO(content))
+    return "\n".join(page.extract_text() for page in reader.pages)
+
 
 _JUNIT = b"""<?xml version="1.0"?><testsuites>
 <testsuite name="dsp" tests="2" failures="0" time="0.1">
@@ -39,8 +48,8 @@ def _upload(client: TestClient, csrf: str, name: str) -> str:
 def test_compare_report_pdf(client: TestClient, seed_admin, patch_ingest) -> None:
     csrf = _login(client)
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
-    a = _upload(client, csrf, "a")
-    b = _upload(client, csrf, "b")
+    a = _upload(client, csrf, "build-alpha")
+    b = _upload(client, csrf, "build-beta")
 
     resp = client.get(f"/api/v1/compare/report.pdf?runs={a},{b}")
     assert resp.status_code == 200, resp.text
@@ -48,6 +57,16 @@ def test_compare_report_pdf(client: TestClient, seed_admin, patch_ingest) -> Non
     assert resp.content[:5] == b"%PDF-"
     assert "attachment" in resp.headers["content-disposition"]
     assert "comparison-report.pdf" in resp.headers["content-disposition"]
+
+    # The report must actually render the comparison content, not be a blank page.
+    text = _pdf_text(resp.content)
+    assert "Comparison report" in text
+    assert "Audio" in text  # project name
+    assert "build-alpha" in text and "build-beta" in text  # both run names
+    assert "Case status" in text
+    assert "other" in text  # a case name from the uploaded suite
+    assert "gain_dB" in text  # the measurement from the JUnit properties
+    assert "12.5" in text  # its value
 
 
 def test_compare_report_requires_auth(client: TestClient) -> None:
@@ -93,3 +112,9 @@ def test_build_compare_report_pdf_unit() -> None:
         data=data, project_names=["Audio"], generated_at=datetime(2026, 6, 1, tzinfo=UTC)
     )
     assert out[:5] == b"%PDF-"
+    text = _pdf_text(out)
+    assert "Comparison report" in text
+    assert "run-1" in text and "run-2" in text
+    assert "gain_dB" in text  # measurement row rendered
+    assert "Case status" in text
+    assert "other" in text  # case name rendered
