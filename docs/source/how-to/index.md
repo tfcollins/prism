@@ -12,6 +12,7 @@ concrete problem.
 ci-integration
 record-measurements
 compare-runs
+export-reports
 upload-raw-http
 configure-ldap
 configure-backups
