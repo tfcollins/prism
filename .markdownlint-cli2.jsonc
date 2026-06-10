@@ -20,6 +20,9 @@
     // instead by the strict Sphinx build (`make lint-docs`).
     "docs/source/**",
     "docs/build/**",
+    // docs/superpowers contains internal workflow planning artifacts (brainstorming
+    // specs, implementation plans) — not published docs, excluded like docs/source.
+    "docs/superpowers/**",
     "apps/web/playwright-report/**",
     "apps/web/test-results/**",
     "apps/web/dist/**",

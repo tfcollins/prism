@@ -6,6 +6,11 @@ the UI has realistic data to render: three `dsp-*` runs with waveform
 artifacts (good for the compare/overlay view) and three `api-*` runs with
 pass/fail metadata only.
 
+Also seeds a `kuiper-linux` project with matrix-dashboard demo data: runs
+tagged with `hw`, `platform`, `boot_file`, and (where applicable)
+`kuiper-linux-release` so the per-project matrix at `/projects/kuiper-linux/matrix`
+and the global release superset are populated.
+
 The canonical shape assumed by the app is one JUnit upload == one
 <testsuite> == one Test Suite Run. This script produces exactly that.
 
@@ -257,6 +262,90 @@ def build_runs() -> list[RunSpec]:
 
 
 # --------------------------------------------------------------------------- #
+# Matrix dashboard dataset — kuiper-linux project
+# --------------------------------------------------------------------------- #
+
+KUIPER_PROJECT_SLUG = "kuiper-linux"
+KUIPER_PROJECT_NAME = "Kuiper Linux"
+
+
+def _kuiper_junit(suite_name: str, pass_count: int, fail_count: int) -> bytes:
+    """Build a minimal JUnit XML with the requested pass/fail distribution."""
+    tests = pass_count + fail_count
+    total_time = 0.08 * tests
+    parts = [
+        '<?xml version="1.0"?>',
+        "<testsuites>",
+        f'  <testsuite name="{suite_name}" tests="{tests}"'
+        f' failures="{fail_count}" time="{total_time:.2f}">',
+    ]
+    for i in range(pass_count):
+        parts.append(f'    <testcase classname="{suite_name}" name="test_{i:03d}" time="0.08"/>')
+    for i in range(fail_count):
+        parts.append(
+            f'    <testcase classname="{suite_name}" name="test_fail_{i:03d}" time="0.08">'
+            f'<failure message="test_fail_{i:03d} did not meet threshold">'
+            f"AssertionError traceback ...</failure>"
+            f"</testcase>"
+        )
+    parts.append("  </testsuite>")
+    parts.append("</testsuites>")
+    return "\n".join(parts).encode("utf-8")
+
+
+def build_kuiper_runs() -> list[RunSpec]:
+    """Return RunSpec entries for the matrix dashboard seed data.
+
+    Each tuple: (hw, platform, boot_file, expected_status, release_or_None)
+    Status is driven by (pass_count, fail_count):
+      pass  → (20, 0)
+      fail  → (0, 20)   — all failures, no passes → FAIL
+      mixed → (18, 2)
+    """
+    matrix_entries: list[tuple[str, str, str, str, str | None]] = [
+        ("ad9081", "zcu102", "zynqmp-common", "pass", "2024_R2"),
+        ("ad9081", "zc706", "zynq-common", "fail", "2024_R2"),
+        ("adrv9009", "zcu102", "zynqmp-common", "pass", "2024_R2"),
+        ("adrv9009", "zed", "zynq-common", "mixed", "2024_R2"),
+        ("ad9371", "zed", "zynq-common", "pass", None),
+        ("ad9371", "zc706", "zynq-common", "fail", None),
+        ("adrv9026", "a10soc", "socfpga_arria10_common", "pass", "2024_R2"),
+    ]
+
+    runs: list[RunSpec] = []
+    for hw, platform, boot_file, status, release in matrix_entries:
+        if status == "pass":
+            pass_count, fail_count = 20, 0
+        elif status == "fail":
+            pass_count, fail_count = 0, 20
+        else:  # mixed
+            pass_count, fail_count = 18, 2
+
+        suite_name = f"{hw}-{platform}"
+        run_name = f"kuiper-{hw}-{platform}"
+
+        tags: dict[str, str] = {
+            "hw": hw,
+            "platform": platform,
+            "boot_file": boot_file,
+        }
+        if release is not None:
+            tags["kuiper-linux-release"] = release
+
+        runs.append(
+            RunSpec(
+                name=run_name,
+                suite=suite_name,
+                tags=tags,
+                junit_xml=_kuiper_junit(suite_name, pass_count, fail_count),
+                archive_zip=None,
+            )
+        )
+
+    return runs
+
+
+# --------------------------------------------------------------------------- #
 # Entry point
 # --------------------------------------------------------------------------- #
 
@@ -305,6 +394,35 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     print(f"✓ seeded {len(runs)} runs into project {args.project!r}", flush=True)
+
+    # ------------------------------------------------------------------ #
+    # Kuiper-Linux matrix dashboard data
+    # ------------------------------------------------------------------ #
+    print(f"→ seeding matrix dashboard data into project {KUIPER_PROJECT_SLUG!r} …", flush=True)
+    client.ensure_project(KUIPER_PROJECT_SLUG, KUIPER_PROJECT_NAME)
+
+    kuiper_runs = build_kuiper_runs()
+    kuiper_seed_names = {r.name for r in kuiper_runs}
+
+    if args.reset:
+        existing_kuiper = client.list_runs(KUIPER_PROJECT_SLUG)
+        for r in existing_kuiper:
+            if r["name"] in kuiper_seed_names:
+                print(f"  deleting existing run {r['name']} ({r['id']})", flush=True)
+                client.delete_run(str(r["id"]))
+
+    for spec in kuiper_runs:
+        tag_summary = ", ".join(f"{k}={v}" for k, v in spec.tags.items())
+        print(f"  uploading {spec.name} ({tag_summary}) …", flush=True)
+        client.upload_run(
+            project_slug=KUIPER_PROJECT_SLUG,
+            run_name=spec.name,
+            junit_xml=spec.junit_xml,
+            archive_zip=spec.archive_zip,
+            tags=spec.tags,
+        )
+
+    print(f"✓ seeded {len(kuiper_runs)} runs into project {KUIPER_PROJECT_SLUG!r}", flush=True)
     return 0
 
 

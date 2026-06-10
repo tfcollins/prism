@@ -6,11 +6,13 @@ from prism_api.models.audit import AuditEvent
 from prism_api.models.base import Base
 from prism_api.models.log import LogFinding, LogReport
 from prism_api.models.mask import SpectrumMask
+from prism_api.models.matrix_config import MatrixConfig
 from prism_api.models.project import Project
 from prism_api.models.run import RunStatus, RunTag, TestRun
 from prism_api.models.spec import SpecDefinition
 from prism_api.models.suite import CaseStatus, Measurement, TestCase, TestSuite
 from prism_api.models.user import User
+from prism_api.models.user_settings import UserSetting
 from prism_api.models.view import SavedView
 
 __all__ = [
@@ -24,6 +26,7 @@ __all__ = [
     "DerivedKind",
     "LogFinding",
     "LogReport",
+    "MatrixConfig",
     "Measurement",
     "Project",
     "RunStatus",
@@ -35,4 +38,5 @@ __all__ = [
     "TestRun",
     "TestSuite",
     "User",
+    "UserSetting",
 ]

@@ -16,6 +16,8 @@ vi.mock('../api/queries', () => ({
     data: [{ id: '1', slug: 'audio', name: 'Audio', run_count: 7 }],
   }),
   useDeleteProject: () => ({ mutate, isPending: false }),
+  useMatrixConfig: () => ({ isLoading: false, data: undefined }),
+  useUpsertMatrixConfig: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
 }));
 import { ProjectsTab } from './AdminPage';
 

@@ -8,8 +8,10 @@ import {
   useAdminLogs,
   useAdminProjects,
   useDeleteProject,
+  useMatrixConfig,
+  useUpsertMatrixConfig,
 } from '../api/queries';
-import type { AdminProject } from '../api/types';
+import type { AdminProject, MatrixConfig } from '../api/types';
 import { AppShell } from '../components/AppShell';
 
 const LOG_SERVICES = ['api', 'worker', 'web', 'postgres', 'redis', 'minio'];
@@ -276,6 +278,63 @@ function LogsTab() {
   );
 }
 
+export function MatrixConfigTab() {
+  const [scope, setScope] = useState('global');
+  const cfgQ = useMatrixConfig(scope);
+  const upsert = useUpsertMatrixConfig(scope);
+  const cfg = cfgQ.data?.config;
+
+  const [stale, setStale] = useState('');
+  const [refresh, setRefresh] = useState('');
+  const [rows, setRows] = useState('');
+  const [cols, setCols] = useState('');
+  const [rotate, setRotate] = useState('');
+
+  const save = () => {
+    if (!cfg) return;
+    const next: MatrixConfig = {
+      ...cfg,
+      stale_after_hours: stale ? Number(stale) : cfg.stale_after_hours,
+      refresh_seconds: refresh ? Number(refresh) : cfg.refresh_seconds,
+      curated_rows: rows ? rows.split(',').map((s) => s.trim()).filter(Boolean) : cfg.curated_rows,
+      curated_cols: cols ? cols.split(',').map((s) => s.trim()).filter(Boolean) : cfg.curated_cols,
+      rotate_filters: rotate
+        ? rotate.split(',').map((s) => s.trim()).filter(Boolean)
+        : cfg.rotate_filters,
+    };
+    upsert.mutate(next);
+  };
+
+  return (
+    <Box maxW="700px">
+      <Heading size="md" mb={3}>Matrix dashboard config</Heading>
+      <Stack gap={3}>
+        <Input placeholder="scope (global or project:slug)" value={scope}
+               onChange={(e) => setScope(e.target.value)} aria-label="scope" />
+        <Text fontSize="sm" color="var(--prism-text-muted)">
+          Current: stale {cfg?.stale_after_hours}h · refresh {cfg?.refresh_seconds}s ·
+          curated rows [{cfg?.curated_rows.join(', ')}] · cols [{cfg?.curated_cols.join(', ')}] ·
+          rotate [{cfg?.rotate_filters.join(', ')}]
+        </Text>
+        <Input placeholder="stale_after_hours" type="number" value={stale}
+               onChange={(e) => setStale(e.target.value)} aria-label="stale hours" />
+        <Input placeholder="refresh_seconds" type="number" value={refresh}
+               onChange={(e) => setRefresh(e.target.value)} aria-label="refresh seconds" />
+        <Input placeholder="curated_rows (comma list)" value={rows}
+               onChange={(e) => setRows(e.target.value)} aria-label="curated rows" />
+        <Input placeholder="curated_cols (comma list)" value={cols}
+               onChange={(e) => setCols(e.target.value)} aria-label="curated cols" />
+        <Input placeholder="rotate_filters (comma list)" value={rotate}
+               onChange={(e) => setRotate(e.target.value)} aria-label="rotate filters" />
+        <Button colorPalette="blue" onClick={save} loading={upsert.isPending} alignSelf="start">
+          Save matrix config
+        </Button>
+        {upsert.isError && <Text color="red.400" fontSize="sm">Save failed (admin only).</Text>}
+      </Stack>
+    </Box>
+  );
+}
+
 export function AdminPage() {
   return (
     <AppShell>
@@ -290,6 +349,7 @@ export function AdminPage() {
             <Tabs.Trigger value="backups">Backups</Tabs.Trigger>
             <Tabs.Trigger value="activity">Activity</Tabs.Trigger>
             <Tabs.Trigger value="logs">Container logs</Tabs.Trigger>
+            <Tabs.Trigger value="matrix">Matrix</Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="accounts">
             <AccountsTab />
@@ -305,6 +365,9 @@ export function AdminPage() {
           </Tabs.Content>
           <Tabs.Content value="logs">
             <LogsTab />
+          </Tabs.Content>
+          <Tabs.Content value="matrix">
+            <MatrixConfigTab />
           </Tabs.Content>
         </Tabs.Root>
       </Box>
