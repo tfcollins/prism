@@ -26,6 +26,7 @@ def settings() -> Settings:
         s3_bucket="x",
         redis_url="x",
         jwt_secret="testsecretlongenough",
+        admin_email="admin@x.com",
     )
 
 
