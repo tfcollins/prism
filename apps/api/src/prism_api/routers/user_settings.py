@@ -31,5 +31,4 @@ def put_setting(
     session: Session = Depends(session_dep),
 ) -> UserSettingOut:
     row = UserSettingsRepo(session).upsert(user.id, key, body.value)
-    session.flush()
     return UserSettingOut(key=row.key, value=row.value, updated_at=row.updated_at)

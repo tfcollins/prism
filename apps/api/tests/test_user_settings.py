@@ -54,6 +54,7 @@ def test_put_then_get_setting(client, db_session, settings):
     assert r.status_code == 200
     assert r.json()["value"] == {"enabled": True, "rotate": False}
     r2 = client.get("/api/v1/me/settings/matrix_dashboard")
+    assert r2.status_code == 200
     assert r2.json()["value"]["enabled"] is True
 
 
