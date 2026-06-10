@@ -524,6 +524,7 @@ def add_run_tag(
         target_id=run_id,
         detail={"key": tag.key, "value": tag.value},
     )
+    session.commit()
     return RunTagOut(key=tag.key, value=tag.value)
 
 
@@ -553,6 +554,7 @@ def update_run_tag(
         target_id=run_id,
         detail={"key": key, "old_value": old_value, "new_value": body.value},
     )
+    session.commit()
     return RunTagOut(key=key, value=body.value)
 
 
@@ -581,3 +583,4 @@ def delete_run_tag(
         target_id=run_id,
         detail={"key": key, "value": value},
     )
+    session.commit()

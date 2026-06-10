@@ -128,6 +128,28 @@ def test_add_tag_validation(client, db_session):
     assert r3.status_code == 422
 
 
+def test_update_tag_requires_auth(client, db_session):
+    rid = _seed_run(db_session)
+    assert client.put(f"/api/v1/runs/{rid}/tags/hw", json={"value": "b"}).status_code == 401
+
+
+def test_update_tag_requires_csrf(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    assert client.put(f"/api/v1/runs/{rid}/tags/hw", json={"value": "b"}).status_code == 403
+
+
+def test_delete_tag_requires_auth(client, db_session):
+    rid = _seed_run(db_session)
+    assert client.delete(f"/api/v1/runs/{rid}/tags/hw").status_code == 401
+
+
+def test_delete_tag_requires_csrf(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    assert client.delete(f"/api/v1/runs/{rid}/tags/hw").status_code == 403
+
+
 def test_update_tag(client, db_session):
     _login(client, db_session)
     rid = _seed_run(db_session)
