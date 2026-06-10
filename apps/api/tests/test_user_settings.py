@@ -19,9 +19,7 @@ def test_repo_get_missing_returns_none(db_session):
 def test_repo_upsert_inserts_then_updates(db_session):
     repo = UserSettingsRepo(db_session)
     repo.upsert("u1", "matrix_dashboard", {"enabled": False})
-    db_session.flush()
     repo.upsert("u1", "matrix_dashboard", {"enabled": True, "rotate": True})
-    db_session.flush()
     got = repo.get("u1", "matrix_dashboard")
     assert got is not None
     assert got.value == {"enabled": True, "rotate": True}

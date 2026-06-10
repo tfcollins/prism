@@ -21,4 +21,5 @@ class UserSettingsRepo:
             return existing
         row = UserSetting(user_id=user_id, key=key, value=value)
         self._session.add(row)
+        self._session.flush()
         return row
