@@ -432,3 +432,56 @@ export interface SearchHit {
   project_slug: string | null;
   run_id: string | null;
 }
+
+export interface MatrixCell {
+  status: RunStatus;
+  run_id: string;
+  passed: number;
+  total: number;
+  finished_at: string | null;
+  age_seconds: number;
+  stale: boolean;
+}
+
+export interface MatrixResponse {
+  scope: string;
+  generated_at: string;
+  row_key: string;
+  col_key: string;
+  rows: string[];
+  cols: string[];
+  boot_files: string[];
+  stale_after_hours: number;
+  summary: Record<string, number>;
+  unplaced_runs: number;
+  cells: Record<string, MatrixCell>;
+}
+
+export interface MatrixConfig {
+  row_key: string;
+  col_key: string;
+  filter_key: string;
+  curated_rows: string[];
+  curated_cols: string[];
+  stale_after_hours: number;
+  refresh_seconds: number;
+  rotate_filters: string[];
+}
+
+export interface MatrixConfigOut {
+  scope: string;
+  config: MatrixConfig;
+}
+
+export interface MatrixDashboardPrefs {
+  enabled: boolean;
+  default_scope?: string;
+  boot_file_filter?: string[];
+  rotate?: boolean;
+}
+
+export interface UserSettingOut {
+  key: string;
+  value: Record<string, unknown>;
+  updated_at: string;
+}
