@@ -42,7 +42,9 @@ from prism_api.schemas.run import (
     RunDetail,
     RunListItem,
     RunOut,
+    RunTagCreate,
     RunTagOut,
+    RunTagUpdate,
     SetCalibrationRequest,
     SuiteSummary,
 )
@@ -497,3 +499,88 @@ def run_report(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/{run_id}/tags", response_model=RunTagOut, status_code=status.HTTP_201_CREATED)
+def add_run_tag(
+    run_id: str,
+    body: RunTagCreate,
+    user: User = Depends(current_user),
+    __: None = Depends(csrf_protect),
+    session: Session = Depends(session_dep),
+) -> RunTagOut:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    if runs.get_tag(run_id, body.key) is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "tag already exists; use PUT to change it")
+    tag = runs.create_tag(run_id, body.key, body.value)
+    AuditRepo(session).record(
+        user_id=user.id,
+        action="run.tag.add",
+        project_id=run.project_id,
+        target_type="run",
+        target_id=run_id,
+        detail={"key": tag.key, "value": tag.value},
+    )
+    session.commit()
+    return RunTagOut(key=tag.key, value=tag.value)
+
+
+@router.put("/{run_id}/tags/{key}", response_model=RunTagOut)
+def update_run_tag(
+    run_id: str,
+    key: str,
+    body: RunTagUpdate,
+    user: User = Depends(current_user),
+    __: None = Depends(csrf_protect),
+    session: Session = Depends(session_dep),
+) -> RunTagOut:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    existing = runs.get_tag(run_id, key)
+    if existing is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "tag not found")
+    old_value = existing.value
+    runs.update_tag(run_id, key, body.value)
+    AuditRepo(session).record(
+        user_id=user.id,
+        action="run.tag.update",
+        project_id=run.project_id,
+        target_type="run",
+        target_id=run_id,
+        detail={"key": key, "old_value": old_value, "new_value": body.value},
+    )
+    session.commit()
+    return RunTagOut(key=key, value=body.value)
+
+
+@router.delete("/{run_id}/tags/{key}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_run_tag(
+    run_id: str,
+    key: str,
+    user: User = Depends(current_user),
+    __: None = Depends(csrf_protect),
+    session: Session = Depends(session_dep),
+) -> None:
+    runs = RunRepo(session)
+    run = runs.get_by_id(run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "run not found")
+    existing = runs.get_tag(run_id, key)
+    if existing is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "tag not found")
+    value = existing.value
+    runs.delete_tag(run_id, key)
+    AuditRepo(session).record(
+        user_id=user.id,
+        action="run.tag.delete",
+        project_id=run.project_id,
+        target_type="run",
+        target_id=run_id,
+        detail={"key": key, "value": value},
+    )
+    session.commit()
