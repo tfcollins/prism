@@ -78,19 +78,32 @@ function TagRow({ runId, tag }: { runId: string; tag: RunTag }) {
             Edit
           </Button>
           {confirmDelete ? (
-            <Button
-              size="xs"
-              colorPalette="red"
-              loading={del.isPending}
-              aria-label={`Confirm delete ${tag.key}`}
-              onClick={() =>
-                del.mutate(tag.key, {
-                  onError: () => setError('Could not delete tag.'),
-                })
-              }
-            >
-              Confirm delete
-            </Button>
+            <>
+              <Button
+                size="xs"
+                colorPalette="red"
+                loading={del.isPending}
+                aria-label={`Confirm delete ${tag.key}`}
+                onClick={() =>
+                  del.mutate(tag.key, {
+                    onError: () => setError('Could not delete tag.'),
+                  })
+                }
+              >
+                Confirm delete
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                aria-label={`Cancel delete ${tag.key}`}
+                onClick={() => {
+                  setConfirmDelete(false);
+                  setError(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </>
           ) : (
             <Button
               size="xs"
@@ -98,7 +111,7 @@ function TagRow({ runId, tag }: { runId: string; tag: RunTag }) {
               aria-label={`Delete ${tag.key}`}
               onClick={() => setConfirmDelete(true)}
             >
-              ✕
+              <Box as="span" aria-hidden="true">✕</Box>
             </Button>
           )}
         </>
@@ -156,6 +169,7 @@ export function TagsEditor({ runId, tags }: { runId: string; tags: RunTag[] }) {
           aria-label="new tag key"
           value={key}
           onChange={(e) => setKey(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
         />
         <Input
           size="xs"
@@ -165,6 +179,7 @@ export function TagsEditor({ runId, tags }: { runId: string; tags: RunTag[] }) {
           aria-label="new tag value"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
         />
         <Button
           size="xs"
