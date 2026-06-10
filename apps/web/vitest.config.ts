@@ -3,6 +3,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  // Mirror vite.config's define so components reading __GIT_COMMIT__ render
+  // under Vitest (it uses a separate config and won't inherit vite's define).
+  define: {
+    __GIT_COMMIT__: JSON.stringify(process.env.GIT_COMMIT ?? 'dev'),
+  },
   test: {
     globals: true,
     environment: 'jsdom',
