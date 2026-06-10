@@ -4,6 +4,7 @@ import { AdminPage } from './pages/AdminPage';
 import { ComparePage } from './pages/ComparePage';
 import { LoginPage } from './pages/LoginPage';
 import { MatrixDashboardPage } from './pages/MatrixDashboardPage';
+import { MatrixKioskPage } from './pages/MatrixKioskPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ProjectDashboardPage } from './pages/ProjectDashboardPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -54,6 +55,14 @@ export function App() {
         element={
           <ProtectedRoute>
             <MatrixDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kiosk/matrix"
+        element={
+          <ProtectedRoute>
+            <MatrixKioskPage />
           </ProtectedRoute>
         }
       />
