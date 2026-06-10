@@ -19,9 +19,12 @@ test('enable matrix dashboard, view grid, and check kiosk', async ({ page }) => 
 
   // Enable via the settings card on the Tokens page.
   await page.goto('/tokens');
-  // Enable via the settings card. Idempotent: if already enabled on a re-run,
-  // the "Enable" button is absent, so we skip the toggle and just verify nav below.
-  const enableBtn = page.locator('button:has-text("Enable matrix dashboard")');
+  // Wait for the settings card to render before probing for the button — count()
+  // does not auto-wait, so checking it before render would spuriously read 0.
+  await expect(page.getByRole('heading', { name: 'Matrix dashboard' })).toBeVisible();
+  // Idempotent: if already enabled on a re-run, the "Enable" button is absent
+  // (it reads "Disable …"), so we skip the toggle and just verify nav below.
+  const enableBtn = page.getByRole('button', { name: 'Enable matrix dashboard' });
   if (await enableBtn.count()) {
     await enableBtn.click();
     await expect(page.getByText('Currently enabled.')).toBeVisible();
