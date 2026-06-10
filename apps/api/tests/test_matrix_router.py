@@ -15,7 +15,6 @@ def _login(client, db_session, settings, *, admin=True):
     db_session.commit()
     r = client.post("/api/v1/auth/login", json={"email": email, "password": "pw"})
     assert r.status_code == 200
-    return email
 
 
 def _seed_cell(db_session):
@@ -36,6 +35,10 @@ def _seed_cell(db_session):
 
 def test_matrix_read_requires_auth(client):
     assert client.get("/api/v1/matrix?scope=project:kuiper-linux").status_code == 401
+
+
+def test_config_read_requires_auth(client):
+    assert client.get("/api/v1/matrix/config?scope=global").status_code == 401
 
 
 def test_matrix_read_returns_grid(client, db_session, settings):

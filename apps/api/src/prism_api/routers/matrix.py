@@ -17,12 +17,14 @@ router = APIRouter(prefix="/api/v1/matrix", tags=["matrix"])
 @router.get("")
 def get_matrix(
     scope: str,
-    boot_file: Annotated[list[str], Query()] = [],  # noqa: B006 - FastAPI query default
+    boot_file: Annotated[list[str] | None, Query()] = None,
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
 ) -> MatrixResponse:
     config = MatrixConfigRepo(session).effective(scope)
-    result = MatrixRepo(session).compute(scope=scope, boot_files=boot_file, config=config)
+    result = MatrixRepo(session).compute(
+        scope=scope, boot_files=boot_file or [], config=config
+    )
     return MatrixResponse(**result)
 
 
@@ -44,5 +46,4 @@ def put_config(
 ) -> MatrixConfigOut:
     repo = MatrixConfigRepo(session)
     row = repo.upsert(scope, body.model_dump())
-    session.flush()
     return MatrixConfigOut(scope=scope, config=row.config)
