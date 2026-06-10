@@ -35,8 +35,10 @@ build:
 	$(COMPOSE) build
 
 # Production deploy (build images + start detached). Run on the host.
+# GIT_COMMIT is baked into the web bundle (shown in the sidebar); compose reads
+# it from the environment (see deploy/docker-compose.yml web build args).
 deploy:
-	$(PROD_COMPOSE) up -d --build
+	GIT_COMMIT=$$(git rev-parse --short HEAD) $(PROD_COMPOSE) up -d --build
 
 deploy-down:
 	$(PROD_COMPOSE) down

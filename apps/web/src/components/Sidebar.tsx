@@ -203,7 +203,7 @@ export function Sidebar({
             color="var(--prism-text-faint)"
             textTransform="uppercase"
           >
-            v0.4
+            v0.4 · {__GIT_COMMIT__}
           </Text>
         </>
       )}

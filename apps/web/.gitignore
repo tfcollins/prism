@@ -6,6 +6,7 @@ playwright-report
 test-results
 *.tsbuildinfo
 *.d.ts
+!src/**/*.d.ts
 **/*.js
 !eslint.config.js
 !prettier.config.js
