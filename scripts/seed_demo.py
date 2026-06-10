@@ -280,9 +280,7 @@ def _kuiper_junit(suite_name: str, pass_count: int, fail_count: int) -> bytes:
         f' failures="{fail_count}" time="{total_time:.2f}">',
     ]
     for i in range(pass_count):
-        parts.append(
-            f'    <testcase classname="{suite_name}" name="test_{i:03d}" time="0.08"/>'
-        )
+        parts.append(f'    <testcase classname="{suite_name}" name="test_{i:03d}" time="0.08"/>')
     for i in range(fail_count):
         parts.append(
             f'    <testcase classname="{suite_name}" name="test_fail_{i:03d}" time="0.08">'
@@ -305,13 +303,13 @@ def build_kuiper_runs() -> list[RunSpec]:
       mixed → (18, 2)
     """
     matrix_entries: list[tuple[str, str, str, str, str | None]] = [
-        ("ad9081",   "zcu102", "zynqmp-common",          "pass",  "2024_R2"),
-        ("ad9081",   "zc706",  "zynq-common",            "fail",  "2024_R2"),
-        ("adrv9009", "zcu102", "zynqmp-common",          "pass",  "2024_R2"),
-        ("adrv9009", "zed",    "zynq-common",            "mixed", "2024_R2"),
-        ("ad9371",   "zed",    "zynq-common",            "pass",  None),
-        ("ad9371",   "zc706",  "zynq-common",            "fail",  None),
-        ("adrv9026", "a10soc", "socfpga_arria10_common", "pass",  "2024_R2"),
+        ("ad9081", "zcu102", "zynqmp-common", "pass", "2024_R2"),
+        ("ad9081", "zc706", "zynq-common", "fail", "2024_R2"),
+        ("adrv9009", "zcu102", "zynqmp-common", "pass", "2024_R2"),
+        ("adrv9009", "zed", "zynq-common", "mixed", "2024_R2"),
+        ("ad9371", "zed", "zynq-common", "pass", None),
+        ("ad9371", "zc706", "zynq-common", "fail", None),
+        ("adrv9026", "a10soc", "socfpga_arria10_common", "pass", "2024_R2"),
     ]
 
     runs: list[RunSpec] = []
