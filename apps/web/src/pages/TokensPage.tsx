@@ -5,6 +5,7 @@ import { useCreateToken, useRevokeToken, useTokens } from '../api/queries';
 import type { TokenCreated } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { CopyButton } from '../components/CopyButton';
+import { MatrixSettingsCard } from './MatrixSettingsCard';
 
 function fmt(iso: string | null): string {
   if (!iso) return '—';
@@ -154,6 +155,8 @@ export function TokensPage() {
             </Table.Body>
           </Table.Root>
         )}
+
+        <MatrixSettingsCard />
       </Box>
     </AppShell>
   );

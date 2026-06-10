@@ -2,7 +2,7 @@ import { Box, IconButton, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 
-import { useProjects } from '../api/queries';
+import { useMatrixPrefs, useProjects } from '../api/queries';
 import { useAuth } from '../auth/useAuth';
 import { Logo } from './Logo';
 
@@ -13,6 +13,7 @@ const BASE_NAV = [
   { to: '/tokens', label: 'Tokens', short: 'T', end: true },
 ];
 const ADMIN_NAV = { to: '/admin', label: 'Admin', short: 'A', end: true };
+const MATRIX_NAV = { to: '/matrix', label: 'Matrix', short: 'M', end: true };
 
 const COLLAPSED_KEY = 'prism-sidebar-collapsed';
 const EXPANDED_WIDTH = '220px';
@@ -68,7 +69,17 @@ export function Sidebar({
 }) {
   const projects = useProjects();
   const { user } = useAuth();
-  const navItems = user?.is_admin ? [...BASE_NAV, ADMIN_NAV] : BASE_NAV;
+  const matrixPrefs = useMatrixPrefs();
+  const matrixEnabled = matrixPrefs.data?.enabled ?? false;
+
+  const baseWithMatrix = matrixEnabled
+    ? [
+        ...BASE_NAV.slice(0, BASE_NAV.findIndex((n) => n.to === '/tokens')),
+        MATRIX_NAV,
+        ...BASE_NAV.slice(BASE_NAV.findIndex((n) => n.to === '/tokens')),
+      ]
+    : BASE_NAV;
+  const navItems = user?.is_admin ? [...baseWithMatrix, ADMIN_NAV] : baseWithMatrix;
   const { slug: activeSlug } = useParams<{ slug?: string }>();
   const isDrawer = variant === 'drawer';
   const [storedCollapsed, setStoredCollapsed] = useState<boolean>(readInitialCollapsed);
