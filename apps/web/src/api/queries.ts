@@ -30,6 +30,7 @@ import type {
   RegressionsResponse,
   RunDetail,
   RunListItem,
+  RunTag,
   SavedView,
   SearchHit,
   SpecDefinition,
@@ -573,5 +574,45 @@ export function useUpsertMatrixPrefs() {
     mutationFn: async (value: MatrixDashboardPrefs) =>
       (await api.put<UserSettingOut>(`/me/settings/${MATRIX_PREFS_KEY}`, { value })).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['user', 'settings', MATRIX_PREFS_KEY] }),
+  });
+}
+
+export function useAddRunTag(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (tag: { key: string; value: string }) =>
+      (await api.post<RunTag>(`/runs/${runId}/tags`, tag)).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['matrix'] });
+    },
+  });
+}
+
+export function useUpdateRunTag(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) =>
+      (await api.put<RunTag>(`/runs/${runId}/tags/${encodeURIComponent(key)}`, { value })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['matrix'] });
+    },
+  });
+}
+
+export function useDeleteRunTag(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (key: string) => {
+      await api.delete(`/runs/${runId}/tags/${encodeURIComponent(key)}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['matrix'] });
+    },
   });
 }
