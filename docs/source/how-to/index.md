@@ -13,6 +13,7 @@ ci-integration
 record-measurements
 compare-runs
 export-reports
+matrix-dashboard
 upload-raw-http
 configure-ldap
 configure-backups
