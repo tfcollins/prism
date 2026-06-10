@@ -86,6 +86,7 @@ function Cell({ cell }: { cell: MatrixCell | undefined }) {
 function Kpi({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <Flex
+      aria-label={`${label} count: ${value}`}
       align="center"
       gap="7px"
       bg="var(--prism-bg-surface)"
@@ -96,7 +97,7 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
       fontSize="13px"
       fontWeight="700"
     >
-      <Text fontSize="16px" color={color} aria-label={`${label} count`}>{value}</Text>
+      <Text fontSize="16px" color={color}>{value}</Text>
       <Text color="var(--prism-text-muted)">{label}</Text>
     </Flex>
   );
@@ -111,6 +112,7 @@ export function MatrixGrid({ data }: { data: MatrixResponse }) {
         <Kpi label="pass" value={summary.pass ?? 0} color="#3fb950" />
         <Kpi label="fail" value={summary.fail ?? 0} color="#ff7b72" />
         <Kpi label="mixed" value={summary.mixed ?? 0} color="#e3b341" />
+        <Kpi label="error" value={summary.error ?? 0} color="#a371f7" />
         <Kpi label="no run" value={summary.no_run ?? 0} color="var(--prism-text-muted)" />
       </Flex>
       <Box display="grid" gridTemplateColumns={template} gap="8px">

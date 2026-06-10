@@ -48,7 +48,7 @@ describe('MatrixGrid', () => {
     renderGrid();
     expect(screen.getByText('PASS')).toBeInTheDocument();
     // ad9081|zed has no cell => no-run marker rendered
-    expect(screen.getAllByText('no run').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('no run')).toHaveLength(3);
   });
 
   it('marks a stale cell', () => {
@@ -58,8 +58,9 @@ describe('MatrixGrid', () => {
 
   it('renders the KPI summary counts', () => {
     renderGrid();
-    expect(screen.getByLabelText('pass count')).toHaveTextContent('1');
-    expect(screen.getByLabelText('fail count')).toHaveTextContent('1');
-    expect(screen.getByLabelText('no run count')).toHaveTextContent('2');
+    expect(screen.getByLabelText('pass count: 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('fail count: 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('error count: 0')).toBeInTheDocument();
+    expect(screen.getByLabelText('no run count: 2')).toBeInTheDocument();
   });
 });
