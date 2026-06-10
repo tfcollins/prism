@@ -18,8 +18,13 @@ def _run(session, project_id, *, name, status, finished_at, tags, counts=(1, 0))
     passed, failed = counts
     session.add(
         TestSuite(
-            run_id=run.id, name="s", pass_count=passed, fail_count=failed,
-            error_count=0, skip_count=0, duration_ms=0,
+            run_id=run.id,
+            name="s",
+            pass_count=passed,
+            fail_count=failed,
+            error_count=0,
+            skip_count=0,
+            duration_ms=0,
         )
     )
     session.flush()
@@ -36,12 +41,24 @@ def _project(session, slug="kuiper-linux"):
 def test_compute_picks_latest_run_per_cell(db_session):
     p = _project(db_session)
     now = datetime.now(UTC)
-    _run(db_session, p.id, name="old", status=RunStatus.FAIL,
-         finished_at=now - timedelta(hours=2),
-         tags={"hw": "ad9081", "platform": "zcu102"}, counts=(8, 4))
-    newer = _run(db_session, p.id, name="new", status=RunStatus.PASS,
-                 finished_at=now - timedelta(minutes=5),
-                 tags={"hw": "ad9081", "platform": "zcu102"}, counts=(12, 0))
+    _run(
+        db_session,
+        p.id,
+        name="old",
+        status=RunStatus.FAIL,
+        finished_at=now - timedelta(hours=2),
+        tags={"hw": "ad9081", "platform": "zcu102"},
+        counts=(8, 4),
+    )
+    newer = _run(
+        db_session,
+        p.id,
+        name="new",
+        status=RunStatus.PASS,
+        finished_at=now - timedelta(minutes=5),
+        tags={"hw": "ad9081", "platform": "zcu102"},
+        counts=(12, 0),
+    )
     db_session.flush()
 
     res = MatrixRepo(db_session).compute(
@@ -59,12 +76,18 @@ def test_compute_picks_latest_run_per_cell(db_session):
 def test_compute_marks_stale(db_session):
     p = _project(db_session)
     now = datetime.now(UTC)
-    _run(db_session, p.id, name="r", status=RunStatus.PASS,
-         finished_at=now - timedelta(hours=72),
-         tags={"hw": "ad9081", "platform": "zcu102"})
+    _run(
+        db_session,
+        p.id,
+        name="r",
+        status=RunStatus.PASS,
+        finished_at=now - timedelta(hours=72),
+        tags={"hw": "ad9081", "platform": "zcu102"},
+    )
     db_session.flush()
     res = MatrixRepo(db_session).compute(
-        scope="project:kuiper-linux", boot_files=[],
+        scope="project:kuiper-linux",
+        boot_files=[],
         config={**DEFAULT_MATRIX_CONFIG, "stale_after_hours": 48},
     )
     assert res["cells"]["ad9081|zcu102"]["stale"] is True
@@ -73,10 +96,22 @@ def test_compute_marks_stale(db_session):
 def test_compute_boot_file_filter(db_session):
     p = _project(db_session)
     now = datetime.now(UTC)
-    _run(db_session, p.id, name="zmp", status=RunStatus.PASS, finished_at=now,
-         tags={"hw": "ad9081", "platform": "zcu102", "boot_file": "zynqmp-common"})
-    _run(db_session, p.id, name="zq", status=RunStatus.FAIL, finished_at=now,
-         tags={"hw": "ad9371", "platform": "zed", "boot_file": "zynq-common"})
+    _run(
+        db_session,
+        p.id,
+        name="zmp",
+        status=RunStatus.PASS,
+        finished_at=now,
+        tags={"hw": "ad9081", "platform": "zcu102", "boot_file": "zynqmp-common"},
+    )
+    _run(
+        db_session,
+        p.id,
+        name="zq",
+        status=RunStatus.FAIL,
+        finished_at=now,
+        tags={"hw": "ad9371", "platform": "zed", "boot_file": "zynq-common"},
+    )
     db_session.flush()
     res = MatrixRepo(db_session).compute(
         scope="project:kuiper-linux", boot_files=["zynqmp-common"], config=DEFAULT_MATRIX_CONFIG
@@ -88,11 +123,18 @@ def test_compute_boot_file_filter(db_session):
 
 def test_compute_curated_extras_add_empty_rows_cols(db_session):
     p = _project(db_session)
-    _run(db_session, p.id, name="r", status=RunStatus.PASS, finished_at=datetime.now(UTC),
-         tags={"hw": "ad9081", "platform": "zcu102"})
+    _run(
+        db_session,
+        p.id,
+        name="r",
+        status=RunStatus.PASS,
+        finished_at=datetime.now(UTC),
+        tags={"hw": "ad9081", "platform": "zcu102"},
+    )
     db_session.flush()
     res = MatrixRepo(db_session).compute(
-        scope="project:kuiper-linux", boot_files=[],
+        scope="project:kuiper-linux",
+        boot_files=[],
         config={**DEFAULT_MATRIX_CONFIG, "curated_rows": ["ad9152"], "curated_cols": ["vcu118"]},
     )
     assert res["rows"] == ["ad9081", "ad9152"]
@@ -104,10 +146,22 @@ def test_compute_curated_extras_add_empty_rows_cols(db_session):
 def test_compute_unplaced_runs_counted(db_session):
     p = _project(db_session)
     now = datetime.now(UTC)
-    _run(db_session, p.id, name="ok", status=RunStatus.PASS, finished_at=now,
-         tags={"hw": "ad9081", "platform": "zcu102"})
-    _run(db_session, p.id, name="nohw", status=RunStatus.PASS, finished_at=now,
-         tags={"platform": "zcu102"})
+    _run(
+        db_session,
+        p.id,
+        name="ok",
+        status=RunStatus.PASS,
+        finished_at=now,
+        tags={"hw": "ad9081", "platform": "zcu102"},
+    )
+    _run(
+        db_session,
+        p.id,
+        name="nohw",
+        status=RunStatus.PASS,
+        finished_at=now,
+        tags={"platform": "zcu102"},
+    )
     db_session.flush()
     res = MatrixRepo(db_session).compute(
         scope="project:kuiper-linux", boot_files=[], config=DEFAULT_MATRIX_CONFIG
@@ -118,8 +172,14 @@ def test_compute_unplaced_runs_counted(db_session):
 def test_compute_excludes_pending_runs(db_session):
     p = _project(db_session)
     now = datetime.now(UTC)
-    _run(db_session, p.id, name="pending", status=RunStatus.PENDING, finished_at=now,
-         tags={"hw": "ad9081", "platform": "zcu102"})
+    _run(
+        db_session,
+        p.id,
+        name="pending",
+        status=RunStatus.PENDING,
+        finished_at=now,
+        tags={"hw": "ad9081", "platform": "zcu102"},
+    )
     db_session.flush()
     res = MatrixRepo(db_session).compute(
         scope="project:kuiper-linux", boot_files=[], config=DEFAULT_MATRIX_CONFIG
@@ -132,12 +192,30 @@ def test_compute_global_superset_by_release_tag(db_session):
     pa = _project(db_session, slug="proj-a")
     pb = _project(db_session, slug="proj-b")
     now = datetime.now(UTC)
-    _run(db_session, pa.id, name="a", status=RunStatus.PASS, finished_at=now,
-         tags={"hw": "ad9081", "platform": "zcu102", "kuiper-linux-release": "2024_R2"})
-    _run(db_session, pb.id, name="b", status=RunStatus.FAIL, finished_at=now,
-         tags={"hw": "ad9371", "platform": "zed", "kuiper-linux-release": "2024_R2"})
-    _run(db_session, pb.id, name="untagged", status=RunStatus.PASS, finished_at=now,
-         tags={"hw": "adrv9009", "platform": "zed"})  # no release tag -> excluded
+    _run(
+        db_session,
+        pa.id,
+        name="a",
+        status=RunStatus.PASS,
+        finished_at=now,
+        tags={"hw": "ad9081", "platform": "zcu102", "kuiper-linux-release": "2024_R2"},
+    )
+    _run(
+        db_session,
+        pb.id,
+        name="b",
+        status=RunStatus.FAIL,
+        finished_at=now,
+        tags={"hw": "ad9371", "platform": "zed", "kuiper-linux-release": "2024_R2"},
+    )
+    _run(
+        db_session,
+        pb.id,
+        name="untagged",
+        status=RunStatus.PASS,
+        finished_at=now,
+        tags={"hw": "adrv9009", "platform": "zed"},
+    )  # no release tag -> excluded
     db_session.flush()
     res = MatrixRepo(db_session).compute(
         scope="global", boot_files=[], config=DEFAULT_MATRIX_CONFIG

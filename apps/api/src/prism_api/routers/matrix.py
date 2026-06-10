@@ -22,9 +22,7 @@ def get_matrix(
     session: Session = Depends(session_dep),
 ) -> MatrixResponse:
     config = MatrixConfigRepo(session).effective(scope)
-    result = MatrixRepo(session).compute(
-        scope=scope, boot_files=boot_file or [], config=config
-    )
+    result = MatrixRepo(session).compute(scope=scope, boot_files=boot_file or [], config=config)
     return MatrixResponse(**result)
 
 

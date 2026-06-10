@@ -29,11 +29,14 @@ def _login(client, db_session, settings):
     from prism_api.auth import hash_password
     from prism_api.repos.users import UserRepo
 
-    UserRepo(db_session).create(email=settings.admin_email or "admin@x.com",
-                                password_hash=hash_password("pw"))
+    UserRepo(db_session).create(
+        email=settings.admin_email or "admin@x.com", password_hash=hash_password("pw")
+    )
     db_session.commit()
-    r = client.post("/api/v1/auth/login",
-                    json={"email": settings.admin_email or "admin@x.com", "password": "pw"})
+    r = client.post(
+        "/api/v1/auth/login",
+        json={"email": settings.admin_email or "admin@x.com", "password": "pw"},
+    )
     assert r.status_code == 200
 
 

@@ -24,12 +24,21 @@ def _seed_cell(db_session):
     run = TestRun(project_id=p.id, name="r", status=RunStatus.PASS, finished_at=datetime.now(UTC))
     db_session.add(run)
     db_session.flush()
-    db_session.add_all([
-        RunTag(run_id=run.id, key="hw", value="ad9081"),
-        RunTag(run_id=run.id, key="platform", value="zcu102"),
-        TestSuite(run_id=run.id, name="s", pass_count=5, fail_count=0,
-                  error_count=0, skip_count=0, duration_ms=0),
-    ])
+    db_session.add_all(
+        [
+            RunTag(run_id=run.id, key="hw", value="ad9081"),
+            RunTag(run_id=run.id, key="platform", value="zcu102"),
+            TestSuite(
+                run_id=run.id,
+                name="s",
+                pass_count=5,
+                fail_count=0,
+                error_count=0,
+                skip_count=0,
+                duration_ms=0,
+            ),
+        ]
+    )
     db_session.commit()
 
 
@@ -62,19 +71,29 @@ def test_config_put_admin_only(client, db_session, settings):
     # Log in as a NON-admin (settings.admin_email differs from this user).
     UserRepo(db_session).create(email="user@x.com", password_hash=hash_password("pw"))
     db_session.commit()
-    assert client.post("/api/v1/auth/login",
-                       json={"email": "user@x.com", "password": "pw"}).status_code == 200
+    assert (
+        client.post(
+            "/api/v1/auth/login", json={"email": "user@x.com", "password": "pw"}
+        ).status_code
+        == 200
+    )
     csrf = client.cookies.get("prism_csrf")
-    r = client.put("/api/v1/matrix/config?scope=global",
-                   json={"stale_after_hours": 24}, headers={"X-Prism-Csrf": csrf})
+    r = client.put(
+        "/api/v1/matrix/config?scope=global",
+        json={"stale_after_hours": 24},
+        headers={"X-Prism-Csrf": csrf},
+    )
     assert r.status_code == 403
 
 
 def test_config_put_then_get(client, db_session, settings):
     _login(client, db_session, settings)
     csrf = client.cookies.get("prism_csrf")
-    r = client.put("/api/v1/matrix/config?scope=global",
-                   json={"stale_after_hours": 24}, headers={"X-Prism-Csrf": csrf})
+    r = client.put(
+        "/api/v1/matrix/config?scope=global",
+        json={"stale_after_hours": 24},
+        headers={"X-Prism-Csrf": csrf},
+    )
     assert r.status_code == 200
     got = client.get("/api/v1/matrix/config?scope=global").json()
     assert got["config"]["stale_after_hours"] == 24
