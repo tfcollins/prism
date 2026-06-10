@@ -1,15 +1,28 @@
 """Run request/response schemas."""
 
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from prism_api.schemas.log import BootSummary
+
+TagKey = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+TagValue = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 
 
 class RunTagOut(BaseModel):
     key: str
     value: str
+
+
+class RunTagCreate(BaseModel):
+    key: TagKey
+    value: TagValue
+
+
+class RunTagUpdate(BaseModel):
+    value: TagValue
 
 
 class RunOut(BaseModel):

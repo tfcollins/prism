@@ -1,8 +1,11 @@
 """Run tag editing — repo methods + HTTP endpoints."""
 
+from prism_api.auth import hash_password
 from prism_api.models.project import Project
 from prism_api.models.run import RunStatus, TestRun
+from prism_api.repos.audit import AuditRepo
 from prism_api.repos.runs import RunRepo
+from prism_api.repos.users import UserRepo
 
 
 def _run(db_session) -> TestRun:
@@ -44,3 +47,135 @@ def test_delete_tag_removes_and_reports(db_session):
     assert repo.delete_tag(run.id, "hw") is True
     assert repo.get_tag(run.id, "hw") is None
     assert repo.delete_tag(run.id, "hw") is False
+
+
+def _login(client, db_session):
+    UserRepo(db_session).create(email="u@x.com", password_hash=hash_password("pw"))
+    db_session.commit()
+    r = client.post("/api/v1/auth/login", json={"email": "u@x.com", "password": "pw"})
+    assert r.status_code == 200
+
+
+def _seed_run(db_session) -> str:
+    run = _run(db_session)
+    db_session.commit()
+    return run.id
+
+
+def test_add_tag_requires_auth(client, db_session):
+    rid = _seed_run(db_session)
+    r = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "x"})
+    assert r.status_code == 401
+
+
+def test_add_tag_requires_csrf(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    r = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "x"})
+    assert r.status_code == 403
+
+
+def test_add_tag_creates(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    r = client.post(
+        f"/api/v1/runs/{rid}/tags",
+        json={"key": "hw", "value": "ad9081"},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 201
+    assert r.json() == {"key": "hw", "value": "ad9081"}
+    assert RunRepo(db_session).get_tag(rid, "hw").value == "ad9081"
+    events = [
+        e.action
+        for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
+    ]
+    assert "run.tag.add" in events
+
+
+def test_add_duplicate_key_conflicts(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    h = {"X-Prism-Csrf": csrf}
+    client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "a"}, headers=h)
+    r = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "b"}, headers=h)
+    assert r.status_code == 409
+
+
+def test_add_tag_unknown_run_404(client, db_session):
+    _login(client, db_session)
+    csrf = client.cookies.get("prism_csrf")
+    r = client.post(
+        "/api/v1/runs/nope/tags",
+        json={"key": "hw", "value": "a"},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 404
+
+
+def test_add_tag_validation(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    h = {"X-Prism-Csrf": csrf}
+    r1 = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "", "value": "a"}, headers=h)
+    assert r1.status_code == 422
+    r2 = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "k", "value": "  "}, headers=h)
+    assert r2.status_code == 422
+    r3 = client.post(f"/api/v1/runs/{rid}/tags", json={"key": "k" * 101, "value": "a"}, headers=h)
+    assert r3.status_code == 422
+
+
+def test_update_tag(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    h = {"X-Prism-Csrf": csrf}
+    client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "a"}, headers=h)
+    r = client.put(f"/api/v1/runs/{rid}/tags/hw", json={"value": "b"}, headers=h)
+    assert r.status_code == 200
+    assert r.json() == {"key": "hw", "value": "b"}
+    assert RunRepo(db_session).get_tag(rid, "hw").value == "b"
+    events = [
+        e.action
+        for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
+    ]
+    assert "run.tag.update" in events
+
+
+def test_update_missing_tag_404(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    r = client.put(
+        f"/api/v1/runs/{rid}/tags/hw",
+        json={"value": "b"},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 404
+
+
+def test_delete_tag(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    h = {"X-Prism-Csrf": csrf}
+    client.post(f"/api/v1/runs/{rid}/tags", json={"key": "hw", "value": "a"}, headers=h)
+    r = client.delete(f"/api/v1/runs/{rid}/tags/hw", headers=h)
+    assert r.status_code == 204
+    assert RunRepo(db_session).get_tag(rid, "hw") is None
+    events = [
+        e.action
+        for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
+    ]
+    assert "run.tag.delete" in events
+
+
+def test_delete_missing_tag_404(client, db_session):
+    _login(client, db_session)
+    rid = _seed_run(db_session)
+    csrf = client.cookies.get("prism_csrf")
+    r = client.delete(f"/api/v1/runs/{rid}/tags/hw", headers={"X-Prism-Csrf": csrf})
+    assert r.status_code == 404
