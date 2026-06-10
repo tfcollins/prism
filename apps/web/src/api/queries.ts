@@ -19,6 +19,10 @@ import type {
   FFTResponse,
   LogReport,
   Mask,
+  MatrixConfig,
+  MatrixConfigOut,
+  MatrixDashboardPrefs,
+  MatrixResponse,
   OverviewResponse,
   Project,
   ProjectDeleted,
@@ -35,6 +39,7 @@ import type {
   TestTimelinePoint,
   TokenCreated,
   TrendResponse,
+  UserSettingOut,
   WaveformResponse,
 } from './types';
 
@@ -497,5 +502,72 @@ export function useSearch(query: string) {
     queryKey: ['search', q],
     queryFn: async () => (await api.get<SearchHit[]>('/search', { params: { q } })).data,
     enabled: q.length >= 2,
+  });
+}
+
+const MATRIX_PREFS_KEY = 'matrix_dashboard';
+
+export function useMatrix(
+  scope: string | undefined,
+  bootFiles: string[],
+  refetchMs: number,
+) {
+  return useQuery({
+    queryKey: ['matrix', scope, [...bootFiles].sort()],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('scope', scope!);
+      for (const bf of bootFiles) params.append('boot_file', bf);
+      return (await api.get<MatrixResponse>(`/matrix?${params.toString()}`)).data;
+    },
+    enabled: Boolean(scope),
+    refetchInterval: refetchMs > 0 ? refetchMs : false,
+    placeholderData: (prev) => prev, // keep last good data on refetch/scope change
+  });
+}
+
+export function useMatrixConfig(scope: string | undefined) {
+  return useQuery({
+    queryKey: ['matrix', 'config', scope],
+    queryFn: async () =>
+      (await api.get<MatrixConfigOut>(`/matrix/config?scope=${encodeURIComponent(scope!)}`)).data,
+    enabled: Boolean(scope),
+  });
+}
+
+export function useUpsertMatrixConfig(scope: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (config: MatrixConfig) =>
+      (await api.put<MatrixConfigOut>(`/matrix/config?scope=${encodeURIComponent(scope)}`, config))
+        .data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['matrix', 'config', scope] });
+      qc.invalidateQueries({ queryKey: ['matrix', scope] });
+    },
+  });
+}
+
+export function useMatrixPrefs() {
+  return useQuery({
+    queryKey: ['user', 'settings', MATRIX_PREFS_KEY],
+    queryFn: async () => {
+      try {
+        const res = await api.get<UserSettingOut>(`/me/settings/${MATRIX_PREFS_KEY}`);
+        return res.data.value as unknown as MatrixDashboardPrefs;
+      } catch {
+        // 404 => not set yet; treat as disabled defaults.
+        return { enabled: false } as MatrixDashboardPrefs;
+      }
+    },
+  });
+}
+
+export function useUpsertMatrixPrefs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (value: MatrixDashboardPrefs) =>
+      (await api.put<UserSettingOut>(`/me/settings/${MATRIX_PREFS_KEY}`, { value })).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['user', 'settings', MATRIX_PREFS_KEY] }),
   });
 }
