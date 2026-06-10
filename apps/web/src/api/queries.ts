@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
 import { api } from './client';
 import type {
@@ -555,9 +556,12 @@ export function useMatrixPrefs() {
       try {
         const res = await api.get<UserSettingOut>(`/me/settings/${MATRIX_PREFS_KEY}`);
         return res.data.value as unknown as MatrixDashboardPrefs;
-      } catch {
-        // 404 => not set yet; treat as disabled defaults.
-        return { enabled: false } as MatrixDashboardPrefs;
+      } catch (err) {
+        // 404 => not set yet; treat as disabled defaults. Re-throw anything else.
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+          return { enabled: false } as MatrixDashboardPrefs;
+        }
+        throw err;
       }
     },
   });
