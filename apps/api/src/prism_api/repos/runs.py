@@ -52,6 +52,30 @@ class RunRepo:
         self._session.merge(tag)
         return tag
 
+    def get_tag(self, run_id: str, key: str) -> RunTag | None:
+        return self._session.get(RunTag, (run_id, key))
+
+    def create_tag(self, run_id: str, key: str, value: str) -> RunTag:
+        tag = RunTag(run_id=run_id, key=key, value=value)
+        self._session.add(tag)
+        self._session.flush()
+        return tag
+
+    def update_tag(self, run_id: str, key: str, value: str) -> RunTag | None:
+        tag = self.get_tag(run_id, key)
+        if tag is None:
+            return None
+        tag.value = value
+        return tag
+
+    def delete_tag(self, run_id: str, key: str) -> bool:
+        tag = self.get_tag(run_id, key)
+        if tag is None:
+            return False
+        self._session.delete(tag)
+        self._session.flush()
+        return True
+
     def tags_for(self, run_id: str) -> list[RunTag]:
         return list(self._session.execute(select(RunTag).where(RunTag.run_id == run_id)).scalars())
 
