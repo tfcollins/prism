@@ -19,6 +19,8 @@ test('enable matrix dashboard, view grid, and check kiosk', async ({ page }) => 
 
   // Enable via the settings card on the Tokens page.
   await page.goto('/tokens');
+  // Enable via the settings card. Idempotent: if already enabled on a re-run,
+  // the "Enable" button is absent, so we skip the toggle and just verify nav below.
   const enableBtn = page.locator('button:has-text("Enable matrix dashboard")');
   if (await enableBtn.count()) {
     await enableBtn.click();
@@ -26,6 +28,8 @@ test('enable matrix dashboard, view grid, and check kiosk', async ({ page }) => 
   }
 
   // Nav entry now appears; open the matrix.
+  // Wait for the Sidebar to re-render with the Matrix nav entry after enabling.
+  await expect(page.locator('a[href="/matrix"]')).toBeVisible();
   await page.click('a[href="/matrix"]');
   await page.waitForURL('/matrix');
   await expect(page.getByRole('heading', { name: /^matrix/i })).toBeVisible();
