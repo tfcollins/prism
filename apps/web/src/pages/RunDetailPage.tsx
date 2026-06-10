@@ -13,6 +13,7 @@ import { Logo } from '../components/Logo';
 import { MeasurementsTable } from '../components/MeasurementsTable';
 import { SpectrogramPlot } from '../components/SpectrogramPlot';
 import { SpectrumAnalysis } from '../components/SpectrumAnalysis';
+import { TagsEditor } from '../components/TagsEditor';
 import { TestTree } from '../components/TestTree';
 import { Toast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
@@ -341,19 +342,7 @@ function RunMetaPane({ run }: { run: RunDetail }) {
       )}
 
       {label('Tags')}
-      {run.tags.length === 0 ? (
-        <Text fontSize="xs" color="var(--prism-text-faint)">
-          none
-        </Text>
-      ) : (
-        <Stack direction="row" gap={1} wrap="wrap">
-          {run.tags.map((t) => (
-            <Badge key={`${t.key}:${t.value}`} variant="outline" size="sm">
-              {t.key}={t.value}
-            </Badge>
-          ))}
-        </Stack>
-      )}
+      <TagsEditor runId={run.id} tags={run.tags} />
 
       {label('Calibration')}
       <CalibrationControl run={run} />
