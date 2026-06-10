@@ -9,11 +9,14 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
 revision: str = "0015"
 down_revision: str | None = "0014"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+
+_JSON = JSONB().with_variant(sa.JSON(), "sqlite")
 
 
 def upgrade() -> None:
@@ -21,7 +24,7 @@ def upgrade() -> None:
         "matrix_config",
         sa.Column("id", sa.String(length=36), primary_key=True),
         sa.Column("scope", sa.String(length=255), nullable=False),
-        sa.Column("config", sa.JSON(), nullable=False),
+        sa.Column("config", _JSON, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("scope", name="uq_matrix_config_scope"),
