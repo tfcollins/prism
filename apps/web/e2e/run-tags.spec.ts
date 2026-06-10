@@ -34,16 +34,16 @@ test('add, edit, and delete a run tag from the run detail page', async ({ page }
 
   // Add a tag.
   await addKey.fill('e2e_tag');
-  await page.getByLabel('new tag value').fill('v1');
+  await page.getByLabel('new tag value').fill('e2e_val_1');
   await page.getByRole('button', { name: 'Add tag' }).click();
   await expect(page.getByText('e2e_tag')).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 
   // Edit its value.
   await page.getByRole('button', { name: 'Edit e2e_tag' }).click();
-  await page.getByLabel('edit value for e2e_tag').fill('v2');
+  await page.getByLabel('edit value for e2e_tag').fill('e2e_val_2');
   await page.getByRole('button', { name: 'Save e2e_tag' }).click();
-  await expect(page.getByText('v2')).toBeVisible();
+  await expect(page.getByText('e2e_val_2')).toBeVisible();
 
   // Delete it (two-step confirm).
   await page.getByRole('button', { name: 'Delete e2e_tag' }).click();
