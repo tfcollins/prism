@@ -72,13 +72,13 @@ export function Sidebar({
   const matrixPrefs = useMatrixPrefs();
   const matrixEnabled = matrixPrefs.data?.enabled ?? false;
 
-  const baseWithMatrix = matrixEnabled
-    ? [
-        ...BASE_NAV.slice(0, BASE_NAV.findIndex((n) => n.to === '/tokens')),
-        MATRIX_NAV,
-        ...BASE_NAV.slice(BASE_NAV.findIndex((n) => n.to === '/tokens')),
-      ]
-    : BASE_NAV;
+  const tokensIdx = BASE_NAV.findIndex((n) => n.to === '/tokens');
+  const baseWithMatrix =
+    matrixEnabled && tokensIdx !== -1
+      ? [...BASE_NAV.slice(0, tokensIdx), MATRIX_NAV, ...BASE_NAV.slice(tokensIdx)]
+      : matrixEnabled
+        ? [...BASE_NAV, MATRIX_NAV]
+        : BASE_NAV;
   const navItems = user?.is_admin ? [...baseWithMatrix, ADMIN_NAV] : baseWithMatrix;
   const { slug: activeSlug } = useParams<{ slug?: string }>();
   const isDrawer = variant === 'drawer';
