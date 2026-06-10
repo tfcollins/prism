@@ -49,6 +49,12 @@ def test_delete_tag_removes_and_reports(db_session):
     assert repo.delete_tag(run.id, "hw") is False
 
 
+def _latest_event(db_session, project_id, action):
+    evs = [e for e in AuditRepo(db_session).list_for_project(project_id) if e.action == action]
+    assert evs, f"no {action} event recorded"
+    return evs[0]  # list_for_project returns newest first
+
+
 def _login(client, db_session):
     UserRepo(db_session).create(email="u@x.com", password_hash=hash_password("pw"))
     db_session.commit()
@@ -92,6 +98,8 @@ def test_add_tag_creates(client, db_session):
         for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
     ]
     assert "run.tag.add" in events
+    ev = _latest_event(db_session, db_session.get(TestRun, rid).project_id, "run.tag.add")
+    assert ev.detail == {"key": "hw", "value": "ad9081"}
 
 
 def test_add_duplicate_key_conflicts(client, db_session):
@@ -165,6 +173,8 @@ def test_update_tag(client, db_session):
         for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
     ]
     assert "run.tag.update" in events
+    ev = _latest_event(db_session, db_session.get(TestRun, rid).project_id, "run.tag.update")
+    assert ev.detail == {"key": "hw", "old_value": "a", "new_value": "b"}
 
 
 def test_update_missing_tag_404(client, db_session):
@@ -193,6 +203,8 @@ def test_delete_tag(client, db_session):
         for e in AuditRepo(db_session).list_for_project(db_session.get(TestRun, rid).project_id)
     ]
     assert "run.tag.delete" in events
+    ev = _latest_event(db_session, db_session.get(TestRun, rid).project_id, "run.tag.delete")
+    assert ev.detail == {"key": "hw", "value": "a"}
 
 
 def test_delete_missing_tag_404(client, db_session):

@@ -70,10 +70,7 @@ function TagRow({ runId, tag }: { runId: string; tag: RunTag }) {
             size="xs"
             variant="outline"
             aria-label={`Edit ${tag.key}`}
-            onClick={() => {
-              setValue(tag.value);
-              setEditing(true);
-            }}
+            onClick={() => { setValue(tag.value); setEditing(true); setConfirmDelete(false); }}
           >
             Edit
           </Button>

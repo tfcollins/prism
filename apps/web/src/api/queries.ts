@@ -582,8 +582,8 @@ export function useAddRunTag(runId: string) {
   return useMutation({
     mutationFn: async (tag: { key: string; value: string }) =>
       (await api.post<RunTag>(`/runs/${runId}/tags`, tag)).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['runs'] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['matrix'] });
     },
@@ -595,8 +595,8 @@ export function useUpdateRunTag(runId: string) {
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) =>
       (await api.put<RunTag>(`/runs/${runId}/tags/${encodeURIComponent(key)}`, { value })).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['runs'] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['matrix'] });
     },
@@ -609,8 +609,8 @@ export function useDeleteRunTag(runId: string) {
     mutationFn: async (key: string) => {
       await api.delete(`/runs/${runId}/tags/${encodeURIComponent(key)}`);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['runs', 'detail', runId] });
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['runs'] });
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['matrix'] });
     },
