@@ -115,6 +115,19 @@ def test_compute_unplaced_runs_counted(db_session):
     assert res["unplaced_runs"] == 1
 
 
+def test_compute_excludes_pending_runs(db_session):
+    p = _project(db_session)
+    now = datetime.now(UTC)
+    _run(db_session, p.id, name="pending", status=RunStatus.PENDING, finished_at=now,
+         tags={"hw": "ad9081", "platform": "zcu102"})
+    db_session.flush()
+    res = MatrixRepo(db_session).compute(
+        scope="project:kuiper-linux", boot_files=[], config=DEFAULT_MATRIX_CONFIG
+    )
+    assert res["cells"] == {}
+    assert res["rows"] == []
+
+
 def test_compute_global_superset_by_release_tag(db_session):
     pa = _project(db_session, slug="proj-a")
     pb = _project(db_session, slug="proj-b")

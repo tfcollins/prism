@@ -107,6 +107,9 @@ class MatrixRepo:
         now = datetime.now(UTC)
         run_repo = RunRepo(self._session)
         cells: dict[str, dict[str, Any]] = {}
+        # NOTE: one aggregate query per occupied cell (N+1). Acceptable at lab
+        # scale (tens of cells), matching the overview/runs pattern. Revisit with
+        # a bulk query if cell counts grow large.
         for (rv, cv), run in latest.items():
             counts = run_repo.aggregate_counts_by_run(run.id)
             total = (
@@ -115,9 +118,7 @@ class MatrixRepo:
                 + counts["error_count"]
                 + counts["skip_count"]
             )
-            finished = run.finished_at or run.created_at
-            if finished.tzinfo is None:
-                finished = finished.replace(tzinfo=UTC)
+            finished = self._as_utc(run.finished_at or run.created_at)
             age_seconds = int((now - finished).total_seconds())
             cells[f"{rv}|{cv}"] = {
                 "status": str(run.status),
