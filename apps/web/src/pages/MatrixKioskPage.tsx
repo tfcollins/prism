@@ -37,6 +37,8 @@ export function MatrixKioskPage() {
       </Flex>
       {q.data ? (
         <MatrixGrid data={q.data} />
+      ) : q.isError ? (
+        <Text color="red.400">Error loading matrix data. Retrying…</Text>
       ) : (
         <Text color="var(--prism-text-muted)">Loading…</Text>
       )}
