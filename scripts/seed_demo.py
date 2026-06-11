@@ -37,7 +37,7 @@ from _prism_client import PrismClient
 
 DEFAULT_URL = os.environ.get("PRISM_URL", "http://localhost:8000")
 DEFAULT_EMAIL = os.environ.get("PRISM_EMAIL", "admin@example.com")
-DEFAULT_PASSWORD = os.environ.get("PRISM_PASSWORD", "change-me-in-prod")
+DEFAULT_PASSWORD = os.environ.get("PRISM_PASSWORD", "analog")
 DEFAULT_PROJECT_SLUG = "audio"
 DEFAULT_PROJECT_NAME = "Audio"
 

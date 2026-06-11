@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { expectNoSeriousAxeViolations } from './helpers/axe';
 
 const EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'admin@example.com';
-const PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? 'change-me-in-prod';
+const PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? 'analog';
 
 test('login redirects to the overview and shows nav', async ({ page }) => {
   await page.goto('/login');
