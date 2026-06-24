@@ -445,24 +445,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--reset",
         action="store_true",
-        help="Delete existing runs in the project whose names match the seed set before uploading",
+        help=(
+            "Delete each seeded project entirely (cascading all its runs, artifacts, "
+            "and blobs) before recreating it. Requires admin privileges."
+        ),
     )
     args = p.parse_args(argv)
 
     client = PrismClient(args.url)
     print(f"→ logging in to {args.url} as {args.email} …", flush=True)
     client.login(args.email, args.password)
+
+    if args.reset:
+        print(f"  resetting project {args.project!r} (delete + recreate) …", flush=True)
+        client.delete_project(args.project)
     client.ensure_project(args.project, DEFAULT_PROJECT_NAME)
 
     runs = build_runs()
-    seed_names = {r.name for r in runs}
-
-    if args.reset:
-        existing = client.list_runs(args.project)
-        for r in existing:
-            if r["name"] in seed_names:
-                print(f"  deleting existing run {r['name']} ({r['id']})", flush=True)
-                client.delete_run(str(r["id"]))
 
     for spec in runs:
         has_waves = "yes" if spec.archive_zip else "no"
@@ -484,17 +483,12 @@ def main(argv: list[str] | None = None) -> int:
     # Kuiper-Linux matrix dashboard data
     # ------------------------------------------------------------------ #
     print(f"→ seeding matrix dashboard data into project {KUIPER_PROJECT_SLUG!r} …", flush=True)
+    if args.reset:
+        print(f"  resetting project {KUIPER_PROJECT_SLUG!r} (delete + recreate) …", flush=True)
+        client.delete_project(KUIPER_PROJECT_SLUG)
     client.ensure_project(KUIPER_PROJECT_SLUG, KUIPER_PROJECT_NAME)
 
     kuiper_runs = build_kuiper_runs()
-    kuiper_seed_names = {r.name for r in kuiper_runs}
-
-    if args.reset:
-        existing_kuiper = client.list_runs(KUIPER_PROJECT_SLUG)
-        for r in existing_kuiper:
-            if r["name"] in kuiper_seed_names:
-                print(f"  deleting existing run {r['name']} ({r['id']})", flush=True)
-                client.delete_run(str(r["id"]))
 
     for spec in kuiper_runs:
         tag_summary = ", ".join(f"{k}={v}" for k, v in spec.tags.items())
