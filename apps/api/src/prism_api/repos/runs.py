@@ -3,9 +3,25 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from prism_api.models.artifact import Artifact, ArtifactKind
 from prism_api.models.log import LogReport
 from prism_api.models.run import RunStatus, RunTag, TestRun
-from prism_api.models.suite import TestSuite
+from prism_api.models.suite import TestCase, TestSuite
+
+# Artifact kinds that render as a plottable figure in the UI (waveforms, spectra,
+# spectrograms, images). Excludes wav_audio (audio playback, not a plot) and
+# Plotly figure JSON, which currently arrives as log_text from kind detection.
+FIGURE_KINDS: frozenset[ArtifactKind] = frozenset(
+    {
+        ArtifactKind.WAVEFORM_CSV,
+        ArtifactKind.WAVEFORM_HDF5,
+        ArtifactKind.WAVEFORM_NPY,
+        ArtifactKind.SPECTRUM_CSV,
+        ArtifactKind.SPECTRUM_TOUCHSTONE,
+        ArtifactKind.SPECTROGRAM,
+        ArtifactKind.IMAGE_PNG,
+    }
+)
 
 
 class RunRepo:
@@ -109,6 +125,60 @@ class RunRepo:
             )
         stmt = stmt.order_by(TestRun.created_at.desc()).limit(limit)
         return list(self._session.execute(stmt).scalars())
+
+    def runs_with_boot_log(self, run_ids: list[str]) -> set[str]:
+        """Return the subset of run_ids that have at least one parsed boot log."""
+        if not run_ids:
+            return set()
+        rows = self._session.execute(
+            select(LogReport.run_id).where(LogReport.run_id.in_(run_ids)).distinct()
+        ).scalars()
+        return set(rows)
+
+    def runs_with_figures(self, run_ids: list[str]) -> set[str]:
+        """Return the subset of run_ids that own at least one figure artifact.
+
+        Figure artifacts (``FIGURE_KINDS``) may be attached at run, suite, or case
+        scope via the polymorphic ``Artifact.owner_type``/``owner_id`` pair, so we
+        resolve each owner back to its run. Three batched queries, independent of
+        the number of runs.
+        """
+        if not run_ids:
+            return set()
+
+        suite_rows = self._session.execute(
+            select(TestSuite.id, TestSuite.run_id).where(TestSuite.run_id.in_(run_ids))
+        ).all()
+        suite_to_run: dict[str, str] = {}
+        for suite_id, owning_run_id in suite_rows:
+            suite_to_run[suite_id] = owning_run_id
+
+        case_to_run: dict[str, str] = {}
+        if suite_to_run:
+            case_rows = self._session.execute(
+                select(TestCase.id, TestCase.suite_id).where(
+                    TestCase.suite_id.in_(list(suite_to_run))
+                )
+            ).all()
+            case_to_run = {cid: suite_to_run[sid] for cid, sid in case_rows}
+
+        owner_ids = list(run_ids) + list(suite_to_run) + list(case_to_run)
+        art_rows = self._session.execute(
+            select(Artifact.owner_type, Artifact.owner_id).where(
+                Artifact.kind.in_(FIGURE_KINDS), Artifact.owner_id.in_(owner_ids)
+            )
+        ).all()
+
+        run_id_set = set(run_ids)
+        result: set[str] = set()
+        for owner_type, owner_id in art_rows:
+            if owner_type == "run" and owner_id in run_id_set:
+                result.add(owner_id)
+            elif owner_type == "suite" and owner_id in suite_to_run:
+                result.add(suite_to_run[owner_id])
+            elif owner_type == "case" and owner_id in case_to_run:
+                result.add(case_to_run[owner_id])
+        return result
 
     def distinct_tag_keys(self, project_id: str) -> list[str]:
         rows = self._session.execute(

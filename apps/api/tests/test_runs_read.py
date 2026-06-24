@@ -114,3 +114,100 @@ def test_run_detail_not_found(client: TestClient, seed_admin) -> None:
     _login(client)
     resp = client.get("/api/v1/runs/00000000-0000-0000-0000-000000000000")
     assert resp.status_code == 404
+
+
+def _upload_archive(
+    client: TestClient,
+    csrf: str,
+    *,
+    name: str,
+    files: dict[str, bytes],
+    project_slug: str = "audio",
+) -> str:
+    """Upload a single-suite run whose archive is built from {arcname: bytes}."""
+    junit = b"""<?xml version="1.0"?><testsuites>
+<testsuite name="dsp" tests="1" failures="0" time="0.1">
+<testcase classname="codec" name="ok" time="0.05"/>
+</testsuite></testsuites>"""
+    arc = io.BytesIO()
+    with zipfile.ZipFile(arc, "w") as zf:
+        for arcname, data in files.items():
+            zf.writestr(arcname, data)
+    resp = client.post(
+        "/api/v1/runs",
+        files={
+            "junit": ("j.xml", junit, "application/xml"),
+            "archive": ("a.zip", arc.getvalue(), "application/zip"),
+        },
+        data={"metadata": json.dumps({"project_slug": project_slug, "name": name})},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+def _upload_no_archive(
+    client: TestClient, csrf: str, *, name: str, project_slug: str = "audio"
+) -> str:
+    junit = b"""<?xml version="1.0"?><testsuites>
+<testsuite name="api" tests="1" failures="0" time="0.05">
+<testcase classname="c" name="happy" time="0.05"/>
+</testsuite></testsuites>"""
+    resp = client.post(
+        "/api/v1/runs",
+        files={"junit": ("j.xml", junit, "application/xml")},
+        data={"metadata": json.dumps({"project_slug": project_slug, "name": name})},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()["id"]
+
+
+def _find(runs: list[dict], name: str) -> dict:
+    return next(r for r in runs if r["name"] == name)
+
+
+def test_list_runs_flags_waveform_as_figure(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    # The default upload attaches dsp__ok__waveform.csv at case scope.
+    _upload(client, csrf, name="wave")
+    item = _find(client.get("/api/v1/runs?project=audio").json(), "wave")
+    assert item["has_figures"] is True
+    assert item["has_boot_log"] is False
+
+
+def test_list_runs_flags_image_as_figure(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
+    _upload_archive(client, csrf, name="img", files={"dsp__ok__plot.png": png})
+    item = _find(client.get("/api/v1/runs?project=audio").json(), "img")
+    assert item["has_figures"] is True
+    assert item["has_boot_log"] is False
+
+
+def test_list_runs_flags_boot_log(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    boot = b"[    0.000000] Linux version 6.1.0-gabc1234 (gcc)\nMachine model: ZCU102\n"
+    # Bare filename (no suite__case__ prefix) → run-scoped artifact.
+    _upload_archive(client, csrf, name="boot", files={"boot.log": boot})
+    item = _find(client.get("/api/v1/runs?project=audio").json(), "boot")
+    assert item["has_boot_log"] is True
+    assert item["has_figures"] is False
+
+
+def test_list_runs_flags_none_when_no_artifacts(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    _upload_no_archive(client, csrf, name="plain")
+    item = _find(client.get("/api/v1/runs?project=audio").json(), "plain")
+    assert item["has_figures"] is False
+    assert item["has_boot_log"] is False
