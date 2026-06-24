@@ -167,9 +167,7 @@ def _find(runs: list[dict], name: str) -> dict:
     return next(r for r in runs if r["name"] == name)
 
 
-def test_list_runs_flags_waveform_as_figure(
-    client: TestClient, seed_admin, patch_ingest
-) -> None:
+def test_list_runs_flags_waveform_as_figure(client: TestClient, seed_admin, patch_ingest) -> None:
     csrf = _login(client)
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
     # The default upload attaches dsp__ok__waveform.csv at case scope.
@@ -179,9 +177,7 @@ def test_list_runs_flags_waveform_as_figure(
     assert item["has_boot_log"] is False
 
 
-def test_list_runs_flags_image_as_figure(
-    client: TestClient, seed_admin, patch_ingest
-) -> None:
+def test_list_runs_flags_image_as_figure(client: TestClient, seed_admin, patch_ingest) -> None:
     csrf = _login(client)
     client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
     png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
