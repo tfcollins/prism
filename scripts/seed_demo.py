@@ -293,6 +293,73 @@ def _kuiper_junit(suite_name: str, pass_count: int, fail_count: int) -> bytes:
     return "\n".join(parts).encode("utf-8")
 
 
+# Board names the boot-log parser will surface, keyed by platform.
+_BOARD_BY_PLATFORM = {
+    "zcu102": "Xilinx ZynqMP ZCU102",
+    "zc706": "Xilinx Zynq ZC706",
+    "zed": "Avnet ZedBoard",
+    "a10soc": "Intel Arria10 SoC Dev Kit",
+}
+# Kernel commit shared across all runs of a release (and a distinct one for the
+# release-less runs) so the boot summary's shared-kernel count has data.
+_KERNEL_COMMIT_BY_RELEASE = {
+    "2024_R2": "a1b2c3d4e5f6",
+    None: "f6e5d4c3b2a1",
+}
+# HDL commit shared within a platform family so shared-hdl counts have data too.
+_HDL_COMMIT_BY_PLATFORM = {
+    "zcu102": "1111aaaa2222",
+    "zc706": "3333bbbb4444",
+    "zed": "3333bbbb4444",
+    "a10soc": "5555cccc6666",
+}
+
+
+def _boot_log(
+    board: str,
+    kernel_commit: str,
+    hdl_commit: str,
+    *,
+    errors: int = 0,
+    warns: int = 0,
+    probe_fail: bool = False,
+    panic: bool = False,
+) -> str:
+    """Build a synthetic dmesg-style boot log the boot-log parser can read.
+
+    The parser pulls the kernel version + commit from a ``Linux version …-g<sha>``
+    line, the board from ``Machine model:``, and the HDL commit from a line
+    matching ``(?i)hdl.*?<hex>``. The severity lines drive the error/warn/panic
+    tallies; the "clean" lines deliberately avoid error/warn/fail keywords.
+    """
+    lines = [
+        f"[    0.000000] Linux version 6.1.0-g{kernel_commit} (gcc 12.2.0) #1 SMP PREEMPT",
+        f"[    0.000000] Machine model: {board}",
+        "[    0.000000] Booting Linux on physical CPU 0x0",
+        "[    1.234567] random: crng init done",
+        f"[    2.345678] fpga_manager fpga0: writing system_top.bit, HDL {hdl_commit}",
+        "[    3.456789] ad9081 spi1.0: device ready",
+    ]
+    for i in range(errors):
+        lines.append(f"[    4.{i:06d}] ERROR: ad9081 calibration out of range (ch {i})")
+    for i in range(warns):
+        lines.append(f"[    5.{i:06d}] WARNING: clock domain {i} mismatch, retrying")
+    if probe_fail:
+        lines.append("[    6.000000] ad9081 spi1.0: probe failed with -ETIMEDOUT")
+    if panic:
+        lines.append("[    7.000000] Kernel panic - not syncing: VFS: Unable to mount root fs")
+    lines.append("[    8.000000] Freeing unused kernel image memory: 2048K")
+    return "\n".join(lines) + "\n"
+
+
+def _boot_archive(boot_text: str) -> bytes:
+    """Wrap a boot log as a run-scoped artifact (bare name → attaches to run)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("boot.log", boot_text)
+    return buf.getvalue()
+
+
 def build_kuiper_runs() -> list[RunSpec]:
     """Return RunSpec entries for the matrix dashboard seed data.
 
@@ -301,6 +368,11 @@ def build_kuiper_runs() -> list[RunSpec]:
       pass  → (20, 0)
       fail  → (0, 20)   — all failures, no passes → FAIL
       mixed → (18, 2)
+
+    Every run also carries a run-scoped ``boot.log`` so the boot summary, commit
+    cross-referencing, and the runs-list boot-log badge all have demo data. Log
+    severity tracks the run's status (clean for pass, errors + a probe failure
+    for fail, warnings for mixed; one fail run additionally panics).
     """
     matrix_entries: list[tuple[str, str, str, str, str | None]] = [
         ("ad9081", "zcu102", "zynqmp-common", "pass", "2024_R2"),
@@ -332,13 +404,26 @@ def build_kuiper_runs() -> list[RunSpec]:
         if release is not None:
             tags["kuiper-linux-release"] = release
 
+        board = _BOARD_BY_PLATFORM.get(platform, platform)
+        kernel_commit = _KERNEL_COMMIT_BY_RELEASE.get(release, "0000deadbeef")
+        hdl_commit = _HDL_COMMIT_BY_PLATFORM.get(platform, "9999feedface")
+        if status == "fail":
+            # The release-less zc706 fail panics; the other fail just errors out.
+            boot = _boot_log(
+                board, kernel_commit, hdl_commit, errors=2, probe_fail=True, panic=release is None
+            )
+        elif status == "mixed":
+            boot = _boot_log(board, kernel_commit, hdl_commit, warns=2)
+        else:
+            boot = _boot_log(board, kernel_commit, hdl_commit)
+
         runs.append(
             RunSpec(
                 name=run_name,
                 suite=suite_name,
                 tags=tags,
                 junit_xml=_kuiper_junit(suite_name, pass_count, fail_count),
-                archive_zip=None,
+                archive_zip=_boot_archive(boot),
             )
         )
 
@@ -413,7 +498,8 @@ def main(argv: list[str] | None = None) -> int:
 
     for spec in kuiper_runs:
         tag_summary = ", ".join(f"{k}={v}" for k, v in spec.tags.items())
-        print(f"  uploading {spec.name} ({tag_summary}) …", flush=True)
+        boot = "+boot.log" if spec.archive_zip else ""
+        print(f"  uploading {spec.name} ({tag_summary}) {boot}…", flush=True)
         client.upload_run(
             project_slug=KUIPER_PROJECT_SLUG,
             run_name=spec.name,

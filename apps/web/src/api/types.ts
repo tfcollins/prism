@@ -89,6 +89,8 @@ export interface RunListItem {
   skip_count: number;
   suite_names: string[];
   tags: RunTag[];
+  has_figures: boolean;
+  has_boot_log: boolean;
 }
 
 export interface SuiteSummary {

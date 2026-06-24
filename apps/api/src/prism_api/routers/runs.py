@@ -161,6 +161,9 @@ def list_runs(
         hdl_commit=hdl_commit,
         limit=limit,
     )
+    ids = [r.id for r in items]
+    fig_ids = runs.runs_with_figures(ids)
+    boot_ids = runs.runs_with_boot_log(ids)
     result: list[RunListItem] = []
     for r in items:
         counts = runs.aggregate_counts_by_run(r.id)
@@ -177,6 +180,8 @@ def list_runs(
                 created_at=r.created_at,
                 suite_names=[s.name for s in suites],
                 tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
+                has_figures=r.id in fig_ids,
+                has_boot_log=r.id in boot_ids,
                 **counts,
             )
         )

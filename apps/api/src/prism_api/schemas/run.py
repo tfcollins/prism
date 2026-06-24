@@ -79,3 +79,5 @@ class RunListItem(BaseModel):
     skip_count: int
     suite_names: list[str] = Field(default_factory=list)
     tags: list[RunTagOut] = Field(default_factory=list)
+    has_figures: bool = False
+    has_boot_log: bool = False

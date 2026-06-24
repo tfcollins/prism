@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import type { RunListItem } from '../api/types';
 import { absoluteTime, relativeTime } from '../util/relativeTime';
+import { Tooltip } from './Tooltip';
 
 const STATUS_COLOR: Record<string, string> = {
   pass: '#48bb78',
@@ -37,6 +38,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
               <Table.ColumnHeader>Status</Table.ColumnHeader>
               <Table.ColumnHeader>Run</Table.ColumnHeader>
               <Table.ColumnHeader>Suite</Table.ColumnHeader>
+              <Table.ColumnHeader>Artifacts</Table.ColumnHeader>
               <Table.ColumnHeader>Pass</Table.ColumnHeader>
               <Table.ColumnHeader>Fail</Table.ColumnHeader>
               <Table.ColumnHeader>When</Table.ColumnHeader>
@@ -95,6 +97,9 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
                     </Flex>
                   )}
                 </Table.Cell>
+                <Table.Cell>
+                  <ArtifactLabels run={r} />
+                </Table.Cell>
                 <Table.Cell>{r.pass_count}</Table.Cell>
                 <Table.Cell>{r.fail_count}</Table.Cell>
                 <Table.Cell>
@@ -128,6 +133,39 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
       </Box>
       <RunSelectionActions ids={Array.from(selected)} />
     </Box>
+  );
+}
+
+/**
+ * Compact badges flagging whether a run carries plottable figures and/or a
+ * parsed boot log, so the list is scannable without opening each run. Renders a
+ * faint em-dash when the run has neither.
+ */
+function ArtifactLabels({ run }: { run: RunListItem }) {
+  if (!run.has_figures && !run.has_boot_log) {
+    return (
+      <Text as="span" fontSize="xs" color="var(--prism-text-faint)">
+        —
+      </Text>
+    );
+  }
+  return (
+    <Flex gap={1} wrap="wrap">
+      {run.has_figures && (
+        <Tooltip content="Run has plottable artifacts (waveforms, spectra, images).">
+          <Badge variant="subtle" colorPalette="purple" aria-label="Has figures">
+            Figures
+          </Badge>
+        </Tooltip>
+      )}
+      {run.has_boot_log && (
+        <Tooltip content="Run has a parsed boot/dmesg log.">
+          <Badge variant="subtle" colorPalette="gray" aria-label="Has boot log">
+            Boot log
+          </Badge>
+        </Tooltip>
+      )}
+    </Flex>
   );
 }
 
