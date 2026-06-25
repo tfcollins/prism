@@ -18,6 +18,7 @@ import type {
   ContainerLogs,
   CreateTokenRequest,
   FFTResponse,
+  GenalyzerResponse,
   LogReport,
   Mask,
   MatrixConfig,
@@ -174,6 +175,15 @@ export function useFFT(
     queryFn: async () =>
       (await api.get<FFTResponse>(`/artifacts/${artifactId}/fft`, { params })).data,
     enabled: Boolean(artifactId),
+  });
+}
+
+export function useGenalyzer(artifactId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'genalyzer'],
+    queryFn: async () =>
+      (await api.get<GenalyzerResponse>(`/artifacts/${artifactId}/genalyzer`)).data,
+    enabled: Boolean(artifactId) && enabled,
   });
 }
 

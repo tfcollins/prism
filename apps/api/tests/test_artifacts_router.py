@@ -199,6 +199,41 @@ def test_artifact_fft_cached_second_call(client: TestClient, seed_admin, patch_i
     assert r1.json()["frequencies"] == r2.json()["frequencies"]
 
 
+def test_artifact_genalyzer_endpoint(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
+    resp = client.get(f"/api/v1/artifacts/{art_id}/genalyzer?harmonics=5")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    labels = [m["label"] for m in body["markers"]]
+    assert "Fund" in labels
+    fund = next(m for m in body["markers"] if m["label"] == "Fund")
+    assert abs(fund["frequency"] - 1000) < 50
+    assert body["snr"] is not None
+    assert body["enob"] is not None
+
+
+def test_artifact_genalyzer_cached_second_call(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
+    r1 = client.get(f"/api/v1/artifacts/{art_id}/genalyzer")
+    assert r1.status_code == 200, r1.text
+    r2 = client.get(f"/api/v1/artifacts/{art_id}/genalyzer")
+    assert r2.status_code == 200
+    assert r1.json() == r2.json()
+
+
+def test_artifact_genalyzer_rejects_non_waveform(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    art_id = _bootstrap_with_spectrogram(client, csrf)
+    resp = client.get(f"/api/v1/artifacts/{art_id}/genalyzer")
+    assert resp.status_code == 400
+
+
 def _bootstrap_with_spectrogram(client: TestClient, csrf: str) -> str:
     client.post("/api/v1/projects", json={"slug": "rf2", "name": "RF2"})
     junit = b"""<?xml version="1.0"?><testsuites>

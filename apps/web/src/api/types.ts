@@ -250,6 +250,22 @@ export interface SpursResponse {
   spurs: Spur[];
 }
 
+export interface GenalyzerMarker {
+  label: string;
+  frequency: number;
+  mag_dbfs: number;
+}
+
+export interface GenalyzerResponse {
+  markers: GenalyzerMarker[];
+  snr: number | null;
+  sfdr: number | null;
+  sinad: number | null;
+  thd: number | null;
+  enob: number | null;
+  fsnr: number | null;
+}
+
 export interface MaskSegment {
   f_start: number;
   f_end: number;

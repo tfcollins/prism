@@ -663,6 +663,18 @@ wheels = [
 ]
 
 [[package]]
+name = "genalyzer"
+version = "0.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2c/76/76c0659f38e0aca1da71d938c19e14146e3a0abd06f8655990cb2c3b75dd/genalyzer-0.1.4.tar.gz", hash = "sha256:1e69ef1a3e295bc272effc3b50a4c77587c107e7e0728b984a642b597c7fd77a", size = 64096, upload-time = "2026-04-21T20:22:51.59Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/fe/2ce1c4309f9352d27003698b066563f4815837d5a00157759a058241029c/genalyzer-0.1.4-py3-none-any.whl", hash = "sha256:5c3141785d7da22a6312bdd9cb4aaf92b564e2a6125b129038d07a3910a99b9e", size = 64503, upload-time = "2026-04-21T20:22:50.246Z" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1377,6 +1389,7 @@ dependencies = [
     { name = "email-validator" },
     { name = "fastapi" },
     { name = "fpdf2" },
+    { name = "genalyzer" },
     { name = "h5py" },
     { name = "junitparser" },
     { name = "ldap3" },
@@ -1421,6 +1434,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "fpdf2", specifier = ">=2.8.7" },
+    { name = "genalyzer", specifier = ">=0.1.4" },
     { name = "h5py", specifier = ">=3.10" },
     { name = "junitparser", specifier = ">=3.1" },
     { name = "ldap3", specifier = ">=2.9" },

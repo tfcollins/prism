@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import PurePosixPath
 
 import numpy as np
@@ -14,6 +15,7 @@ from prism_api.config import Settings
 from prism_api.deps import current_user, get_settings_dep, session_dep
 from prism_api.dsp.downsample import downsample_for_plot
 from prism_api.dsp.fft import FFTParams, compute_fft, params_hash
+from prism_api.dsp.genalyzer_markers import analyze as genalyzer_analyze
 from prism_api.dsp.spectrum_metrics import channel_metrics, find_spurs
 from prism_api.models import ArtifactKind, DerivedKind
 from prism_api.models.artifact import Artifact
@@ -27,6 +29,8 @@ from prism_api.schemas.artifact import (
     ArtifactOut,
     ChannelMetricsResponse,
     FFTResponse,
+    GenalyzerMarker,
+    GenalyzerResponse,
     SpectrogramResponse,
     SpectrumResponse,
     SpurOut,
@@ -295,4 +299,58 @@ def get_fft(
         magnitudes=[float(x) for x in mags],
         sample_rate=float(sample_rate),
         params={"window": window, "nfft": nfft, "overlap": overlap},
+    )
+
+
+@router.get("/{artifact_id}/genalyzer", response_model=GenalyzerResponse)
+def get_genalyzer(
+    artifact_id: str,
+    harmonics: int = Query(default=5, ge=1, le=10),
+    _: User = Depends(current_user),
+    settings: Settings = Depends(get_settings_dep),
+    session: Session = Depends(session_dep),
+) -> GenalyzerResponse:
+    a = _fetch_artifact_or_404(session, artifact_id)
+    if a.kind not in _WAVEFORM_KINDS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform"
+        )
+    ph = f"h{harmonics}"
+    storage = build_storage(settings)
+    derived_repo = DerivedRepo(session)
+    cached = derived_repo.find(source_artifact_id=a.id, kind=DerivedKind.GENALYZER, params_hash=ph)
+    if cached is not None:
+        payload = json.loads(storage.get_bytes(cached.storage_key))
+    else:
+        raw = storage.get_bytes(a.storage_key)
+        wf = load_waveform(a.kind, raw, filename=a.filename)
+        if wf.sample_rate is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "waveform has no sample rate")
+        result = genalyzer_analyze(wf.samples, float(wf.sample_rate), harmonics=harmonics)
+        payload = {
+            "markers": [
+                {"label": m.label, "frequency": m.frequency, "mag_dbfs": m.mag_dbfs}
+                for m in result.markers
+            ],
+            "snr": result.snr,
+            "sfdr": result.sfdr,
+            "sinad": result.sinad,
+            "thd": result.thd,
+            "enob": result.enob,
+            "fsnr": result.fsnr,
+        }
+        key = f"derived/genalyzer/{a.content_hash}-{ph}.json"
+        storage.put_at(key, json.dumps(payload).encode(), content_type="application/json")
+        derived_repo.create(
+            source_artifact_id=a.id, kind=DerivedKind.GENALYZER, storage_key=key, params_hash=ph
+        )
+        session.commit()
+    return GenalyzerResponse(
+        markers=[GenalyzerMarker(**m) for m in payload["markers"]],
+        snr=payload["snr"],
+        sfdr=payload["sfdr"],
+        sinad=payload["sinad"],
+        thd=payload["thd"],
+        enob=payload["enob"],
+        fsnr=payload["fsnr"],
     )
