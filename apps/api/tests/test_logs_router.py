@@ -41,6 +41,8 @@ def test_run_logs_and_boot_summary(client, seed_admin, patch_ingest) -> None:
     assert logs[0]["kernel_commit"] == "1a2b3c4"
     assert logs[0]["hdl_commit"] == "deadbeef1234"
     assert any(f["severity"] == "error" for f in logs[0]["findings"])
+    # The raw log artifact id is exposed so the web can fetch/download the log.
+    assert logs[0]["artifact_id"]
 
     detail = client.get(f"/api/v1/runs/{run_id}").json()
     assert detail["boot"]["kernel_commit"] == "1a2b3c4"

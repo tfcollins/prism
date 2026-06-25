@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useCase, useRun, useRunArtifacts, useRuns, useSetCalibration } from '../api/queries';
 import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
+import { BootLogViewer } from '../components/BootLogViewer';
 import { BootPanel } from '../components/BootPanel';
 import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
@@ -98,6 +99,7 @@ export function RunDetailPage() {
           {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
+          <BootLogViewer runId={runQuery.data.id} />
           <Grid
             templateColumns={{
               base: '1fr',
@@ -320,7 +322,7 @@ function RunMetaPane({ run }: { run: RunDetail }) {
 
       {run.boot && (
         <Box mt={3}>
-          <BootPanel runId={run.id} boot={run.boot} />
+          <BootPanel boot={run.boot} />
         </Box>
       )}
 

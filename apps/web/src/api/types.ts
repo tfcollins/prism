@@ -130,6 +130,7 @@ export interface LogFinding {
 
 export interface LogReport {
   source: string;
+  artifact_id: string | null;
   kernel_version: string | null;
   board: string | null;
   kernel_commit: string | null;
