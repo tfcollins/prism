@@ -26,6 +26,29 @@ jobs:
       - uses: astral-sh/setup-uv@v3
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
+      # The genalyzer python package ctypes-loads a system libgenalyzer.so that
+      # is not bundled in the wheel, so build it once (cached by version) for the
+      # genalyzer DSP/endpoint tests.
+      - name: Cache libgenalyzer build
+        id: gn-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/genalyzer-build
+          key: genalyzer-v0.1.4-${{ runner.os }}
+      - name: Build libgenalyzer
+        if: steps.gn-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake g++ libfftw3-dev
+          git clone --depth 1 --branch v0.1.4 https://github.com/analogdevicesinc/genalyzer.git /tmp/gn-src
+          cmake -B /tmp/genalyzer-build -S /tmp/gn-src -DBUILD_TESTS_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/genalyzer-build -j
+      - name: Install libgenalyzer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libfftw3-3
+          sudo cp -P /tmp/genalyzer-build/bindings/c/src/libgenalyzer.so* /usr/local/lib/
+          sudo ldconfig
       - working-directory: apps/api
         env:
           PRISM_DATABASE_URL: postgresql+psycopg://prism:prism@localhost:5432/prism

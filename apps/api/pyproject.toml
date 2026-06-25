@@ -26,6 +26,7 @@ dependencies = [
   "pandas>=2.2",
   "h5py>=3.10",
   "fpdf2>=2.8.7",
+  "genalyzer>=0.1.4",
 ]
 
 [dependency-groups]
@@ -82,7 +83,7 @@ warn_unreachable = true
 # Third-party libs that don't ship type stubs. Suppress at the import
 # boundary so our own code stays strictly checked.
 [[tool.mypy.overrides]]
-module = ["celery", "celery.*", "h5py", "boto3", "boto3.*", "mypy_boto3_s3.*", "scipy", "scipy.*", "ldap3", "ldap3.*", "docker", "docker.*"]
+module = ["celery", "celery.*", "h5py", "boto3", "boto3.*", "mypy_boto3_s3.*", "scipy", "scipy.*", "ldap3", "ldap3.*", "docker", "docker.*", "genalyzer", "genalyzer.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
@@ -105,7 +106,7 @@ exclude_lines = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-n auto --durations=10 --cov --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml:coverage.xml"
+addopts = "-n auto --durations=10 -p no:genalyzer --cov --cov-report=term-missing --cov-report=html:htmlcov --cov-report=xml:coverage.xml"
 filterwarnings = [
   "error",
   # passlib imports the stdlib 'crypt' module which is deprecated in Python 3.12;

@@ -61,3 +61,19 @@ class SpursResponse(BaseModel):
     margin_db: float
     noise_floor_dbm: float
     spurs: list[SpurOut] = Field(default_factory=list)
+
+
+class GenalyzerMarker(BaseModel):
+    label: str
+    frequency: float
+    mag_dbfs: float
+
+
+class GenalyzerResponse(BaseModel):
+    markers: list[GenalyzerMarker] = Field(default_factory=list)
+    snr: float | None = None
+    sfdr: float | None = None
+    sinad: float | None = None
+    thd: float | None = None
+    enob: float | None = None
+    fsnr: float | None = None

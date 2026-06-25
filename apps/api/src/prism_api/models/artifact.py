@@ -30,6 +30,7 @@ class ArtifactKind(enum.StrEnum):
 class DerivedKind(enum.StrEnum):
     FFT = "fft"
     THUMBNAIL = "thumbnail"
+    GENALYZER = "genalyzer"
 
 
 # Use JSONB on postgres, JSON elsewhere (tests run against SQLite)
