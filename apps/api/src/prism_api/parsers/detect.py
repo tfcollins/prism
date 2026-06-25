@@ -29,6 +29,13 @@ def detect_kind(filename: str, head: bytes) -> ArtifactKind:
     # Extension-based
     suffix = PurePosixPath(filename).suffix.lower()
     if suffix == ".xml":
+        # A libiio context dump opens with `<!DOCTYPE context …>` (always emitted)
+        # and a root `<context …>`; JUnit never carries either. Everything else
+        # with an .xml suffix is treated as JUnit. (Only archive files reach here
+        # — the main JUnit upload is created with kind=JUNIT_XML directly.)
+        lowered = head.lower()
+        if b"<!doctype context" in lowered or b"<context " in lowered or b"<context>" in lowered:
+            return ArtifactKind.IIO_CONTEXT_XML
         return ArtifactKind.JUNIT_XML
     if suffix in {".s1p", ".s2p"}:
         return ArtifactKind.SPECTRUM_TOUCHSTONE

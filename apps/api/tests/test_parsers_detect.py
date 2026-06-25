@@ -8,6 +8,31 @@ def test_junit_xml() -> None:
     )
 
 
+_CONTEXT_HEAD = (
+    b'<?xml version="1.0" encoding="utf-8"?>\n'
+    b"<!DOCTYPE context [\n"
+    b"<!ELEMENT context (device | context-attribute)*>\n"
+    b"]>\n"
+    b'<context name="local" description="Emulated Context">\n'
+    b'  <device id="iio:device0" name="ad7291">\n'
+)
+
+
+def test_iio_context_xml_by_doctype() -> None:
+    assert detect_kind("ad7291.xml", _CONTEXT_HEAD) == ArtifactKind.IIO_CONTEXT_XML
+
+
+def test_iio_context_xml_without_doctype() -> None:
+    # Some dumps may omit the DOCTYPE; the root <context …> still identifies it.
+    head = b'<?xml version="1.0"?><context name="local"><device id="d0"/></context>'
+    assert detect_kind("ctx.xml", head) == ArtifactKind.IIO_CONTEXT_XML
+
+
+def test_junit_xml_not_misread_as_context() -> None:
+    head = b'<?xml version="1.0"?><testsuites><testsuite name="test_context"/></testsuites>'
+    assert detect_kind("results.xml", head) == ArtifactKind.JUNIT_XML
+
+
 def test_waveform_csv() -> None:
     assert detect_kind("sine.csv", b"0.0\n0.1\n0.2\n") == ArtifactKind.WAVEFORM_CSV
 
