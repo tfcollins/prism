@@ -302,10 +302,14 @@ def get_fft(
     )
 
 
+_GENALYZER_WINDOWS = {"blackman_harris", "hann", "none"}
+
+
 @router.get("/{artifact_id}/genalyzer", response_model=GenalyzerResponse)
 def get_genalyzer(
     artifact_id: str,
     harmonics: int = Query(default=5, ge=1, le=10),
+    window: str = Query(default="blackman_harris"),
     _: User = Depends(current_user),
     settings: Settings = Depends(get_settings_dep),
     session: Session = Depends(session_dep),
@@ -315,7 +319,12 @@ def get_genalyzer(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, f"artifact kind {a.kind.value} is not a waveform"
         )
-    ph = f"h{harmonics}"
+    if window not in _GENALYZER_WINDOWS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"window must be one of {sorted(_GENALYZER_WINDOWS)}",
+        )
+    ph = f"h{harmonics}-{window}"
     storage = build_storage(settings)
     derived_repo = DerivedRepo(session)
     cached = derived_repo.find(source_artifact_id=a.id, kind=DerivedKind.GENALYZER, params_hash=ph)
@@ -326,7 +335,9 @@ def get_genalyzer(
         wf = load_waveform(a.kind, raw, filename=a.filename)
         if wf.sample_rate is None:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "waveform has no sample rate")
-        result = genalyzer_analyze(wf.samples, float(wf.sample_rate), harmonics=harmonics)
+        result = genalyzer_analyze(
+            wf.samples, float(wf.sample_rate), harmonics=harmonics, window=window
+        )
         payload = {
             "markers": [
                 {"label": m.label, "frequency": m.frequency, "mag_dbfs": m.mag_dbfs}

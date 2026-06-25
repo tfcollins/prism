@@ -62,7 +62,13 @@ def _thd_dbc(results: dict[str, float], harmonics: int) -> float | None:
     return 10.0 * math.log10(power)
 
 
-def analyze(samples: np.ndarray, sample_rate: float, *, harmonics: int = 5) -> GenalyzerResult:
+def analyze(
+    samples: np.ndarray,
+    sample_rate: float,
+    *,
+    harmonics: int = 5,
+    window: str = "blackman_harris",
+) -> GenalyzerResult:
     """Run genalyzer FFT analysis on a real waveform; degenerate input → empty."""
     x = np.asarray(samples, dtype=np.float64).ravel()
     if x.size < 4:
@@ -75,6 +81,15 @@ def analyze(samples: np.ndarray, sample_rate: float, *, harmonics: int = 5) -> G
 
     import genalyzer as gn
 
+    win_map = {
+        "blackman_harris": gn.Window.BLACKMAN_HARRIS,
+        "hann": gn.Window.HANN,
+        "none": gn.Window.NO_WINDOW,
+    }
+    gn_window = win_map.get(window, gn.Window.BLACKMAN_HARRIS)
+    # NO_WINDOW assumes coherent sampling — no leakage skirt, so ssb=0.
+    ssb = 0 if gn_window == gn.Window.NO_WINDOW else 3
+
     fsr = 2.0 * peak * 1.0001
     with _LOCK:
         qwf = gn.quantize(x, fsr, 16, 0.0, gn.CodeFormat.TWOS_COMPLEMENT)
@@ -83,7 +98,7 @@ def analyze(samples: np.ndarray, sample_rate: float, *, harmonics: int = 5) -> G
             16,
             1,
             nfft,
-            gn.Window.BLACKMAN_HARRIS,
+            gn_window,
             gn.CodeFormat.TWOS_COMPLEMENT,
             gn.RfftScale.DBFS_SIN,
         )
@@ -91,9 +106,9 @@ def analyze(samples: np.ndarray, sample_rate: float, *, harmonics: int = 5) -> G
         gn.mgr_remove(key)
         gn.fa_create(key)
         gn.fa_analysis_band(key, "fdata*0.0", "fdata*1.0")
-        gn.fa_max_tone(key, "A", gn.FaCompTag.SIGNAL, 3)
+        gn.fa_max_tone(key, "A", gn.FaCompTag.SIGNAL, ssb)
         gn.fa_hd(key, harmonics)
-        gn.fa_ssb(key, gn.FaSsb.DEFAULT, 3)
+        gn.fa_ssb(key, gn.FaSsb.DEFAULT, ssb)
         gn.fa_fsample(key, sample_rate)
         results = gn.fft_analysis(key, fft_cplx, nfft)
         annots = gn.fa_annotations(results)

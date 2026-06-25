@@ -27,9 +27,13 @@ const GENALYZER = {
   fsnr: 84.0,
 };
 
+const genCalls: unknown[][] = [];
 vi.mock('../api/queries', () => ({
   useFFT: () => ({ data: FFT, isLoading: false, isError: false }),
-  useGenalyzer: () => ({ data: GENALYZER, isLoading: false, isError: false }),
+  useGenalyzer: (...args: unknown[]) => {
+    genCalls.push(args);
+    return { data: GENALYZER, isLoading: false, isError: false };
+  },
 }));
 
 vi.mock('../colorMode', () => ({ useColorMode: () => ({ colorMode: 'dark' }) }));
@@ -61,5 +65,19 @@ describe('FFTPlot genalyzer markers', () => {
     expect(screen.getByText(/SNR/i)).toBeInTheDocument();
     expect(screen.getByText(/84\.2/)).toBeInTheDocument();
     expect(screen.getByText(/SFDR/i)).toBeInTheDocument();
+  });
+
+  it('shows harmonics + window config controls and refetches on change', () => {
+    renderPlot();
+    fireEvent.click(screen.getByRole('button', { name: /genalyzer/i }));
+    expect(screen.getByLabelText(/harmonics/i)).toBeInTheDocument();
+    const windowSelect = screen.getByLabelText(/window/i);
+    expect(windowSelect).toBeInTheDocument();
+
+    genCalls.length = 0;
+    fireEvent.change(windowSelect, { target: { value: 'hann' } });
+    // useGenalyzer(artifactId, enabled, harmonics, window) — last call uses 'hann'
+    const last = genCalls[genCalls.length - 1];
+    expect(last[3]).toBe('hann');
   });
 });

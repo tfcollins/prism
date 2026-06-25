@@ -21,10 +21,27 @@ function Metric({ label, value, unit }: { label: string; value: number | null; u
   );
 }
 
+const WINDOWS = [
+  { value: 'blackman_harris', label: 'Blackman-Harris' },
+  { value: 'hann', label: 'Hann' },
+  { value: 'none', label: 'None' },
+];
+const HARMONICS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const selectStyle = {
+  fontSize: '0.75rem',
+  padding: '1px 4px',
+  borderRadius: 4,
+  border: '1px solid var(--prism-border)',
+  background: 'var(--prism-bg-surface)',
+  color: 'var(--prism-text)',
+};
+
 export function FFTPlot({ artifactId }: { artifactId: string }) {
   const q = useFFT(artifactId);
   const [showGen, setShowGen] = useState(false);
-  const gen = useGenalyzer(artifactId, showGen);
+  const [harmonics, setHarmonics] = useState(5);
+  const [window, setWindow] = useState('blackman_harris');
+  const gen = useGenalyzer(artifactId, showGen, harmonics, window);
   const { colorMode } = useColorMode();
   if (q.isLoading) return <PlotSkeleton height={320} label="Loading FFT…" />;
   if (q.isError || !q.data) return <Text color="red.400">Failed to load FFT</Text>;
@@ -69,6 +86,40 @@ export function FFTPlot({ artifactId }: { artifactId: string }) {
           {showGen ? '✓ genalyzer markers' : 'genalyzer markers'}
         </Button>
       </Flex>
+      {showGen && (
+        <Flex justify="flex-end" align="center" gap={3} mb={1}>
+          <Text as="label" fontSize="xs" color="var(--prism-text-subtle)">
+            Harmonics{' '}
+            <select
+              aria-label="Harmonics"
+              value={harmonics}
+              onChange={(e) => setHarmonics(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {HARMONICS.map((h) => (
+                <option key={h} value={h}>
+                  {h}
+                </option>
+              ))}
+            </select>
+          </Text>
+          <Text as="label" fontSize="xs" color="var(--prism-text-subtle)">
+            Window{' '}
+            <select
+              aria-label="Window"
+              value={window}
+              onChange={(e) => setWindow(e.target.value)}
+              style={selectStyle}
+            >
+              {WINDOWS.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+          </Text>
+        </Flex>
+      )}
       <Plot
         data={data}
         layout={analyzerLayout(colorMode, {
