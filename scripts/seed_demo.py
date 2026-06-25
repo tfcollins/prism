@@ -183,13 +183,28 @@ def _context_xml() -> str:
     )
 
 
+def _distorted_tone() -> Iterable[float]:
+    """A 1 kHz fundamental with deliberate harmonics so the genalyzer markers
+    show distortion: HD2 -40 dBc, HD3 -50 dBc, HD5 -55 dBc."""
+    return _sum(
+        _sine(1000, 1.0),
+        _sine(2000, 0.01),
+        _sine(3000, 0.003),
+        _sine(5000, 0.0018),
+    )
+
+
 def _dsp_archive(
-    sine_1k: Iterable[float], sine_5k: Iterable[float], impulse: Iterable[float]
+    sine_1k: Iterable[float],
+    sine_5k: Iterable[float],
+    impulse: Iterable[float],
+    distorted: Iterable[float],
 ) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("dsp__sine_sweep_1khz__wave.csv", _csv(sine_1k))
         zf.writestr("dsp__sine_sweep_5khz__wave.csv", _csv(sine_5k))
+        zf.writestr("dsp__harmonic_distortion__wave.csv", _csv(distorted))
         zf.writestr("dsp__impulse_response__wave.csv", _csv(impulse))
         # libiio context dump: run-scoped (run-level Context section) and
         # case-scoped on sine_sweep_1khz (shows in that test's case view).
@@ -204,16 +219,19 @@ def build_runs() -> list[RunSpec]:
     dsp_cases_ok = [
         ("codec", "sine_sweep_1khz", None),
         ("codec", "sine_sweep_5khz", None),
+        ("codec", "harmonic_distortion", None),
         ("latency", "impulse_response", None),
     ]
     dsp_cases_one_fail = [
         ("codec", "sine_sweep_1khz", None),
         ("codec", "sine_sweep_5khz", "expected SNR >60dB, got 58.3dB"),
+        ("codec", "harmonic_distortion", None),
         ("latency", "impulse_response", None),
     ]
     dsp_cases_two_fail = [
         ("codec", "sine_sweep_1khz", "noise floor regression"),
         ("codec", "sine_sweep_5khz", "harmonic distortion at 12kHz"),
+        ("codec", "harmonic_distortion", None),
         ("latency", "impulse_response", None),
     ]
 
@@ -222,6 +240,7 @@ def build_runs() -> list[RunSpec]:
         sine_1k=_sine(1000),
         sine_5k=_sine(5000),
         impulse=_impulse(200),
+        distorted=_distorted_tone(),
     )
 
     # Nightly-42: slightly drifted 1 kHz + added 12 kHz harmonic in the 5 kHz case
@@ -230,6 +249,7 @@ def build_runs() -> list[RunSpec]:
         sine_1k=_sine(1005),
         sine_5k=_sum(_sine(5000), _sine(12000, amp=0.3)),
         impulse=_impulse(180),
+        distorted=_distorted_tone(),
     )
 
     # PR-17: regressions on both sine cases — noisier signals.
@@ -237,6 +257,7 @@ def build_runs() -> list[RunSpec]:
         sine_1k=_noisy(_sine(1000), amp=0.25),
         sine_5k=_noisy(_sine(5000), amp=0.40),
         impulse=_impulse(250),
+        distorted=_distorted_tone(),
     )
 
     # Three api variants — no waveforms attached, just pass/fail metadata.
