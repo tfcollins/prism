@@ -234,6 +234,23 @@ def test_artifact_genalyzer_rejects_non_waveform(
     assert resp.status_code == 400
 
 
+def test_artifact_genalyzer_window_param(client: TestClient, seed_admin, patch_ingest) -> None:
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
+    resp = client.get(f"/api/v1/artifacts/{art_id}/genalyzer?harmonics=3&window=hann")
+    assert resp.status_code == 200, resp.text
+    assert any(m["label"] == "Fund" for m in resp.json()["markers"])
+
+
+def test_artifact_genalyzer_rejects_unknown_window(
+    client: TestClient, seed_admin, patch_ingest
+) -> None:
+    csrf = _login(client)
+    art_id = _bootstrap_with_waveform(client, csrf)
+    resp = client.get(f"/api/v1/artifacts/{art_id}/genalyzer?window=bogus")
+    assert resp.status_code == 400
+
+
 def _bootstrap_with_spectrogram(client: TestClient, csrf: str) -> str:
     client.post("/api/v1/projects", json={"slug": "rf2", "name": "RF2"})
     junit = b"""<?xml version="1.0"?><testsuites>

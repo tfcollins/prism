@@ -178,11 +178,20 @@ export function useFFT(
   });
 }
 
-export function useGenalyzer(artifactId: string | undefined, enabled = true) {
+export function useGenalyzer(
+  artifactId: string | undefined,
+  enabled = true,
+  harmonics = 5,
+  window = 'blackman_harris',
+) {
   return useQuery({
-    queryKey: ['artifacts', artifactId, 'genalyzer'],
+    queryKey: ['artifacts', artifactId, 'genalyzer', harmonics, window],
     queryFn: async () =>
-      (await api.get<GenalyzerResponse>(`/artifacts/${artifactId}/genalyzer`)).data,
+      (
+        await api.get<GenalyzerResponse>(`/artifacts/${artifactId}/genalyzer`, {
+          params: { harmonics, window },
+        })
+      ).data,
     enabled: Boolean(artifactId) && enabled,
   });
 }

@@ -29,3 +29,22 @@ def test_analyze_silence_is_degenerate_not_an_error() -> None:
     r = analyze(np.zeros(1024), 48000.0)
     assert r.markers == []
     assert r.snr is None and r.enob is None
+
+
+def test_analyze_honors_window_choices() -> None:
+    fs = 48000.0
+    n = 16384
+    t = np.arange(n) / fs
+    sig = np.sin(2 * math.pi * 1500 * t)
+    for window in ("hann", "none", "blackman_harris"):
+        r = analyze(sig, fs, harmonics=3, window=window)
+        fund = next(m for m in r.markers if m.label == "Fund")
+        assert abs(fund.frequency - 1500.0) < 100.0
+        assert r.snr is not None
+
+
+def test_analyze_unknown_window_falls_back() -> None:
+    fs = 48000.0
+    t = np.arange(16384) / fs
+    r = analyze(np.sin(2 * math.pi * 1500 * t), fs, window="bogus")
+    assert any(m.label == "Fund" for m in r.markers)
