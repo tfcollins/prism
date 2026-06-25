@@ -143,6 +143,46 @@ def _api_junit(cases: Sequence[tuple[str, str, str | None]]) -> bytes:
     return "\n".join(parts).encode("utf-8")
 
 
+def _context_xml() -> str:
+    """A small, realistic libiio context dump (emulated) for the context viewer.
+
+    Recognised by the ingest detector (``<!DOCTYPE context …>``) as
+    ``iio_context_xml`` and rendered as a device → channel → attribute tree.
+    """
+    return (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        "<!DOCTYPE context [\n"
+        "<!ELEMENT context (device | context-attribute)*>\n"
+        "<!ELEMENT context-attribute EMPTY>\n"
+        "<!ELEMENT device (channel | attribute | debug-attribute | buffer-attribute)*>\n"
+        "<!ELEMENT channel (scan-element?, attribute*)>\n"
+        "<!ELEMENT attribute EMPTY>\n"
+        "<!ELEMENT scan-element EMPTY>\n"
+        "]>\n"
+        '<context name="xml" description="Emulated ad9361 context">\n'
+        '  <context-attribute name="local,kernel" value="6.1.0" />\n'
+        '  <context-attribute name="uri" value="ip:192.168.2.1" />\n'
+        '  <device id="iio:device0" name="ad9361-phy">\n'
+        '    <attribute name="calib_mode" value="auto" />\n'
+        '    <attribute name="ensm_mode" value="fdd" />\n'
+        '    <channel id="voltage0" type="output" name="TX_LO">\n'
+        '      <attribute name="hardwaregain" value="-10.000000" />\n'
+        '      <attribute name="sampling_frequency" value="30720000" />\n'
+        "    </channel>\n"
+        '    <channel id="altvoltage0" type="output" name="RX_LO">\n'
+        '      <attribute name="frequency" value="2400000000" />\n'
+        "    </channel>\n"
+        "  </device>\n"
+        '  <device id="iio:device1" name="cf-ad9361-lpc">\n'
+        '    <channel id="voltage0" type="input">\n'
+        '      <scan-element index="0" format="le:S12/16&gt;&gt;0" />\n'
+        '      <attribute name="calibphase" value="0.000000" />\n'
+        "    </channel>\n"
+        "  </device>\n"
+        "</context>\n"
+    )
+
+
 def _dsp_archive(
     sine_1k: Iterable[float], sine_5k: Iterable[float], impulse: Iterable[float]
 ) -> bytes:
@@ -151,6 +191,11 @@ def _dsp_archive(
         zf.writestr("dsp__sine_sweep_1khz__wave.csv", _csv(sine_1k))
         zf.writestr("dsp__sine_sweep_5khz__wave.csv", _csv(sine_5k))
         zf.writestr("dsp__impulse_response__wave.csv", _csv(impulse))
+        # libiio context dump: run-scoped (run-level Context section) and
+        # case-scoped on sine_sweep_1khz (shows in that test's case view).
+        ctx = _context_xml()
+        zf.writestr("context.xml", ctx)
+        zf.writestr("dsp__sine_sweep_1khz__context.xml", ctx)
     return buf.getvalue()
 
 
