@@ -7,6 +7,7 @@ import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
 import { BootLogViewer } from '../components/BootLogViewer';
 import { BootPanel } from '../components/BootPanel';
+import { ContextSection } from '../components/ContextXmlViewer';
 import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
@@ -65,7 +66,8 @@ export function RunDetailPage() {
       a !== figureJson &&
       a !== inlineArtifact &&
       a !== spectrum &&
-      a !== spectrogram,
+      a !== spectrogram &&
+      a.kind !== 'iio_context_xml',
   );
 
   return (
@@ -100,6 +102,7 @@ export function RunDetailPage() {
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
           <BootLogViewer runId={runQuery.data.id} />
+          {runArtifactsQuery.data && <ContextSection artifacts={runArtifactsQuery.data} />}
           <Grid
             templateColumns={{
               base: '1fr',
@@ -233,6 +236,7 @@ export function RunDetailPage() {
                       </Text>
                     )
                   )}
+                  {caseQuery.data && <ContextSection artifacts={caseQuery.data.artifacts} />}
                   {otherArtifacts.length > 0 && (
                     <Box>
                       <Text

@@ -14,6 +14,7 @@ from prism_api.models.base import Base, TimestampMixin
 
 class ArtifactKind(enum.StrEnum):
     JUNIT_XML = "junit_xml"
+    IIO_CONTEXT_XML = "iio_context_xml"
     WAVEFORM_CSV = "waveform_csv"
     WAVEFORM_HDF5 = "waveform_hdf5"
     WAVEFORM_NPY = "waveform_npy"
