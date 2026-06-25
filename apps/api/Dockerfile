@@ -2,7 +2,7 @@
 FROM python:3.12-slim AS genalyzer-builder
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      git cmake g++ libfftw3-dev ca-certificates \
+      git cmake make g++ pkg-config libfftw3-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 RUN git clone --depth 1 --branch v0.1.4 https://github.com/analogdevicesinc/genalyzer.git \
