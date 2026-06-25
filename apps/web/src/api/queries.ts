@@ -362,6 +362,21 @@ export function useRunLogs(runId: string | undefined) {
   });
 }
 
+/**
+ * Fetch an artifact's raw bytes as text (e.g. a boot log). Streams through the
+ * API (`/artifacts/:id/raw`), so it works in prod where MinIO isn't
+ * browser-reachable. `enabled` lets callers fetch lazily (e.g. on accordion
+ * expand).
+ */
+export function useArtifactRaw(artifactId: string | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['artifacts', artifactId, 'raw'],
+    queryFn: async () =>
+      (await api.get<string>(`/artifacts/${artifactId}/raw`, { responseType: 'text' })).data,
+    enabled: Boolean(artifactId) && enabled,
+  });
+}
+
 export function useCommits(projectSlug: string | undefined, type: 'kernel' | 'hdl') {
   return useQuery({
     queryKey: ['projects', projectSlug, 'commits', type],
@@ -509,11 +524,7 @@ export function useSearch(query: string) {
 
 const MATRIX_PREFS_KEY = 'matrix_dashboard';
 
-export function useMatrix(
-  scope: string | undefined,
-  bootFiles: string[],
-  refetchMs: number,
-) {
+export function useMatrix(scope: string | undefined, bootFiles: string[], refetchMs: number) {
   return useQuery({
     queryKey: ['matrix', scope, [...bootFiles].sort()],
     queryFn: async () => {

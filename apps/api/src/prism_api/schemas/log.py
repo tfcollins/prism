@@ -17,6 +17,7 @@ class FindingOut(BaseModel):
 
 class LogReportOut(BaseModel):
     source: str
+    artifact_id: str | None = None
     kernel_version: str | None = None
     board: str | None = None
     kernel_commit: str | None = None

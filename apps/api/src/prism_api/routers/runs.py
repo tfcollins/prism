@@ -350,6 +350,7 @@ def get_run_logs(
         out.append(
             LogReportOut(
                 source=r.source,
+                artifact_id=r.artifact_id,
                 kernel_version=r.kernel_version,
                 board=r.board,
                 kernel_commit=r.kernel_commit,
