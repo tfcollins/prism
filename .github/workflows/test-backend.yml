@@ -46,7 +46,7 @@ jobs:
       - name: Install libgenalyzer
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libfftw3-3
+          sudo apt-get install -y --no-install-recommends libfftw3-double3
           sudo cp -P /tmp/genalyzer-build/bindings/c/src/libgenalyzer.so* /usr/local/lib/
           sudo ldconfig
       - working-directory: apps/api
