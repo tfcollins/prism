@@ -119,6 +119,24 @@ def main() -> int:
             page.wait_for_timeout(2500)
             shot(page, "fft")
 
+        # --- genalyzer markers on the harmonic-distortion case ---
+        page.goto(f"{BASE}/runs/{run_id}", wait_until="networkidle")
+        page.wait_for_timeout(1200)
+        hd = page.get_by_text("harmonic_distortion", exact=False).first
+        if hd.count() > 0:
+            hd.click(timeout=2500)
+            page.wait_for_timeout(1500)
+            gfft = first_present(page, ("text=FFT",))
+            if gfft is not None:
+                gfft.click(timeout=2000)
+                page.wait_for_timeout(1500)
+                toggle = page.get_by_text("genalyzer markers").first
+                if toggle.count() > 0:
+                    toggle.click(timeout=2000)
+                    page.get_by_text("SNR").first.wait_for(timeout=20000)
+                    page.wait_for_timeout(2000)
+                    shot(page, "genalyzer")
+
         # --- compare ---
         if compare_pair:
             page.goto(f"{BASE}/compare?runs={compare_pair}", wait_until="networkidle")
