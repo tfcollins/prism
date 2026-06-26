@@ -98,7 +98,7 @@ left; selecting one with an attached waveform renders an interactive plot with
 status, tags, calibration link and a downloadable compliance PDF.
 
 ```{image} ../_static/img/screenshots/run-detail.png
-:alt: A run-detail page showing a sine-sweep waveform in the time domain
+:alt: A run-detail page showing the harmonic_distortion test's waveform in the time domain
 :class: prism-shot
 :align: center
 ```
@@ -107,7 +107,7 @@ Switch to the **FFT** tab to see the same artifact transformed to the frequency
 domain — computed on the server with a Welch periodogram and cached:
 
 ```{image} ../_static/img/screenshots/fft.png
-:alt: The FFT tab showing the frequency-domain view of the same waveform
+:alt: The FFT tab showing the harmonic_distortion waveform's spectrum with its harmonics
 :class: prism-shot
 :align: center
 ```

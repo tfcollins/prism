@@ -104,9 +104,11 @@ def main() -> int:
             shot(page, "export-actions")
 
         # --- run detail with waveform plot ---
+        # Prefer the harmonic_distortion case so the time/FFT shots show a richer
+        # spectrum (harmonics), falling back to the first sine-sweep-style case.
         page.goto(f"{BASE}/runs/{run_id}", wait_until="networkidle")
         page.wait_for_timeout(1200)
-        case = first_present(page, CASE_SELECTORS)
+        case = first_present(page, ("text=harmonic_distortion", *CASE_SELECTORS))
         if case is not None:
             case.click(timeout=2500)
         page.wait_for_timeout(2500)
