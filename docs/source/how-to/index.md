@@ -12,6 +12,7 @@ concrete problem.
 ci-integration
 record-measurements
 compare-runs
+genalyzer-markers
 export-reports
 matrix-dashboard
 upload-raw-http
