@@ -60,6 +60,7 @@ export interface Project {
   slug: string;
   name: string;
   description: string;
+  genalyzer_auto: boolean;
 }
 
 export interface CreateProjectRequest {

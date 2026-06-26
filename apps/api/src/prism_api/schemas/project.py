@@ -25,3 +25,8 @@ class ProjectOut(BaseModel):
     slug: str
     name: str
     description: str
+    genalyzer_auto: bool = False
+
+
+class UpdateProjectRequest(BaseModel):
+    genalyzer_auto: bool

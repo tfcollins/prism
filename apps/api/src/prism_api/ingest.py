@@ -20,13 +20,67 @@ from prism_api.parsers.logs import (
     DEFAULT_KERNEL_PATTERN,
     parse_log,
 )
+from prism_api.parsers.waveform import load_waveform
 from prism_api.repos.artifacts import ArtifactRepo
 from prism_api.repos.logs import LogRepo
+from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
 from prism_api.storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
+
+_WAVEFORM_KINDS = {
+    ArtifactKind.WAVEFORM_CSV,
+    ArtifactKind.WAVEFORM_NPY,
+    ArtifactKind.WAVEFORM_HDF5,
+}
+# genalyzer result attribute -> measurement (name suffix, unit)
+_GENALYZER_METRICS = (
+    ("snr", "dB"),
+    ("sfdr", "dB"),
+    ("sinad", "dB"),
+    ("thd", "dBc"),
+    ("enob", "bits"),
+)
+_GENALYZER_TRUE = {"true", "1", "yes", "on"}
+_GENALYZER_FALSE = {"false", "0", "no", "off"}
+
+
+def _genalyzer_enabled(project: object, tags: dict[str, str]) -> bool:
+    """A run's `genalyzer` tag (true/false) overrides the project default."""
+    raw = tags.get("genalyzer")
+    if raw is not None:
+        v = raw.strip().lower()
+        if v in _GENALYZER_TRUE:
+            return True
+        if v in _GENALYZER_FALSE:
+            return False
+    return bool(getattr(project, "genalyzer_auto", False))
+
+
+def _record_genalyzer(
+    measurements_repo: MeasurementRepo, case_id: str, data: bytes, kind: ArtifactKind, filename: str
+) -> None:
+    """Analyze a waveform with genalyzer and store its metrics as measurements."""
+    from prism_api.dsp.genalyzer_markers import analyze as genalyzer_analyze
+
+    wf = load_waveform(kind, data, filename=filename)
+    if wf.sample_rate is None:
+        return
+    result = genalyzer_analyze(wf.samples, float(wf.sample_rate))
+    for attr, unit in _GENALYZER_METRICS:
+        value = getattr(result, attr)
+        if value is not None:
+            measurements_repo.create(
+                case_id=case_id,
+                name=f"genalyzer.{attr}",
+                value=float(value),
+                unit=unit,
+                spec_min=None,
+                spec_max=None,
+            )
+
 
 _STATUS_MAP = {
     "pass": CaseStatus.PASS,
@@ -162,6 +216,13 @@ def ingest_run(
                     spec_max=pm.spec_max,
                 )
 
+    # Resolve whether to record genalyzer metrics for this run's waveform cases.
+    run = runs.get_by_id(inputs.run_id)
+    project = ProjectRepo(session).get_by_id(run.project_id) if run else None
+    run_tags = {t.key: t.value for t in runs.tags_for(inputs.run_id)}
+    genalyzer_on = _genalyzer_enabled(project, run_tags)
+    genalyzer_done: set[str] = set()
+
     # 4) Extract archive and attach artifacts
     if inputs.archive:
         kind_map = _parse_manifest_kind_map(inputs.archive)
@@ -207,6 +268,19 @@ def ingest_run(
                         )
                     except Exception as exc:  # best-effort; never fail ingest
                         logger.warning("log parse failed for %s: %s", name, exc)
+
+                if (
+                    genalyzer_on
+                    and owner_type == "case"
+                    and kind in _WAVEFORM_KINDS
+                    and owner_id not in genalyzer_done
+                ):
+                    # One genalyzer analysis per case (first waveform wins).
+                    genalyzer_done.add(owner_id)
+                    try:
+                        _record_genalyzer(measurements_repo, owner_id, data, kind, name)
+                    except Exception as exc:  # best-effort; never fail ingest
+                        logger.warning("genalyzer analysis failed for %s: %s", name, exc)
 
     # 5) Set final run status
     runs.set_status(inputs.run_id, _derive_run_status(parsed_suites))

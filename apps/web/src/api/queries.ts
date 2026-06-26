@@ -260,6 +260,23 @@ export function useSpecs(projectSlug: string | undefined) {
   });
 }
 
+export function useProject(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['projects', slug, 'detail'],
+    queryFn: async () => (await api.get<Project>(`/projects/${slug}`)).data,
+    enabled: Boolean(slug),
+  });
+}
+
+export function useUpdateProject(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (patch: { genalyzer_auto: boolean }) =>
+      (await api.patch<Project>(`/projects/${slug}`, patch)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', slug, 'detail'] }),
+  });
+}
+
 export function useUpsertSpec(projectSlug: string) {
   const qc = useQueryClient();
   return useMutation({

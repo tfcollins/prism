@@ -21,6 +21,8 @@ vi.mock('react-plotly.js/factory', () => ({ default: () => () => null }));
 vi.mock('../src/colorMode', () => ({
   useColorMode: () => ({ colorMode: 'dark', setColorMode: vi.fn(), toggleColorMode: vi.fn() }),
 }));
+// The Specs tab mounts the admin-only genalyzer toggle, which reads auth.
+vi.mock('../src/auth/useAuth', () => ({ useAuth: () => ({ user: null }) }));
 
 function routeData(url: string) {
   // All dashboard tabs mount; give object-shaped endpoints their shape.

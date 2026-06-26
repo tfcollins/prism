@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from prism_api.deps import csrf_protect, current_user, session_dep
+from prism_api.deps import csrf_protect, current_user, require_admin, session_dep
 from prism_api.models.user import User
 from prism_api.repos.audit import AuditRepo
 from prism_api.repos.export import EXPORT_COLUMNS, ExportRepo
@@ -26,7 +26,7 @@ from prism_api.schemas.audit import AuditEventOut
 from prism_api.schemas.case import measurement_margin
 from prism_api.schemas.log import CommitCount
 from prism_api.schemas.mask import MaskCreate, MaskOut, MaskSegment
-from prism_api.schemas.project import CreateProjectRequest, ProjectOut
+from prism_api.schemas.project import CreateProjectRequest, ProjectOut, UpdateProjectRequest
 from prism_api.schemas.spec import SpecDefinitionOut, SpecUpsert, resolve_spec
 from prism_api.schemas.test_history import TestSummary, TestTimelinePoint
 from prism_api.schemas.trend import (
@@ -40,15 +40,22 @@ from prism_api.schemas.view import SavedViewOut, SavedViewUpsert
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
+def _project_out(p: object) -> ProjectOut:
+    return ProjectOut(
+        id=p.id,  # type: ignore[attr-defined]
+        slug=p.slug,  # type: ignore[attr-defined]
+        name=p.name,  # type: ignore[attr-defined]
+        description=p.description,  # type: ignore[attr-defined]
+        genalyzer_auto=p.genalyzer_auto,  # type: ignore[attr-defined]
+    )
+
+
 @router.get("")
 def list_projects(
     _: User = Depends(current_user),
     session: Session = Depends(session_dep),
 ) -> list[ProjectOut]:
-    return [
-        ProjectOut(id=p.id, slug=p.slug, name=p.name, description=p.description)
-        for p in ProjectRepo(session).list_all()
-    ]
+    return [_project_out(p) for p in ProjectRepo(session).list_all()]
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -64,7 +71,7 @@ def create_project(
         session.flush()
     except IntegrityError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, "slug already exists") from exc
-    return ProjectOut(id=p.id, slug=p.slug, name=p.name, description=p.description)
+    return _project_out(p)
 
 
 @router.get("/{slug}")
@@ -76,7 +83,21 @@ def get_project(
     p = ProjectRepo(session).get_by_slug(slug)
     if p is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "project not found")
-    return ProjectOut(id=p.id, slug=p.slug, name=p.name, description=p.description)
+    return _project_out(p)
+
+
+@router.patch("/{slug}", dependencies=[Depends(csrf_protect), Depends(require_admin)])
+def update_project(
+    slug: str,
+    body: UpdateProjectRequest,
+    session: Session = Depends(session_dep),
+) -> ProjectOut:
+    p = ProjectRepo(session).get_by_slug(slug)
+    if p is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "project not found")
+    p.genalyzer_auto = body.genalyzer_auto
+    session.flush()
+    return _project_out(p)
 
 
 @router.get("/{slug}/measurements")
