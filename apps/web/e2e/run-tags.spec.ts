@@ -23,12 +23,17 @@ test('add, edit, and delete a run tag from the run detail page', async ({ page }
   await page.locator('tbody tr a').first().click();
   await page.waitForURL(/\/runs\//);
 
-  // The Tags editor lives in the details panel (rightOpen defaults to true, so
-  // the panel is normally visible). If the add-key field isn't visible, click
-  // the toggle button (it reads "‹ show details" when the panel is closed).
+  // The Tags editor lives in the details panel (rightOpen defaults to true). The
+  // panel only renders once the run-detail fetch resolves, which can lag the
+  // client-side navigation — so a bare `isVisible()` here races the load and, if
+  // it loses, wrongly tries to click a "show details" toggle that doesn't exist
+  // on an already-open panel (30s timeout). Wait for the field (or the toggle, if
+  // the panel is collapsed) to render before deciding whether to open it.
   const addKey = page.getByLabel('new tag key');
+  const showDetails = page.getByText(/show details/);
+  await expect(addKey.or(showDetails).first()).toBeVisible({ timeout: 15000 });
   if (!(await addKey.isVisible())) {
-    await page.getByText(/show details/).click();
+    await showDetails.click();
   }
   await expect(addKey).toBeVisible();
 
