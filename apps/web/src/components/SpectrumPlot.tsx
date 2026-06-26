@@ -8,7 +8,7 @@ import type { MaskSegment } from '../api/types';
 import { useColorMode } from '../colorMode';
 import { findMaskViolations, maskStepLine } from '../lib/mask';
 import { formatEng } from '../lib/measurement';
-import { analyzerLayout, traceColor } from './plotLayout';
+import { analyzerLayout, plotLayoutColors, traceColor } from './plotLayout';
 import { PlotSkeleton } from './PlotSkeleton';
 
 interface DeltaMarker {
@@ -112,7 +112,9 @@ export function SpectrumPlot({
       type: 'scatter',
       mode: 'markers+text',
       textposition: 'top center',
-      textfont: { color: colorMode === 'light' ? '#111827' : '#f9fafb', size: 10 },
+      // The plot area is dark in both themes, so label text uses the on-plot
+      // color (plotFont) — a dark color in light mode would be invisible here.
+      textfont: { color: plotLayoutColors(colorMode).plotFont, size: 10 },
       marker: { color: '#22d3ee', size: 9, symbol: 'diamond' },
       name: 'markers',
       hoverinfo: 'skip',

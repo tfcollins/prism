@@ -5,7 +5,7 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 
 import { useFFT, useGenalyzer } from '../api/queries';
 import { useColorMode } from '../colorMode';
-import { analyzerLayout, traceColor } from './plotLayout';
+import { analyzerLayout, plotLayoutColors, traceColor } from './plotLayout';
 import { PlotSkeleton } from './PlotSkeleton';
 
 const Plot = createPlotlyComponent(Plotly as object);
@@ -67,7 +67,10 @@ export function FFTPlot({ artifactId }: { artifactId: string }) {
       type: 'scatter',
       mode: 'markers+text',
       textposition: 'top center',
-      textfont: { size: 10 },
+      // The analyzer plot stays dark in both themes, so label text uses the
+      // on-plot color (plotFont) — not the global font, which is dark in light
+      // mode (for the white axis margin) and would make the labels invisible.
+      textfont: { size: 10, color: plotLayoutColors(colorMode).plotFont },
       marker: { color: '#f59e0b', size: 8, symbol: 'diamond' },
       name: 'genalyzer',
       hovertemplate: '%{text}<br>%{x:.4s}Hz<br>%{y:.1f} dBFS<extra></extra>',
