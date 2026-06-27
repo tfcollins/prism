@@ -27,6 +27,22 @@ def test_get_unknown_404(client: TestClient, seed_admin: None) -> None:
     assert r.status_code == 404
 
 
+def test_update_genalyzer_auto(client: TestClient, seed_admin: None) -> None:
+    _login(client)
+    csrf = client.cookies.get("prism_csrf") or ""
+    client.post("/api/v1/projects", json={"slug": "audio", "name": "Audio"})
+    assert client.get("/api/v1/projects/audio").json()["genalyzer_auto"] is False
+
+    r = client.patch(
+        "/api/v1/projects/audio",
+        json={"genalyzer_auto": True},
+        headers={"X-Prism-Csrf": csrf},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["genalyzer_auto"] is True
+    assert client.get("/api/v1/projects/audio").json()["genalyzer_auto"] is True
+
+
 def test_create_duplicate_409(client: TestClient, seed_admin: None) -> None:
     _login(client)
     client.post(

@@ -23,6 +23,7 @@ import {
 } from '../api/queries';
 import type { DashboardViewConfig, RunListItem, SpecDefinition } from '../api/types';
 import { AppShell } from '../components/AppShell';
+import { GenalyzerSettingCard } from '../components/GenalyzerSettingCard';
 import { RunsTable } from '../components/RunsTable';
 import { Tooltip } from '../components/Tooltip';
 import { TrendPlot } from '../components/TrendPlot';
@@ -813,8 +814,15 @@ function AuditTab({ slug }: { slug: string }) {
 function SpecsTab({ slug }: { slug: string }) {
   const specsQuery = useSpecs(slug);
   const namesQuery = useMeasurementNames(slug);
+  const settings = <GenalyzerSettingCard slug={slug} />;
 
-  if (specsQuery.isLoading || namesQuery.isLoading) return <Text>Loading…</Text>;
+  if (specsQuery.isLoading || namesQuery.isLoading)
+    return (
+      <Box>
+        {settings}
+        <Text>Loading…</Text>
+      </Box>
+    );
 
   const specByName = new Map((specsQuery.data ?? []).map((s) => [s.measurement_name, s]));
   const names = [...new Set([...(namesQuery.data ?? []), ...specByName.keys()])].sort((a, b) =>
@@ -823,15 +831,19 @@ function SpecsTab({ slug }: { slug: string }) {
 
   if (names.length === 0) {
     return (
-      <Text color="var(--prism-text-subtle)" fontSize="sm">
-        No measurements yet. Once runs report measurements, set per-name limits here; they apply at
-        read time to any run whose measurement carried no embedded limits.
-      </Text>
+      <Box>
+        {settings}
+        <Text color="var(--prism-text-subtle)" fontSize="sm">
+          No measurements yet. Once runs report measurements, set per-name limits here; they apply
+          at read time to any run whose measurement carried no embedded limits.
+        </Text>
+      </Box>
     );
   }
 
   return (
     <Box>
+      {settings}
       <Text color="var(--prism-text-subtle)" fontSize="sm" mb={2}>
         Project limits fill in for measurements that arrived without their own. Limits embedded in a
         run at ingest always win, so editing here never rewrites historical pass/fail.
