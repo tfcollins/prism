@@ -526,6 +526,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  resetting project {args.project!r} (delete + recreate) …", flush=True)
         client.delete_project(args.project)
     client.ensure_project(args.project, DEFAULT_PROJECT_NAME)
+    # Enable genalyzer auto-analysis before uploading so the dsp tone captures
+    # record SNR/SFDR/SINAD/THD/ENOB as `genalyzer.*` measurements at ingest.
+    client.set_genalyzer_auto(args.project, True)
 
     runs = build_runs()
 
