@@ -108,6 +108,18 @@ class PrismClient:
         if code not in (201, 409):
             raise RuntimeError(f"project create failed: HTTP {code} {body!r}")
 
+    def set_genalyzer_auto(self, slug: str, enabled: bool = True) -> None:
+        """Toggle a project's genalyzer auto-analysis (admin-only PATCH)."""
+        payload = json.dumps({"genalyzer_auto": enabled}).encode("utf-8")
+        code, body = self._request(
+            "PATCH",
+            f"/api/v1/projects/{urllib.parse.quote(slug)}",
+            body=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        if code != 200:
+            raise RuntimeError(f"set genalyzer_auto failed: HTTP {code} {body!r}")
+
     def project_exists(self, slug: str) -> bool:
         code, _ = self._request("GET", f"/api/v1/projects/{urllib.parse.quote(slug)}")
         return code == 200
