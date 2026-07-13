@@ -1,10 +1,10 @@
 """pytest-prism plugin entry. Wires pytest hooks to the registry."""
 
-import io
-import re
 import datetime as _dt
+import io
 import json
 import logging
+import re
 import sys
 import traceback
 from collections.abc import Generator
