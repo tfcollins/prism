@@ -7,8 +7,7 @@ export function MatrixSettingsCard() {
   const upsert = useUpsertMatrixPrefs();
   const enabled = prefs.data?.enabled ?? false;
 
-  const toggle = () =>
-    upsert.mutate({ ...(prefs.data ?? { enabled: false }), enabled: !enabled });
+  const toggle = () => upsert.mutate({ ...(prefs.data ?? { enabled: false }), enabled: !enabled });
 
   return (
     <Box mt={10} maxW="900px">
@@ -20,11 +19,7 @@ export function MatrixSettingsCard() {
         <strong>Matrix</strong> entry to your navigation.
       </Text>
       <Stack direction="row" align="center" gap={3}>
-        <Button
-          colorPalette={enabled ? 'red' : 'blue'}
-          onClick={toggle}
-          loading={upsert.isPending}
-        >
+        <Button colorPalette={enabled ? 'red' : 'blue'} onClick={toggle} loading={upsert.isPending}>
           {enabled ? 'Disable' : 'Enable'} matrix dashboard
         </Button>
         <Text fontSize="sm" color="var(--prism-text-muted)">

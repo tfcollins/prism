@@ -23,16 +23,20 @@ export function MatrixDashboardPage() {
       <Box p={8}>
         <Flex justify="space-between" align="center" mb={2}>
           <Heading size="xl">Matrix — {scope === 'global' ? 'All releases' : slug}</Heading>
-          {q.isFetching && <Text fontSize="sm" color="var(--prism-text-muted)">refreshing…</Text>}
+          {q.isFetching && (
+            <Text fontSize="sm" color="var(--prism-text-muted)">
+              refreshing…
+            </Text>
+          )}
         </Flex>
-        {q.isError && !q.data && (
-          <Text color="red.400">Failed to load matrix.</Text>
-        )}
+        {q.isError && !q.data && <Text color="red.400">Failed to load matrix.</Text>}
         {q.data && (
           <>
             {q.data.boot_files.length > 0 && (
               <Flex gap={2} mb={4} wrap="wrap" align="center">
-                <Text fontSize="sm" color="var(--prism-text-muted)">boot file:</Text>
+                <Text fontSize="sm" color="var(--prism-text-muted)">
+                  boot file:
+                </Text>
                 {q.data.boot_files.map((bf) => (
                   <Button
                     key={bf}

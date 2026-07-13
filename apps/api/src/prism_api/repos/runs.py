@@ -160,7 +160,6 @@ class RunRepo:
         ).scalars()
         return set(rows)
 
-
     def runs_with_figures(self, run_ids: list[str]) -> set[str]:
         """Return the subset of run_ids that own at least one figure artifact.
 

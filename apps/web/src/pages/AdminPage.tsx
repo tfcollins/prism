@@ -296,10 +296,23 @@ export function MatrixConfigTab() {
       ...cfg,
       stale_after_hours: stale ? Number(stale) : cfg.stale_after_hours,
       refresh_seconds: refresh ? Number(refresh) : cfg.refresh_seconds,
-      curated_rows: rows ? rows.split(',').map((s) => s.trim()).filter(Boolean) : cfg.curated_rows,
-      curated_cols: cols ? cols.split(',').map((s) => s.trim()).filter(Boolean) : cfg.curated_cols,
+      curated_rows: rows
+        ? rows
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : cfg.curated_rows,
+      curated_cols: cols
+        ? cols
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : cfg.curated_cols,
       rotate_filters: rotate
-        ? rotate.split(',').map((s) => s.trim()).filter(Boolean)
+        ? rotate
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
         : cfg.rotate_filters,
     };
     upsert.mutate(next);
@@ -307,29 +320,61 @@ export function MatrixConfigTab() {
 
   return (
     <Box maxW="700px">
-      <Heading size="md" mb={3}>Matrix dashboard config</Heading>
+      <Heading size="md" mb={3}>
+        Matrix dashboard config
+      </Heading>
       <Stack gap={3}>
-        <Input placeholder="scope (global or project:slug)" value={scope}
-               onChange={(e) => setScope(e.target.value)} aria-label="scope" />
+        <Input
+          placeholder="scope (global or project:slug)"
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+          aria-label="scope"
+        />
         <Text fontSize="sm" color="var(--prism-text-muted)">
-          Current: stale {cfg?.stale_after_hours}h · refresh {cfg?.refresh_seconds}s ·
-          curated rows [{cfg?.curated_rows.join(', ')}] · cols [{cfg?.curated_cols.join(', ')}] ·
-          rotate [{cfg?.rotate_filters.join(', ')}]
+          Current: stale {cfg?.stale_after_hours}h · refresh {cfg?.refresh_seconds}s · curated rows
+          [{cfg?.curated_rows.join(', ')}] · cols [{cfg?.curated_cols.join(', ')}] · rotate [
+          {cfg?.rotate_filters.join(', ')}]
         </Text>
-        <Input placeholder="stale_after_hours" type="number" value={stale}
-               onChange={(e) => setStale(e.target.value)} aria-label="stale hours" />
-        <Input placeholder="refresh_seconds" type="number" value={refresh}
-               onChange={(e) => setRefresh(e.target.value)} aria-label="refresh seconds" />
-        <Input placeholder="curated_rows (comma list)" value={rows}
-               onChange={(e) => setRows(e.target.value)} aria-label="curated rows" />
-        <Input placeholder="curated_cols (comma list)" value={cols}
-               onChange={(e) => setCols(e.target.value)} aria-label="curated cols" />
-        <Input placeholder="rotate_filters (comma list)" value={rotate}
-               onChange={(e) => setRotate(e.target.value)} aria-label="rotate filters" />
+        <Input
+          placeholder="stale_after_hours"
+          type="number"
+          value={stale}
+          onChange={(e) => setStale(e.target.value)}
+          aria-label="stale hours"
+        />
+        <Input
+          placeholder="refresh_seconds"
+          type="number"
+          value={refresh}
+          onChange={(e) => setRefresh(e.target.value)}
+          aria-label="refresh seconds"
+        />
+        <Input
+          placeholder="curated_rows (comma list)"
+          value={rows}
+          onChange={(e) => setRows(e.target.value)}
+          aria-label="curated rows"
+        />
+        <Input
+          placeholder="curated_cols (comma list)"
+          value={cols}
+          onChange={(e) => setCols(e.target.value)}
+          aria-label="curated cols"
+        />
+        <Input
+          placeholder="rotate_filters (comma list)"
+          value={rotate}
+          onChange={(e) => setRotate(e.target.value)}
+          aria-label="rotate filters"
+        />
         <Button colorPalette="blue" onClick={save} loading={upsert.isPending} alignSelf="start">
           Save matrix config
         </Button>
-        {upsert.isError && <Text color="red.400" fontSize="sm">Save failed (admin only).</Text>}
+        {upsert.isError && (
+          <Text color="red.400" fontSize="sm">
+            Save failed (admin only).
+          </Text>
+        )}
       </Stack>
     </Box>
   );

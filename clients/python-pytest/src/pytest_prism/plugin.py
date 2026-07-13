@@ -49,7 +49,6 @@ class _State:
             self.hook_post_results = {}
 
 
-
 def pytest_addoption(parser: pytest.Parser) -> None:
     g = parser.getgroup("prism_report", "Prism test-report plugin")
     g.addoption("--prism-report", action="store_true", default=False)
@@ -78,10 +77,12 @@ def _setup_terminal_capture(config: pytest.Config, st: _State) -> None:
     tr = config.pluginmanager.get_plugin("terminalreporter")
     if tr is not None and hasattr(tr, "_tw") and not hasattr(tr._tw.write, "__prism_wrapped__"):
         orig_write = tr._tw.write
+
         def new_write(s: str, *args: Any, **kwargs: Any) -> Any:
             if st.terminal_buffer is not None:
                 st.terminal_buffer.write(s)
             return orig_write(s, *args, **kwargs)
+
         new_write.__prism_wrapped__ = True  # type: ignore[attr-defined]
         tr._tw.write = new_write
 
@@ -285,12 +286,10 @@ def pytest_unconfigure(config: pytest.Config) -> None:
     # Capture terminal log
     if st.terminal_buffer is not None:
         raw_text = st.terminal_buffer.getvalue()
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        clean_text = ansi_escape.sub('', raw_text)
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+        clean_text = ansi_escape.sub("", raw_text)
         st.out_dir.write_run_artifact(
-            "terminal.log",
-            clean_text.encode("utf-8"),
-            kind="terminal_log"
+            "terminal.log", clean_text.encode("utf-8"), kind="terminal_log"
         )
 
     run_meta = {
@@ -317,4 +316,3 @@ def pytest_unconfigure(config: pytest.Config) -> None:
         f"pytest-prism: uploaded run {result.run_id} (status={result.status}) "
         f"-> {st.cfg.upload_url}{result.url}\n"
     )
-

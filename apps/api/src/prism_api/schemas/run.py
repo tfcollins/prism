@@ -82,4 +82,3 @@ class RunListItem(BaseModel):
     has_figures: bool = False
     has_boot_log: bool = False
     has_terminal_log: bool = False
-

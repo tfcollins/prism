@@ -19,7 +19,11 @@ function ageLabel(seconds: number): string {
 }
 
 const ICON: Record<RunStatus, string> = {
-  pass: '✓', fail: '✕', mixed: '~', error: '!', pending: '·',
+  pass: '✓',
+  fail: '✕',
+  mixed: '~',
+  error: '!',
+  pending: '·',
 };
 
 function Cell({ cell }: { cell: MatrixCell | undefined }) {
@@ -71,11 +75,15 @@ function Cell({ cell }: { cell: MatrixCell | undefined }) {
           STALE
         </Box>
       )}
-      <Text fontSize="18px" lineHeight="1">{ICON[cell.status]}</Text>
+      <Text fontSize="18px" lineHeight="1">
+        {ICON[cell.status]}
+      </Text>
       <Text fontSize="12px" fontWeight="800" letterSpacing=".06em">
         {cell.status.toUpperCase()}
       </Text>
-      <Text fontSize="11px" opacity={0.92}>{cell.passed}/{cell.total}</Text>
+      <Text fontSize="11px" opacity={0.92}>
+        {cell.passed}/{cell.total}
+      </Text>
       <Text position="absolute" bottom="6px" right="8px" fontSize="10px" opacity={0.7}>
         {ageLabel(cell.age_seconds)}
       </Text>
@@ -97,7 +105,9 @@ function Kpi({ label, value, color }: { label: string; value: number; color: str
       fontSize="13px"
       fontWeight="700"
     >
-      <Text fontSize="16px" color={color}>{value}</Text>
+      <Text fontSize="16px" color={color}>
+        {value}
+      </Text>
       <Text color="var(--prism-text-muted)">{label}</Text>
     </Flex>
   );
@@ -118,14 +128,26 @@ export function MatrixGrid({ data }: { data: MatrixResponse }) {
       <Box display="grid" gridTemplateColumns={template} gap="8px">
         <Box />
         {cols.map((c) => (
-          <Text key={c} textAlign="center" fontSize="12px" fontWeight="700"
-                color="var(--prism-text-muted)" py="6px">
+          <Text
+            key={c}
+            textAlign="center"
+            fontSize="12px"
+            fontWeight="700"
+            color="var(--prism-text-muted)"
+            py="6px"
+          >
             {c}
           </Text>
         ))}
         {rows.map((r) => (
           <Box key={r} display="contents">
-            <Flex align="center" fontSize="14px" fontWeight="700" color="var(--prism-text)" pr="8px">
+            <Flex
+              align="center"
+              fontSize="14px"
+              fontWeight="700"
+              color="var(--prism-text)"
+              pr="8px"
+            >
               {r}
             </Flex>
             {cols.map((c) => (

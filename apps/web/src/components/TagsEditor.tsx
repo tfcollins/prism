@@ -70,7 +70,11 @@ function TagRow({ runId, tag }: { runId: string; tag: RunTag }) {
             size="xs"
             variant="outline"
             aria-label={`Edit ${tag.key}`}
-            onClick={() => { setValue(tag.value); setEditing(true); setConfirmDelete(false); }}
+            onClick={() => {
+              setValue(tag.value);
+              setEditing(true);
+              setConfirmDelete(false);
+            }}
           >
             Edit
           </Button>
@@ -108,7 +112,9 @@ function TagRow({ runId, tag }: { runId: string; tag: RunTag }) {
               aria-label={`Delete ${tag.key}`}
               onClick={() => setConfirmDelete(true)}
             >
-              <Box as="span" aria-hidden="true">✕</Box>
+              <Box as="span" aria-hidden="true">
+                ✕
+              </Box>
             </Button>
           )}
         </>
@@ -140,9 +146,7 @@ export function TagsEditor({ runId, tags }: { runId: string; tags: RunTag[] }) {
         },
         onError: (e: unknown) => {
           const status = (e as { response?: { status?: number } })?.response?.status;
-          setError(
-            status === 409 ? 'Tag already exists — edit it instead.' : 'Could not add tag.',
-          );
+          setError(status === 409 ? 'Tag already exists — edit it instead.' : 'Could not add tag.');
         },
       },
     );
@@ -166,7 +170,9 @@ export function TagsEditor({ runId, tags }: { runId: string; tags: RunTag[] }) {
           aria-label="new tag key"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit();
+          }}
         />
         <Input
           size="xs"
@@ -176,7 +182,9 @@ export function TagsEditor({ runId, tags }: { runId: string; tags: RunTag[] }) {
           aria-label="new tag value"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submit();
+          }}
         />
         <Button
           size="xs"

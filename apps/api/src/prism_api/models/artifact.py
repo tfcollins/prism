@@ -28,7 +28,6 @@ class ArtifactKind(enum.StrEnum):
     OTHER_BINARY = "other_binary"
 
 
-
 class DerivedKind(enum.StrEnum):
     FFT = "fft"
     THUMBNAIL = "thumbnail"

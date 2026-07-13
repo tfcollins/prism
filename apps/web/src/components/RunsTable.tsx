@@ -176,7 +176,6 @@ function ArtifactLabels({ run }: { run: RunListItem }) {
   );
 }
 
-
 /**
  * Action bar shown when run rows are selected. "Export PDF" downloads a combined
  * test-results report (flat tables, not a comparison) for the selected run(s) —

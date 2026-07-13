@@ -225,4 +225,3 @@ export function TerminalLogViewer({ runId }: { runId: string }) {
     />
   );
 }
-
