@@ -9,8 +9,14 @@ def build_boot_summary(
     repo: LogRepo, run_id: str, settings: Settings, project_id: str | None = None
 ) -> BootSummary | None:
     reports = repo.list_by_run(run_id)
+    # Exclude terminal/console/stdout/stderr logs from boot summary
+    reports = [
+        r for r in reports
+        if not any(k in r.source.lower() for k in ("terminal", "console", "stdout", "stderr"))
+    ]
     if not reports:
         return None
+
 
     def first(attr: str) -> str | None:
         for r in reports:  # oldest-first (list_by_run orders by created_at)

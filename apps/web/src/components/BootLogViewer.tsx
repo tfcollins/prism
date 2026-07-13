@@ -145,11 +145,27 @@ function ItemHeader({ report }: { report: LogReport }) {
   );
 }
 
-export function BootLogViewer({ runId }: { runId: string }) {
+export function isTerminalLog(source: string): boolean {
+  const lowered = source.toLowerCase();
+  return (
+    lowered.includes('terminal') ||
+    lowered.includes('console') ||
+    lowered.includes('stdout') ||
+    lowered.includes('stderr')
+  );
+}
+
+interface GenericLogViewerProps {
+  runId: string;
+  title: string;
+  filterFn: (source: string) => boolean;
+}
+
+export function GenericLogViewer({ runId, title, filterFn }: GenericLogViewerProps) {
   const logs = useRunLogs(runId);
   const [openItems, setOpenItems] = useState<string[]>([]);
 
-  const reports = logs.data ?? [];
+  const reports = (logs.data ?? []).filter((report) => filterFn(report.source));
   if (reports.length === 0) return null;
 
   return (
@@ -161,7 +177,7 @@ export function BootLogViewer({ runId }: { runId: string }) {
         color="var(--prism-text-faint)"
         mb={1}
       >
-        Boot log
+        {title}
       </Text>
       <Accordion.Root
         multiple
@@ -189,3 +205,24 @@ export function BootLogViewer({ runId }: { runId: string }) {
     </Box>
   );
 }
+
+export function BootLogViewer({ runId }: { runId: string }) {
+  return (
+    <GenericLogViewer
+      runId={runId}
+      title="Boot log"
+      filterFn={(source) => !isTerminalLog(source)}
+    />
+  );
+}
+
+export function TerminalLogViewer({ runId }: { runId: string }) {
+  return (
+    <GenericLogViewer
+      runId={runId}
+      title="Terminal log"
+      filterFn={(source) => isTerminalLog(source)}
+    />
+  );
+}
+

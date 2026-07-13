@@ -164,6 +164,7 @@ def list_runs(
     ids = [r.id for r in items]
     fig_ids = runs.runs_with_figures(ids)
     boot_ids = runs.runs_with_boot_log(ids)
+    term_ids = runs.runs_with_terminal_log(ids)
     result: list[RunListItem] = []
     for r in items:
         counts = runs.aggregate_counts_by_run(r.id)
@@ -182,10 +183,12 @@ def list_runs(
                 tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
                 has_figures=r.id in fig_ids,
                 has_boot_log=r.id in boot_ids,
+                has_terminal_log=r.id in term_ids,
                 **counts,
             )
         )
     return result
+
 
 
 _MAX_REPORT_RUNS = 50

@@ -1,7 +1,7 @@
 """pytest-prism plugin entry. Wires pytest hooks to the registry."""
 
-from __future__ import annotations
-
+import io
+import re
 import datetime as _dt
 import json
 import logging
@@ -38,10 +38,16 @@ class _State:
     registry: Registry
     started_at: str = ""
     hook_pre_results: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
+    hook_post_results: dict[str, dict[str, Any]] = None  # type: ignore[assignment]
+    terminal_buffer: io.StringIO | None = None
+    exitstatus: int | None = None
 
     def __post_init__(self) -> None:
         if self.hook_pre_results is None:
             self.hook_pre_results = {}
+        if self.hook_post_results is None:
+            self.hook_post_results = {}
+
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -64,6 +70,20 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     g.addoption("--prism-fail-on-upload-error", action="store_true", default=False)
     g.addoption("--prism-strict-registry", action="store_true", default=False)
     g.addoption("--prism-fail-on-hook-error", action="store_true", default=False)
+
+
+def _setup_terminal_capture(config: pytest.Config, st: _State) -> None:
+    if st.terminal_buffer is None:
+        st.terminal_buffer = io.StringIO()
+    tr = config.pluginmanager.get_plugin("terminalreporter")
+    if tr is not None and hasattr(tr, "_tw") and not hasattr(tr._tw.write, "__prism_wrapped__"):
+        orig_write = tr._tw.write
+        def new_write(s: str, *args: Any, **kwargs: Any) -> Any:
+            if st.terminal_buffer is not None:
+                st.terminal_buffer.write(s)
+            return orig_write(s, *args, **kwargs)
+        new_write.__prism_wrapped__ = True  # type: ignore[attr-defined]
+        tr._tw.write = new_write
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -96,7 +116,10 @@ def pytest_configure(config: pytest.Config) -> None:
     except RegistryError as exc:
         raise pytest.UsageError(f"prism-report: {exc}") from exc
 
-    config._prism_state = _State(cfg=cfg, out_dir=out_dir, registry=registry)  # type: ignore[attr-defined]
+    st = _State(cfg=cfg, out_dir=out_dir, registry=registry)
+    config._prism_state = st  # type: ignore[attr-defined]
+    _setup_terminal_capture(config, st)
+
     junit_path = resolved_out_dir / "junit.xml"
     config.option.xmlpath = str(junit_path)
     for topic, msg in cfg.warnings.items():
@@ -110,7 +133,9 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     st: _State | None = getattr(session.config, "_prism_state", None)
     if st is None:
         return
+    _setup_terminal_capture(session.config, st)
     st.started_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
+
     fail_on_err = session.config.getoption("--prism-fail-on-hook-error")
 
     if not st.registry.session_hooks:
@@ -227,6 +252,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     st: _State | None = getattr(session.config, "_prism_state", None)
     if st is None:
         return
+    st.exitstatus = exitstatus
     fail_on_err = session.config.getoption("--prism-fail-on-hook-error")
 
     hook_post_results: dict[str, dict[str, Any]] = {}
@@ -248,13 +274,32 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             sys.stderr.write(f"pytest-prism: session_post {name!r} raised: {exc}; continuing\n")
             hook_post_results[name] = {"error": str(exc)}
 
+    st.hook_post_results = hook_post_results
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    st: _State | None = getattr(config, "_prism_state", None)
+    if st is None:
+        return
+
+    # Capture terminal log
+    if st.terminal_buffer is not None:
+        raw_text = st.terminal_buffer.getvalue()
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        clean_text = ansi_escape.sub('', raw_text)
+        st.out_dir.write_run_artifact(
+            "terminal.log",
+            clean_text.encode("utf-8"),
+            kind="terminal_log"
+        )
+
     run_meta = {
         "started_at": st.started_at,
         "ended_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "tags": dict(st.cfg.user_tags),
         "plugin_version": _PLUGIN_VERSION,
         "session_pre": st.hook_pre_results,
-        "session_post": hook_post_results,
+        "session_post": st.hook_post_results,
     }
     st.out_dir.finalize(run_meta=run_meta)
     sys.stderr.write(f"pytest-prism: wrote run to {st.out_dir.root}\n")
@@ -266,9 +311,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     except UploadError as exc:
         sys.stderr.write(f"pytest-prism: upload failed: {exc}; preserved at {st.out_dir.root}\n")
         if st.cfg.fail_on_upload_error:
-            session.exitstatus = 5
+            sys.exit(5)
         return
     sys.stderr.write(
         f"pytest-prism: uploaded run {result.run_id} (status={result.status}) "
         f"-> {st.cfg.upload_url}{result.url}\n"
     )
+

@@ -34,6 +34,7 @@ function makeRun(overrides: Partial<RunListItem>): RunListItem {
     tags: [],
     has_figures: false,
     has_boot_log: false,
+    has_terminal_log: false,
     ...overrides,
   };
 }
@@ -77,22 +78,41 @@ describe('RunsTable artifact labels', () => {
     renderTable([makeRun({ id: 'a', name: 'wave', has_figures: true })]);
     expect(screen.getByText('Figures')).toBeInTheDocument();
     expect(screen.queryByText('Boot log')).toBeNull();
+    expect(screen.queryByText('Terminal log')).toBeNull();
   });
 
   it('shows a Boot log badge when the run has a boot log', () => {
     renderTable([makeRun({ id: 'b', name: 'boot', has_boot_log: true })]);
     expect(screen.getByText('Boot log')).toBeInTheDocument();
     expect(screen.queryByText('Figures')).toBeNull();
+    expect(screen.queryByText('Terminal log')).toBeNull();
   });
 
-  it('shows both badges when the run has figures and a boot log', () => {
-    renderTable([makeRun({ id: 'c', name: 'both', has_figures: true, has_boot_log: true })]);
+  it('shows a Terminal log badge when the run has a terminal log', () => {
+    renderTable([makeRun({ id: 'e', name: 'terminal', has_terminal_log: true })]);
+    expect(screen.getByText('Terminal log')).toBeInTheDocument();
+    expect(screen.queryByText('Figures')).toBeNull();
+    expect(screen.queryByText('Boot log')).toBeNull();
+  });
+
+  it('shows all badges when the run has figures, boot log, and terminal log', () => {
+    renderTable([
+      makeRun({
+        id: 'c',
+        name: 'all',
+        has_figures: true,
+        has_boot_log: true,
+        has_terminal_log: true,
+      }),
+    ]);
     expect(screen.getByText('Figures')).toBeInTheDocument();
     expect(screen.getByText('Boot log')).toBeInTheDocument();
+    expect(screen.getByText('Terminal log')).toBeInTheDocument();
   });
 
-  it('shows neither badge when the run has no figures or boot log', () => {
+  it('shows neither badge when the run has no figures, boot log, or terminal log', () => {
     renderTable([makeRun({ id: 'd', name: 'plain' })]);
+
     expect(screen.queryByText('Figures')).toBeNull();
     expect(screen.queryByText('Boot log')).toBeNull();
   });

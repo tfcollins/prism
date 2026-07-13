@@ -92,6 +92,8 @@ export interface RunListItem {
   tags: RunTag[];
   has_figures: boolean;
   has_boot_log: boolean;
+  has_terminal_log: boolean;
+
 }
 
 export interface SuiteSummary {

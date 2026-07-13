@@ -80,25 +80,32 @@ Browser ──► web (nginx → React SPA) ──► api (FastAPI) ──► po
 
 **Artifacts are content-addressed and polymorphic.** The `artifacts` table has an `owner_type` discriminator (run / suite / case) instead of three FK columns. Identical bytes across runs share a single MinIO object. `DerivedArtifact` is a cache table keyed by `(source_hash, params_hash)` for computed views — the FFT endpoint (`GET /api/v1/artifacts/:id/fft`) reads this cache, computes Welch FFT and stores `.npz` on a miss. Waveform downsampling (`GET .../waveform?downsample=N`) is computed on the fly from `prism_api.dsp.downsample`.
 
-**Auth uses cookie JWT + double-submit CSRF.** Login sets two cookies: the JWT session and `prism_csrf` (CSRF token). All state-changing requests must echo the CSRF cookie back as the `X-Prism-Csrf` header. The `scripts/upload_run.py` helper handles this; raw `curl` examples in `docs/source/how-to/upload-raw-http.md` show the pattern.
+**Two auth paths: cookie JWT (browser) and bearer API tokens (programmatic).** Browser login sets two cookies — the JWT session and `prism_csrf` (CSRF token); all cookie-based state-changing requests must echo the CSRF cookie back as the `X-Prism-Csrf` header. Programmatic clients (CI, scripts) instead send `Authorization: Bearer <token>` — per-user API tokens minted at `/api/v1/tokens` (managed in the web `TokensPage`); bearer requests skip CSRF entirely (`deps.csrf_protect`). `scripts/upload_run.py` supports both (`--token`/`PRISM_TOKEN` or `--email`/`--password`); raw `curl` examples in `docs/source/how-to/upload-raw-http.md` show the cookie pattern. **Optional LDAP** (search + bind) augments local password auth when `PRISM_LDAP_ENABLED=true` (see `ldap_auth.py` + `ldap_*` settings in `config.py`).
 
 **Settings layer.** All runtime config is `PRISM_*` env vars consumed by `prism_api.config.Settings` (pydantic-settings). `get_settings()` is `lru_cache`d. In tests, override via the `settings` fixture and dependency overrides (`app.dependency_overrides[get_settings_dep]` in `conftest.py`).
 
 **Module layout inside `apps/api/src/prism_api/`:**
 
 - `main.py` — FastAPI app + router wiring
-- `routers/` — HTTP layer (auth, users, projects, runs, suites, cases, artifacts, compare)
+- `routers/` — HTTP layer (auth, users, projects, runs, suites, cases, artifacts, compare, admin, overview, search, tokens)
 - `repos/` — SQLAlchemy data access; routers never query directly
+- `schemas/` — pydantic request/response models (one module per domain)
 - `models/` — SQLAlchemy ORM (declarative, `models.base.Base`)
 - `parsers/` — JUnit, waveform, filename, kind detection
 - `dsp/` — waveform downsampling + FFT (numpy/scipy)
-- `worker/` — `celery_app` + `tasks`; `prism.ingest_run` is the only task
+- `reports/` — PDF generation via `fpdf2` (`run_report`, `compare_report`, `combined_report`); tests read PDFs back with `pypdf` to assert rendered text, not just `%PDF` magic bytes
+- `services/` — cross-cutting logic (`retention`, `boot_summary`, `container_logs`)
+- `worker/` — `celery_app` + `tasks`; `prism.ingest_run` is the only Celery task
+- `auth.py` / `tokens.py` / `ldap_auth.py` — JWT encode/decode, API-token hashing, LDAP bind
+- `ingest.py` — ingest logic invoked by the worker task (importable for inline test runs)
+- `deps.py` — FastAPI dependencies (`current_user`, `csrf_protect`, `session_dep`)
+- `storage.py` / `db.py` / `config.py` — MinIO/S3 client, SQLAlchemy engine/session, `PRISM_*` settings
 - `migrations/` — Alembic
 - `bootstrap.py` / `cli.py` — `prism-api bootstrap-admin` and `ensure-bucket` invoked from `docker-entrypoint.sh` on container start
 
 **Module layout inside `apps/web/src/`:**
 
-- `pages/` — top-level routes (Projects, ProjectDashboard, RunDetail, Compare, Login)
+- `pages/` — top-level routes (Projects, ProjectDashboard, RunDetail, Compare, Overview, Search, Admin, Tokens, Login)
 - `routes/ProtectedRoute.tsx` — auth gate
 - `api/` — axios client + react-query hooks + generated types
 - `components/` — `RunsTable`, `TestTree`, `WaveformPlot`, `FFTPlot`, overlay variants, `AppShell`
