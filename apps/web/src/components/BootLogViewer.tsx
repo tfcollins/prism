@@ -8,7 +8,7 @@ import { useState } from 'react';
 
 import { useArtifactRaw, useRunLogs } from '../api/queries';
 import type { LogReport } from '../api/types';
-import { classifyLines, type LogFilter, matchesFilter } from '../lib/dmesg';
+import { classifyLines, isTerminalLog, type LogFilter, matchesFilter } from '../lib/dmesg';
 import { severityColor } from '../lib/logFindings';
 
 const MAX_LINES = 5000;
@@ -142,16 +142,6 @@ function ItemHeader({ report }: { report: LogReport }) {
         {report.error_count} errors · {report.warn_count} warnings
       </Text>
     </Flex>
-  );
-}
-
-export function isTerminalLog(source: string): boolean {
-  const lowered = source.toLowerCase();
-  return (
-    lowered.includes('terminal') ||
-    lowered.includes('console') ||
-    lowered.includes('stdout') ||
-    lowered.includes('stderr')
   );
 }
 

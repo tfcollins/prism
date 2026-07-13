@@ -8,7 +8,6 @@ import { AppShell } from '../components/AppShell';
 import { BootLogViewer, TerminalLogViewer } from '../components/BootLogViewer';
 import { BootPanel } from '../components/BootPanel';
 import { ContextSection } from '../components/ContextXmlViewer';
-
 import { CopyButton } from '../components/CopyButton';
 import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';

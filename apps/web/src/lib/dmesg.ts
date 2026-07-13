@@ -61,3 +61,14 @@ export function matchesFilter(severity: Severity | null, filter: LogFilter): boo
   if (filter === 'errors') return ERROR_SEVERITIES.includes(severity);
   return WARN_SEVERITIES.includes(severity);
 }
+
+/** Whether a log's source filename indicates a terminal log. */
+export function isTerminalLog(source: string): boolean {
+  const lowered = source.toLowerCase();
+  return (
+    lowered.includes('terminal') ||
+    lowered.includes('console') ||
+    lowered.includes('stdout') ||
+    lowered.includes('stderr')
+  );
+}
