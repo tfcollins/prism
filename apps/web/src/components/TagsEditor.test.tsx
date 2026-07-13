@@ -39,10 +39,7 @@ describe('TagsEditor', () => {
     fireEvent.change(screen.getByLabelText('new tag key'), { target: { value: 'platform' } });
     fireEvent.change(screen.getByLabelText('new tag value'), { target: { value: 'zcu102' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add tag' }));
-    expect(addMutate).toHaveBeenCalledWith(
-      { key: 'platform', value: 'zcu102' },
-      expect.anything(),
-    );
+    expect(addMutate).toHaveBeenCalledWith({ key: 'platform', value: 'zcu102' }, expect.anything());
   });
 
   it('edits a tag value', () => {
@@ -50,10 +47,7 @@ describe('TagsEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit hw' }));
     fireEvent.change(screen.getByLabelText('edit value for hw'), { target: { value: 'adrv9009' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save hw' }));
-    expect(updateMutate).toHaveBeenCalledWith(
-      { key: 'hw', value: 'adrv9009' },
-      expect.anything(),
-    );
+    expect(updateMutate).toHaveBeenCalledWith({ key: 'hw', value: 'adrv9009' }, expect.anything());
   });
 
   it('deletes a tag after confirm', () => {

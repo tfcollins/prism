@@ -131,7 +131,32 @@ class RunRepo:
         if not run_ids:
             return set()
         rows = self._session.execute(
-            select(LogReport.run_id).where(LogReport.run_id.in_(run_ids)).distinct()
+            select(LogReport.run_id)
+            .where(LogReport.run_id.in_(run_ids))
+            .where(
+                ~LogReport.source.ilike("%terminal%"),
+                ~LogReport.source.ilike("%console%"),
+                ~LogReport.source.ilike("%stdout%"),
+                ~LogReport.source.ilike("%stderr%"),
+            )
+            .distinct()
+        ).scalars()
+        return set(rows)
+
+    def runs_with_terminal_log(self, run_ids: list[str]) -> set[str]:
+        """Return the subset of run_ids that have at least one parsed terminal log."""
+        if not run_ids:
+            return set()
+        rows = self._session.execute(
+            select(LogReport.run_id)
+            .where(LogReport.run_id.in_(run_ids))
+            .where(
+                (LogReport.source.ilike("%terminal%"))
+                | (LogReport.source.ilike("%console%"))
+                | (LogReport.source.ilike("%stdout%"))
+                | (LogReport.source.ilike("%stderr%"))
+            )
+            .distinct()
         ).scalars()
         return set(rows)
 

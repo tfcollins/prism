@@ -142,7 +142,7 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
  * faint em-dash when the run has neither.
  */
 function ArtifactLabels({ run }: { run: RunListItem }) {
-  if (!run.has_figures && !run.has_boot_log) {
+  if (!run.has_figures && !run.has_boot_log && !run.has_terminal_log) {
     return (
       <Text as="span" fontSize="xs" color="var(--prism-text-faint)">
         —
@@ -162,6 +162,13 @@ function ArtifactLabels({ run }: { run: RunListItem }) {
         <Tooltip content="Run has a parsed boot/dmesg log.">
           <Badge variant="subtle" colorPalette="gray" aria-label="Has boot log">
             Boot log
+          </Badge>
+        </Tooltip>
+      )}
+      {run.has_terminal_log && (
+        <Tooltip content="Run has terminal execution logs.">
+          <Badge variant="subtle" colorPalette="cyan" aria-label="Has terminal log">
+            Terminal log
           </Badge>
         </Tooltip>
       )}

@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useCase, useRun, useRunArtifacts, useRuns, useSetCalibration } from '../api/queries';
 import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
-import { BootLogViewer } from '../components/BootLogViewer';
+import { BootLogViewer, TerminalLogViewer } from '../components/BootLogViewer';
 import { BootPanel } from '../components/BootPanel';
 import { ContextSection } from '../components/ContextXmlViewer';
 import { CopyButton } from '../components/CopyButton';
@@ -102,7 +102,9 @@ export function RunDetailPage() {
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
           <BootLogViewer runId={runQuery.data.id} />
+          <TerminalLogViewer runId={runQuery.data.id} />
           {runArtifactsQuery.data && <ContextSection artifacts={runArtifactsQuery.data} />}
+
           <Grid
             templateColumns={{
               base: '1fr',

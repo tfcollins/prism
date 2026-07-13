@@ -19,12 +19,22 @@ const DATA: MatrixResponse = {
   unplaced_runs: 0,
   cells: {
     'ad9081|zcu102': {
-      status: 'pass', run_id: 'r1', passed: 12, total: 12,
-      finished_at: new Date().toISOString(), age_seconds: 120, stale: false,
+      status: 'pass',
+      run_id: 'r1',
+      passed: 12,
+      total: 12,
+      finished_at: new Date().toISOString(),
+      age_seconds: 120,
+      stale: false,
     },
     'ad9371|zed': {
-      status: 'fail', run_id: 'r2', passed: 8, total: 12,
-      finished_at: new Date().toISOString(), age_seconds: 99999, stale: true,
+      status: 'fail',
+      run_id: 'r2',
+      passed: 8,
+      total: 12,
+      finished_at: new Date().toISOString(),
+      age_seconds: 99999,
+      stale: true,
     },
   },
 };

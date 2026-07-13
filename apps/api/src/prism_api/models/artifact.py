@@ -24,6 +24,7 @@ class ArtifactKind(enum.StrEnum):
     WAV_AUDIO = "wav_audio"
     IMAGE_PNG = "image_png"
     LOG_TEXT = "log_text"
+    TERMINAL_LOG = "terminal_log"
     OTHER_BINARY = "other_binary"
 
 

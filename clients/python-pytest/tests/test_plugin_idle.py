@@ -60,3 +60,6 @@ def test_plugin_creates_out_dir_when_flag_on(pytester: pytest.Pytester, tmp_path
     assert (out / "manifest.json").exists()
     assert (out / "run_meta.json").exists()
     assert (out / "junit.xml").exists()
+    assert (out / "terminal.log").exists()
+    term_content = (out / "terminal.log").read_text()
+    assert "1 passed in" in term_content
