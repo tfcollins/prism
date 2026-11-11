@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyLine, classifyLines, matchesFilter } from './dmesg';
+import {
+  classifyLine,
+  classifyLines,
+  isCapturedOutput,
+  isTerminalLog,
+  matchesFilter,
+} from './dmesg';
 
 // Mirrors apps/api/tests/test_parsers_logs.py so the TS classifier stays in
 // parity with the server's parsers/logs.py::_classify.
@@ -75,4 +81,28 @@ describe('matchesFilter', () => {
     expect(matchesFilter(null, 'all')).toBe(true);
     expect(matchesFilter('error', 'all')).toBe(true);
   });
+});
+
+describe('captured output filenames', () => {
+  it.each([
+    'captured/case/call.log',
+    'pytest_stdout_setup.log',
+    'custom_suite__test_pass__pytest_capture__pytest_stdout_setup.log',
+    'cases/unique/custom_suite__test_pass__pytest_capture__pytest_stdout_call.log',
+    'pytest_stderr_call.log',
+    'pytest_log_teardown.log',
+    'system-out.log',
+    'system-err.log',
+  ])('recognizes %s as pytest output', (filename) => {
+    expect(isCapturedOutput({ filename })).toBe(true);
+    expect(isTerminalLog(filename)).toBe(true);
+  });
+
+  it.each(['dmesg_pre.log', 'dmesg_post.log', 'trace.csv', 'custom.log'])(
+    'keeps %s outside captured output',
+    (filename) => {
+      expect(isCapturedOutput({ filename })).toBe(false);
+      expect(isTerminalLog(filename)).toBe(false);
+    },
+  );
 });

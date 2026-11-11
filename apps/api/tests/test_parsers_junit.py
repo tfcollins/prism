@@ -76,3 +76,15 @@ def test_parse_no_measurements_when_no_properties() -> None:
         b"</testsuite></testsuites>"
     )
     assert suite.cases[0].measurements == []
+
+
+def test_repeated_captured_output_elements_preserve_all_phases():
+    xml = (
+        b'<testsuites><testsuite name="pytest"><testcase name="test_pass">'
+        b"<system-out>setup\n</system-out><system-out>call\n</system-out>"
+        b"<system-out>teardown\n</system-out><system-err>stderr\n</system-err>"
+        b"</testcase></testsuite></testsuites>"
+    )
+    case = parse_junit_xml(xml)[0].cases[0]
+    assert case.stdout == "setup\ncall\nteardown\n"
+    assert case.stderr == "stderr\n"

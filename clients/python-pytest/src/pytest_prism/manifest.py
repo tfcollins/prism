@@ -46,7 +46,17 @@ class OutputDir:
         self.root = Path(root)
         self._run_artifacts: list[dict[str, Any]] = []
         self._cases: dict[str, _CaseEntry] = {}
+        self._case_safe_ids: dict[str, str] = {}
         self._initialized = False
+
+    def _case_id(self, nodeid: str) -> str:
+        if nodeid not in self._case_safe_ids:
+            safe = _safe_test_id(nodeid)
+            if safe in self._case_safe_ids.values():
+                digest = hashlib.sha256(nodeid.encode()).hexdigest()[:16]
+                safe = f"{safe[: _MAX_SAFE_ID_LEN - 17]}_{digest}"
+            self._case_safe_ids[nodeid] = safe
+        return self._case_safe_ids[nodeid]
 
     def initialize(self) -> None:
         if self.root.exists():
@@ -91,7 +101,7 @@ class OutputDir:
     ) -> None:
         if not self._initialized:
             raise RuntimeError("OutputDir.initialize() must be called first")
-        safe = _safe_test_id(case_nodeid)
+        safe = self._case_id(case_nodeid)
         case_kind_dir = self.root / "cases" / safe / kind
         case_kind_dir.mkdir(parents=True, exist_ok=True)
         (case_kind_dir / filename).write_bytes(content)
@@ -121,7 +131,7 @@ class OutputDir:
         """
         if not self._initialized:
             raise RuntimeError("OutputDir.initialize() must be called first")
-        safe = _safe_test_id(case_nodeid)
+        safe = self._case_id(case_nodeid)
         if size is None:
             size = (self.root / "cases" / safe / kind / filename).stat().st_size
         entry = self._cases.setdefault(case_nodeid, _CaseEntry(case_nodeid))
@@ -136,7 +146,7 @@ class OutputDir:
 
     def case_kind_dir(self, *, case_nodeid: str, kind: str) -> Path:
         """Return (and ensure) the per-case-per-kind directory."""
-        safe = _safe_test_id(case_nodeid)
+        safe = self._case_id(case_nodeid)
         d = self.root / "cases" / safe / kind
         d.mkdir(parents=True, exist_ok=True)
         return d

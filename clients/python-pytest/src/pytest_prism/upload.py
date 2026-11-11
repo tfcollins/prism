@@ -13,6 +13,7 @@ import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import defusedxml.ElementTree as ET
 
@@ -63,6 +64,8 @@ def _build_artifacts_zip(out_root: Path) -> bytes:
     )
 
     case_dir_to_name: dict[str, str] = {}
+    case_dir_to_nodeid: dict[str, str] = {}
+    manifest: dict[str, Any] = {}
     if manifest_path.exists():
         manifest = _json.loads(manifest_path.read_text())
         for case in manifest.get("cases", []):
@@ -76,12 +79,29 @@ def _build_artifacts_zip(out_root: Path) -> bytes:
                 safe_id = parts[1]
                 case_name = nodeid.rsplit("::", 1)[-1] if "::" in nodeid else nodeid
                 case_dir_to_name[safe_id] = case_name
+                case_dir_to_nodeid[safe_id] = nodeid
+
+    junit_owners = {}
+    if junit_path.exists():
+        root = ET.fromstring(junit_path.read_bytes())
+        suites = [root] if root.tag == "testsuite" else root.findall(".//testsuite")
+        for suite in suites:
+            for case in suite.findall("testcase"):
+                for prop in case.findall("properties/property"):
+                    if prop.get("name") == "prism_nodeid":
+                        junit_owners[prop.get("value")] = {
+                            "suite": suite.get("name", suite_name),
+                            "classname": case.get("classname", ""),
+                            "case": case.get("name", ""),
+                        }
 
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        used_names: set[str] = set()
+        archive_artifacts = []
         for p in out_root.rglob("*"):
             if not p.is_file():
                 continue
-            if p.name == "junit.xml":
+            if p.name in {"junit.xml", "manifest.json"}:
                 continue
             rel = p.relative_to(out_root)
             parts = rel.parts
@@ -93,6 +113,18 @@ def _build_artifacts_zip(out_root: Path) -> bytes:
                     arcname = f"{kind}__{filename}"
                 else:
                     arcname = f"{suite_name}__{case_name}__{kind}__{filename}"
+                    if arcname in used_names:
+                        arcname = f"cases/{safe_id}/{arcname}"
+                    nodeid = case_dir_to_nodeid[safe_id]
+                    node_parts = nodeid.split("::")
+                    fallback_class = ".".join(
+                        [node_parts[0].removesuffix(".py").replace("/", "."), *node_parts[1:-1]]
+                    )
+                    owner = junit_owners.get(
+                        nodeid,
+                        {"suite": suite_name, "classname": fallback_class, "case": case_name},
+                    )
+                    archive_artifacts.append({"filename": arcname, "kind": kind, **owner})
             elif len(parts) >= 3 and parts[0] == "session":
                 # session/<hook_name>/<filename> — prefix with hook_name so
                 # multiple hooks with same filename don't collide.
@@ -101,6 +133,9 @@ def _build_artifacts_zip(out_root: Path) -> bytes:
             else:
                 arcname = parts[-1]
             zf.writestr(arcname, p.read_bytes())
+            used_names.add(arcname)
+        manifest["archive_artifacts"] = archive_artifacts
+        zf.writestr("manifest.json", _json.dumps(manifest))
     return buf.getvalue()
 
 
@@ -115,6 +150,8 @@ def upload(
         raise UploadError("upload() called with no upload_project")
     junit_bytes = (out_dir.root / "junit.xml").read_bytes()
     archive_bytes = _build_artifacts_zip(out_dir.root)
+    run_meta_path = out_dir.root / "run_meta.json"
+    run_meta = _json.loads(run_meta_path.read_text()) if run_meta_path.exists() else {}
 
     client = PrismClient(cfg.upload_url, token=cfg.upload_token)
     if not cfg.upload_token:
@@ -130,6 +167,8 @@ def upload(
             junit_xml=junit_bytes,
             archive_zip=archive_bytes,
             tags=dict(cfg.user_tags),
+            ci=run_meta.get("ci"),
+            hardware=run_meta.get("hardware"),
         )
     except RuntimeError as exc:
         raise UploadError(f"run create failed: {exc}") from exc
@@ -141,7 +180,7 @@ def upload(
     deadline = time.monotonic() + poll_timeout_s
     status = result.get("status", "pending")
     url = result.get("url", f"/runs/{run_id}")
-    while status not in ("ready", "failed") and time.monotonic() < deadline:
+    while status in ("pending",) and time.monotonic() < deadline:
         time.sleep(poll_interval_s)
         code, resp = client._request("GET", f"/api/v1/runs/{run_id}")
         if code == 200:

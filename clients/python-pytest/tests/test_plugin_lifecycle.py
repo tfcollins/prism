@@ -95,3 +95,132 @@ def test_out_dir_overwrite_flag_clears_existing(pytester: pytest.Pytester, tmp_p
     result.assert_outcomes(passed=1)
     assert not (out / "stale.txt").exists()
     assert (out / "manifest.json").exists()
+
+
+def test_captures_passing_output_for_all_phases(pytester, tmp_path):
+    out = tmp_path / "complete"
+    pytester.makepyfile("""
+        import logging
+        import sys
+        import pytest
+        @pytest.fixture
+        def noisy():
+            print('setup stdout')
+            logging.warning('setup log')
+            yield
+            print('teardown stderr', file=sys.stderr)
+            logging.warning('teardown log')
+        def test_pass(noisy):
+            print('passing stdout')
+            print('passing stderr', file=sys.stderr)
+            logging.warning('passing log')
+    """)
+    result = pytester.runpytest_inprocess(
+        "-q", "--prism-report", f"--prism-out={out}", *_DISABLE_NOISY_PLUGINS
+    )
+    result.assert_outcomes(passed=1)
+    logs = {p.name: p.read_text() for p in (out / "cases").rglob("*.log")}
+    assert "setup stdout" in logs["pytest_stdout_setup.log"]
+    assert "passing stdout" in logs["pytest_stdout_call.log"]
+    assert "passing stderr" in logs["pytest_stderr_call.log"]
+    assert "passing log" in logs["pytest_log_call.log"]
+    assert "teardown stderr" in logs["pytest_stderr_teardown.log"]
+    assert "teardown log" in logs["pytest_log_teardown.log"]
+    assert "1 passed" in (out / "terminal.log").read_text()
+
+
+@pytest.mark.parametrize("failure", ["setup", "teardown", "interrupt", "collection"])
+def test_preserves_output_when_session_fails(pytester, tmp_path, failure):
+    out = tmp_path / "failed-session"
+    sources = {
+        "setup": (
+            "import pytest\n@pytest.fixture\ndef f():\n"
+            " print('setup-before-error')\n raise RuntimeError('setup-failed')\n"
+            "def test_x(f): pass"
+        ),
+        "teardown": (
+            "import pytest\n@pytest.fixture\ndef f():\n yield\n"
+            " print('teardown-before-error')\n raise RuntimeError('teardown-failed')\n"
+            "def test_x(f): pass"
+        ),
+        "interrupt": "def test_x():\n print('before-interrupt')\n raise KeyboardInterrupt()",
+        "collection": "print('before-collection-error')\nraise RuntimeError('collection-failed')",
+    }
+    pytester.makepyfile(sources[failure])
+    run = pytester.runpytest_subprocess if failure == "interrupt" else pytester.runpytest_inprocess
+    result = run("-q", "--prism-report", f"--prism-out={out}", *_DISABLE_NOISY_PLUGINS)
+    assert result.ret != 0
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert manifest["run_meta"]["exitstatus"] == int(result.ret)
+    terminal = (out / "terminal.log").read_text()
+    if failure == "interrupt":
+        import defusedxml.ElementTree as ET
+
+        root = ET.fromstring((out / "junit.xml").read_bytes())
+        cases = root.findall(".//testcase")
+        assert cases and all(case.get("name") for case in cases)
+        assert any("before-interrupt" in p.read_text() for p in (out / "cases").rglob("*.log"))
+    assert {
+        "setup": "setup-failed",
+        "teardown": "teardown-failed",
+        "interrupt": "KeyboardInterrupt",
+        "collection": "collection-failed",
+    }[failure] in terminal
+
+
+def test_distributed_capture_and_renderer_output(pytester, tmp_path):
+    out = tmp_path / "distributed"
+    pytester.makepyfile("""
+        from pytest_prism import attach
+        def test_first():
+            print('worker-first')
+            attach('unknown.kind', {'worker': 'first'})
+        def test_second():
+            print('worker-second')
+            attach('unknown.kind', {'worker': 'second'})
+    """)
+    disabled = [arg for arg in _DISABLE_NOISY_PLUGINS if arg != "no:xdist"]
+    # Remove the now-unpaired trailing -p.
+    disabled.pop()
+    result = pytester.runpytest_subprocess(
+        "-q", "-n", "2", "--prism-report", f"--prism-out={out}", *disabled
+    )
+    result.assert_outcomes(passed=2)
+    logs = [p.read_text() for p in (out / "cases").rglob("pytest_stdout_call.log")]
+    assert any("worker-first" in log for log in logs)
+    assert any("worker-second" in log for log in logs)
+    raw = [json.loads(p.read_text()) for p in (out / "cases").rglob("raw.json")]
+    assert sorted(x["worker"] for x in raw) == ["first", "second"]
+    assert len(json.loads((out / "manifest.json").read_text())["cases"]) == 2
+
+
+def test_terminal_transcript_includes_uncaptured_stdout_and_stderr(pytester, tmp_path):
+    out = tmp_path / "uncaptured"
+    pytester.makepyfile("""
+        import sys
+        def test_x():
+            print('visible stdout')
+            print('visible stderr', file=sys.stderr)
+    """)
+    result = pytester.runpytest_inprocess(
+        "-q", "-s", "--prism-report", f"--prism-out={out}", *_DISABLE_NOISY_PLUGINS
+    )
+    result.assert_outcomes(passed=1)
+    terminal = (out / "terminal.log").read_text()
+    assert "visible stdout" in terminal
+    assert "visible stderr" in terminal
+    assert terminal.count("1 passed") == 1
+
+
+def test_distributed_interruption_preserves_output(pytester, tmp_path):
+    out = tmp_path / "distributed-interrupt"
+    pytester.makepyfile(
+        "def test_interrupted():\n print('worker-interrupted-output')\n raise KeyboardInterrupt()"
+    )
+    disabled = _DISABLE_NOISY_PLUGINS[:-2]
+    result = pytester.runpytest_subprocess(
+        "-q", "-n", "1", "--prism-report", f"--prism-out={out}", *disabled
+    )
+    assert result.ret != 0
+    logs = [p.read_text() for p in (out / "cases").rglob("*.log")]
+    assert any("worker-interrupted-output" in log for log in logs)

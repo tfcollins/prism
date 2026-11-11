@@ -65,6 +65,21 @@ exactly the one you want to inspect in Prism.
 
 ## Bundling artifacts
 
+For complete passing-test output and a terminal transcript, preserve pytest's
+exit status through `tee` and upload in an `if: always()` step.
+
+```bash
+set -o pipefail
+pytest --junitxml=results.xml \
+  -o junit_logging=all -o junit_log_passing_tests=true 2>&1 | tee pytest.log
+```
+
+Pass `--pytest-log pytest.log` with the upload. JUnit `system-out` and
+`system-err` content becomes downloadable case artifacts. The pytest-prism
+plugin also records stdout, stderr, and logging separately for setup, call,
+and teardown. Run and case log viewers load on expansion and progressively
+render all lines, with full downloads available.
+
 To attach waveforms, logs and other measurement files, zip them and pass
 `--archive`. Files inside the archive are routed to the right run/suite/case by
 the `{suite}__{case}__{label}.{ext}` naming convention — see

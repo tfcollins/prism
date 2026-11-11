@@ -120,3 +120,43 @@ def test_polls_until_ready(tmp_path: Path, fake_prism: tuple[str, FakePrismRecor
     cfg = _cfg(url)
     result = upload(od, cfg, poll_timeout_s=2.0, poll_interval_s=0.05)
     assert result.status == "ready"
+
+
+def test_archive_keeps_same_named_tests_distinct(tmp_path):
+    import json
+
+    from pytest_prism.upload import _build_artifacts_zip
+
+    od = OutputDir(tmp_path / "out")
+    od.initialize()
+    (od.root / "junit.xml").write_text(
+        "<testsuites>"
+        '<testsuite name="pytest">'
+        '<testcase classname="test_a" name="test_same">'
+        "<properties>"
+        '<property name="prism_nodeid" value="test_a.py::test_same"/>'
+        "</properties>"
+        "</testcase>"
+        '<testcase classname="test_b" name="test_same">'
+        "<properties>"
+        '<property name="prism_nodeid" value="test_b.py::test_same"/>'
+        "</properties>"
+        "</testcase>"
+        "</testsuite>"
+        "</testsuites>"
+    )
+    for module in ["test_a", "test_b"]:
+        od.write_case_artifact(
+            case_nodeid=f"{module}.py::test_same",
+            filename="pytest_stdout_call.log",
+            content=module.encode(),
+            kind="pytest_capture",
+        )
+    od.finalize(run_meta={})
+    with zipfile.ZipFile(BytesIO(_build_artifacts_zip(od.root))) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+        entries = manifest["archive_artifacts"]
+        assert {entry["classname"] for entry in entries} == {"test_a", "test_b"}
+        assert len({entry["filename"] for entry in entries}) == 2
+        for entry in entries:
+            assert zf.read(entry["filename"]).decode() == entry["classname"]

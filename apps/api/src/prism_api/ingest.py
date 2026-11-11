@@ -26,6 +26,7 @@ from prism_api.repos.logs import LogRepo
 from prism_api.repos.projects import ProjectRepo
 from prism_api.repos.runs import RunRepo
 from prism_api.repos.suites import CaseRepo, MeasurementRepo, SuiteRepo
+from prism_api.services.run_provenance import recover_provenance
 from prism_api.storage import ObjectStorage
 
 logger = logging.getLogger(__name__)
@@ -184,6 +185,7 @@ def ingest_run(
     # 3) Create suites + cases; build lookup maps for artifact attachment
     suite_by_name: dict[str, TestSuite] = {}
     case_by_key: dict[tuple[str, str], TestCase] = {}
+    case_by_identity: dict[tuple[str, str, str], TestCase] = {}
     for ps in parsed_suites:
         suite = suites_repo.create(
             run_id=inputs.run_id,
@@ -206,6 +208,21 @@ def ingest_run(
                 failure_trace=pc.failure_trace,
             )
             case_by_key[(ps.name, pc.name)] = case
+            case_by_identity[(ps.name, pc.classname, pc.name)] = case
+            for filename, output in (("system-out.log", pc.stdout), ("system-err.log", pc.stderr)):
+                if output:
+                    data = output.encode("utf-8")
+                    key = storage.put_raw(data, filename=filename)
+                    artifacts.create(
+                        owner_type="case",
+                        owner_id=case.id,
+                        kind=ArtifactKind.LOG_TEXT,
+                        filename=filename,
+                        size_bytes=len(data),
+                        content_hash=key.rsplit("/", 1)[-1],
+                        storage_key=key,
+                        manifest_kind="pytest_capture",
+                    )
             for pm in pc.measurements:
                 measurements_repo.create(
                     case_id=case.id,
@@ -227,6 +244,15 @@ def ingest_run(
     if inputs.archive:
         kind_map = _parse_manifest_kind_map(inputs.archive)
         with zipfile.ZipFile(io.BytesIO(inputs.archive)) as zf:
+            archive_owners = {}
+            if "manifest.json" in zf.namelist():
+                try:
+                    manifest = json.loads(zf.read("manifest.json"))
+                    archive_owners = {
+                        item["filename"]: item for item in manifest.get("archive_artifacts", [])
+                    }
+                except (KeyError, ValueError, TypeError, AttributeError):
+                    logger.warning("invalid artifact ownership manifest for %s", inputs.run_id)
             for name in zf.namelist():
                 if name.endswith("/") or name == "manifest.json":
                     continue
@@ -238,10 +264,18 @@ def ingest_run(
                 owner_type, owner_id = _resolve_owner(
                     owner, inputs.run_id, suite_by_name, case_by_key
                 )
+                entry = archive_owners.get(name)
+                if entry:
+                    identity = (entry.get("suite"), entry.get("classname"), entry.get("case"))
+                    matched_case = case_by_identity.get(identity)
+                    if matched_case is not None:
+                        owner_type, owner_id = "case", matched_case.id
                 # Map archive name → manifest filename (trailing __-split label)
                 parts = bare.rsplit("__", 1)
                 label = parts[-1] if len(parts) > 1 else bare
                 manifest_kind = kind_map.get(label)
+                if entry:
+                    manifest_kind = entry.get("kind", manifest_kind)
                 created = artifacts.create(
                     owner_type=owner_type,
                     owner_id=owner_id,
@@ -252,7 +286,11 @@ def ingest_run(
                     storage_key=key,
                     manifest_kind=manifest_kind,
                 )
-                if kind == ArtifactKind.LOG_TEXT:
+                if (
+                    kind == ArtifactKind.LOG_TEXT
+                    and owner_type == "run"
+                    and not name.lower().endswith(".json")
+                ):
                     try:
                         parsed = parse_log(
                             data,
@@ -283,6 +321,10 @@ def ingest_run(
                         logger.warning("genalyzer analysis failed for %s: %s", name, exc)
 
     # 5) Set final run status
+    if run is not None:
+        run.ci, run.hardware = recover_provenance(
+            run, session=session, storage=storage, tags=run_tags
+        )
     runs.set_status(inputs.run_id, _derive_run_status(parsed_suites))
 
 

@@ -16,7 +16,11 @@ Every `--flag` also reads its matching environment variable.
 | `--project` | `PRISM_PROJECT` | Required; must exist unless `--auto-create-project` |
 | `--run-name` | `PRISM_RUN_NAME` | Required; the Test Suite Run name shown in the dashboard |
 | `--tag key=value` | — | Repeatable. Becomes a tag chip on the run |
-| `--archive PATH` | — | Optional zip of measurement artifacts (waveforms, logs) |
+| `--archive PATH` | `PRISM_ARCHIVE` | Optional zip of measurement artifacts (waveforms, logs) |
+| `--pytest-log PATH` | `PRISM_PYTEST_LOG` | Complete terminal transcript, merged into the archive as `terminal.log` |
+| `--ci-json JSON_OR_PATH` | `PRISM_CI_JSON` | Explicit CI metadata object or JSON file |
+| `--hardware-json JSON_OR_PATH` | `PRISM_HARDWARE_JSON` | Reserved hardware metadata object or JSON file |
+| `--job-url URL` | `PRISM_CI_JOB_URL` | Exact job link, taking precedence over automatic resolution |
 | `--measurement name=value[:unit[:min[:max]]]` | — | Repeatable. Inject a numeric measurement into a single-testcase JUnit |
 | `--auto-create-project` | — | Create the project if missing |
 | `--wait [SECONDS]` | — | Poll `GET /runs/:id` until no longer pending (default 60s) |
@@ -36,3 +40,14 @@ Every `--flag` also reads its matching environment variable.
 The final line on stdout is always
 `uploaded <run-name> (id=<uuid>, status=<status>)` so CI can grep it for the
 run ID.
+
+GitHub Actions detection records repository, workflow, run ID, rerun attempt,
+job name, and an attempt-specific run URL. Set `PRISM_CI_MATRIX` to the job's
+matrix JSON. With `GITHUB_TOKEN` or `GH_TOKEN` available, the uploader queries
+the current attempt's jobs and resolves a unique display-name or active-runner
+match. `PRISM_CI_JOB_NAME` can supply the full job display name. The UI uses
+the workflow-run URL when an exact job link is unavailable.
+
+Hardware metadata accepts `place`, `board`, `carrier`, `exporters`, `tags`,
+`metadata_status`, and `collection_errors`. Capture this data while the
+reservation is active. Run details expose optional `ci` and `hardware` objects.
