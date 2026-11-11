@@ -122,7 +122,7 @@ def test_polls_until_ready(tmp_path: Path, fake_prism: tuple[str, FakePrismRecor
     assert result.status == "ready"
 
 
-def test_archive_keeps_same_named_tests_distinct(tmp_path):
+def test_archive_keeps_same_named_tests_distinct(tmp_path: Path) -> None:
     import json
 
     from pytest_prism.upload import _build_artifacts_zip

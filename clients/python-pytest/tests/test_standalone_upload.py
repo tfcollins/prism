@@ -5,17 +5,25 @@ import json
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from types import ModuleType
+
+import pytest
+
+from tests.conftest import FakePrismRecord
 
 
-def uploader():
+def uploader() -> ModuleType:
     path = Path(__file__).resolve().parents[3] / "scripts" / "upload_run.py"
     spec = importlib.util.spec_from_file_location("standalone_uploader", path)
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def test_standalone_metadata_and_complete_transcript(tmp_path, fake_prism, monkeypatch):
+def test_standalone_metadata_and_complete_transcript(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord], monkeypatch: pytest.MonkeyPatch
+) -> None:
     module = uploader()
     url, record = fake_prism
     monkeypatch.setattr(module.PrismClient, "project_exists", lambda *a: True)
@@ -65,7 +73,9 @@ def test_standalone_metadata_and_complete_transcript(tmp_path, fake_prism, monke
         assert zf.read("dmesg_pre.log") == b"before testing\n"
 
 
-def test_custom_workflow_command_inherits_capture_environment(tmp_path, fake_prism, monkeypatch):
+def test_custom_workflow_command_inherits_capture_environment(
+    tmp_path: Path, fake_prism: tuple[str, FakePrismRecord], monkeypatch: pytest.MonkeyPatch
+) -> None:
     module = uploader()
     url, record = fake_prism
     monkeypatch.setattr(module.PrismClient, "project_exists", lambda *a: True)

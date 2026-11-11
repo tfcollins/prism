@@ -116,7 +116,7 @@ def test_finalize_creates_run_meta_json(tmp_path: Path) -> None:
     assert rm["plugin_version"] == "0.1.0"
 
 
-def test_sanitized_parameter_ids_do_not_overwrite_output(tmp_path):
+def test_sanitized_parameter_ids_do_not_overwrite_output(tmp_path: Path) -> None:
     od = OutputDir(tmp_path / "out")
     od.initialize()
     for nodeid in ["test.py::test_value[a/b]", "test.py::test_value[a_b]"]:

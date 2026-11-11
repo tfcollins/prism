@@ -97,7 +97,7 @@ def test_out_dir_overwrite_flag_clears_existing(pytester: pytest.Pytester, tmp_p
     assert (out / "manifest.json").exists()
 
 
-def test_captures_passing_output_for_all_phases(pytester, tmp_path):
+def test_captures_passing_output_for_all_phases(pytester: pytest.Pytester, tmp_path: Path) -> None:
     out = tmp_path / "complete"
     pytester.makepyfile("""
         import logging
@@ -130,7 +130,9 @@ def test_captures_passing_output_for_all_phases(pytester, tmp_path):
 
 
 @pytest.mark.parametrize("failure", ["setup", "teardown", "interrupt", "collection"])
-def test_preserves_output_when_session_fails(pytester, tmp_path, failure):
+def test_preserves_output_when_session_fails(
+    pytester: pytest.Pytester, tmp_path: Path, failure: str
+) -> None:
     out = tmp_path / "failed-session"
     sources = {
         "setup": (
@@ -168,7 +170,7 @@ def test_preserves_output_when_session_fails(pytester, tmp_path, failure):
     }[failure] in terminal
 
 
-def test_distributed_capture_and_renderer_output(pytester, tmp_path):
+def test_distributed_capture_and_renderer_output(pytester: pytest.Pytester, tmp_path: Path) -> None:
     out = tmp_path / "distributed"
     pytester.makepyfile("""
         from pytest_prism import attach
@@ -194,7 +196,9 @@ def test_distributed_capture_and_renderer_output(pytester, tmp_path):
     assert len(json.loads((out / "manifest.json").read_text())["cases"]) == 2
 
 
-def test_terminal_transcript_includes_uncaptured_stdout_and_stderr(pytester, tmp_path):
+def test_terminal_transcript_includes_uncaptured_stdout_and_stderr(
+    pytester: pytest.Pytester, tmp_path: Path
+) -> None:
     out = tmp_path / "uncaptured"
     pytester.makepyfile("""
         import sys
@@ -212,7 +216,9 @@ def test_terminal_transcript_includes_uncaptured_stdout_and_stderr(pytester, tmp
     assert terminal.count("1 passed") == 1
 
 
-def test_distributed_interruption_preserves_output(pytester, tmp_path):
+def test_distributed_interruption_preserves_output(
+    pytester: pytest.Pytester, tmp_path: Path
+) -> None:
     out = tmp_path / "distributed-interrupt"
     pytester.makepyfile(
         "def test_interrupted():\n print('worker-interrupted-output')\n raise KeyboardInterrupt()"

@@ -3,31 +3,37 @@
 import importlib.util
 import json
 from pathlib import Path
+from types import ModuleType
+from typing import cast
 
 import pytest
 
 from pytest_prism import client as plugin_client
+from tests.conftest import FakePrismRecord
 
 
-def script_client():
+def script_client() -> ModuleType:
     path = Path(__file__).resolve().parents[3] / "scripts" / "_prism_client.py"
     spec = importlib.util.spec_from_file_location("script_client", path)
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
 @pytest.fixture(params=[plugin_client, script_client()])
-def client_module(request):
-    return request.param
+def client_module(request: pytest.FixtureRequest) -> ModuleType:
+    return cast(ModuleType, request.param)
 
 
-def test_local_run_has_no_ci(client_module, monkeypatch):
+def test_local_run_has_no_ci(client_module: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     assert client_module.detect_ci() is None
 
 
-def test_matrix_rerun_metadata_and_explicit_job(client_module, monkeypatch):
+def test_matrix_rerun_metadata_and_explicit_job(
+    client_module: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
     values = {
         "GITHUB_ACTIONS": "true",
         "GITHUB_REPOSITORY": "org/repo",
@@ -47,7 +53,7 @@ def test_matrix_rerun_metadata_and_explicit_job(client_module, monkeypatch):
     assert ci["job_url"].endswith("/job/100")
 
 
-def test_exact_job_only_resolved_when_unique(client_module):
+def test_exact_job_only_resolved_when_unique(client_module: ModuleType) -> None:
     jobs = [
         {"name": "hw (adc, zcu)", "html_url": "https://github.com/job/1"},
         {"name": "hw (dac, zcu)", "html_url": "https://github.com/job/2"},
@@ -59,7 +65,9 @@ def test_exact_job_only_resolved_when_unique(client_module):
     assert client_module.resolve_job_url(jobs + jobs[:1], job_name="hw (adc, zcu)") is None
 
 
-def test_client_upload_carries_explicit_provenance(client_module, fake_prism):
+def test_client_upload_carries_explicit_provenance(
+    client_module: ModuleType, fake_prism: tuple[str, FakePrismRecord]
+) -> None:
     url, record = fake_prism
     client_module.PrismClient(url).upload_run(
         project_slug="demo",
@@ -75,7 +83,7 @@ def test_client_upload_carries_explicit_provenance(client_module, fake_prism):
     assert meta["hardware"]["place"] == "reserved"
 
 
-def test_job_resolution_uses_unique_active_runner(client_module):
+def test_job_resolution_uses_unique_active_runner(client_module: ModuleType) -> None:
     jobs = [
         {
             "name": "caller / tests (adc)",
@@ -102,16 +110,21 @@ def test_job_resolution_uses_unique_active_runner(client_module):
     )
 
 
-def test_explicit_ci_environment_for_other_providers(client_module, monkeypatch):
+def test_explicit_ci_environment_for_other_providers(
+    client_module: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("PRISM_CI_JSON", '{"provider":"jenkins","run_url":"https://ci.example/5"}')
     assert client_module.detect_ci() == {"provider": "jenkins", "run_url": "https://ci.example/5"}
 
 
 @pytest.mark.parametrize("api_available", [True, False])
-def test_github_attempt_job_lookup_and_run_link_fallback(client_module, monkeypatch, api_available):
+def test_github_attempt_job_lookup_and_run_link_fallback(
+    client_module: ModuleType, monkeypatch: pytest.MonkeyPatch, api_available: bool
+) -> None:
     import io
     import urllib.error
+    import urllib.request
 
     for name in ["PRISM_CI_JSON", "PRISM_CI_JOB_URL", "GITHUB_JOB_URL"]:
         monkeypatch.delenv(name, raising=False)
@@ -125,9 +138,9 @@ def test_github_attempt_job_lookup_and_run_link_fallback(client_module, monkeypa
         "GITHUB_TOKEN": "fixture-token",
     }.items():
         monkeypatch.setenv(name, value)
-    requests = []
+    requests: list[urllib.request.Request] = []
 
-    def fetch(request, *, timeout):
+    def fetch(request: urllib.request.Request, *, timeout: float) -> io.BytesIO:
         requests.append(request)
         assert timeout == 5
         if not api_available:
