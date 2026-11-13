@@ -5,7 +5,11 @@ import { useParams } from 'react-router-dom';
 import { useCase, useRun, useRunArtifacts, useRuns, useSetCalibration } from '../api/queries';
 import type { RunDetail } from '../api/types';
 import { AppShell } from '../components/AppShell';
-import { BootLogViewer, TerminalLogViewer } from '../components/BootLogViewer';
+import {
+  BootLogViewer,
+  CapturedOutputViewer,
+  TerminalLogViewer,
+} from '../components/BootLogViewer';
 import { BootPanel } from '../components/BootPanel';
 import { ContextSection } from '../components/ContextXmlViewer';
 import { CopyButton } from '../components/CopyButton';
@@ -13,6 +17,7 @@ import { FFTPlot } from '../components/FFTPlot';
 import { InlinePlotlyFigure } from '../components/InlinePlotlyFigure';
 import { Logo } from '../components/Logo';
 import { MeasurementsTable } from '../components/MeasurementsTable';
+import { RunContextSummary } from '../components/RunContextSummary';
 import { SpectrogramPlot } from '../components/SpectrogramPlot';
 import { SpectrumAnalysis } from '../components/SpectrumAnalysis';
 import { TagsEditor } from '../components/TagsEditor';
@@ -20,6 +25,7 @@ import { TestTree } from '../components/TestTree';
 import { Toast } from '../components/Toast';
 import { Tooltip } from '../components/Tooltip';
 import { WaveformPlot } from '../components/WaveformPlot';
+import { isCapturedOutput } from '../lib/dmesg';
 import { pickInlineArtifact } from '../lib/inlineKinds';
 import { parseTestId } from '../lib/parseTestId';
 
@@ -67,7 +73,8 @@ export function RunDetailPage() {
       a !== inlineArtifact &&
       a !== spectrum &&
       a !== spectrogram &&
-      a.kind !== 'iio_context_xml',
+      a.kind !== 'iio_context_xml' &&
+      !isCapturedOutput(a),
   );
 
   return (
@@ -98,6 +105,7 @@ export function RunDetailPage() {
             </Tooltip>
           </Flex>
 
+          <RunContextSummary ci={runQuery.data.ci} hardware={runQuery.data.hardware} />
           {runArtifactsQuery.data && runArtifactsQuery.data.length > 0 && (
             <RunFilesSection artifacts={runArtifactsQuery.data} />
           )}
@@ -187,6 +195,15 @@ export function RunDetailPage() {
               {caseQuery.data && (
                 <Stack gap={3}>
                   <CaseHeader caseData={caseQuery.data} />
+                  <RunContextSummary
+                    ci={runQuery.data.ci}
+                    hardware={runQuery.data.hardware}
+                    inherited
+                  />
+                  <CapturedOutputViewer
+                    key={caseQuery.data.id}
+                    artifacts={caseQuery.data.artifacts}
+                  />
                   <MeasurementsTable measurements={caseQuery.data.measurements} />
                   <CaseParamsTable name={caseQuery.data.name} />
                   {caseQuery.data.failure_message && (

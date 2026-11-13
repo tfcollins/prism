@@ -114,3 +114,19 @@ def test_finalize_creates_run_meta_json(tmp_path: Path) -> None:
     od.finalize(run_meta={"plugin_version": "0.1.0"})
     rm = json.loads((root / "run_meta.json").read_text())
     assert rm["plugin_version"] == "0.1.0"
+
+
+def test_sanitized_parameter_ids_do_not_overwrite_output(tmp_path: Path) -> None:
+    od = OutputDir(tmp_path / "out")
+    od.initialize()
+    for nodeid in ["test.py::test_value[a/b]", "test.py::test_value[a_b]"]:
+        od.write_case_artifact(
+            case_nodeid=nodeid,
+            filename="pytest_stdout_call.log",
+            content=nodeid.encode(),
+            kind="pytest_capture",
+        )
+    manifest = od.finalize(run_meta={})
+    assert len(manifest["cases"]) == 2
+    for case in manifest["cases"]:
+        assert (od.root / case["artifacts"][0]["rel_path"]).read_text() == case["case_nodeid"]

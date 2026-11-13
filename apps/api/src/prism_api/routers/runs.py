@@ -50,6 +50,7 @@ from prism_api.schemas.run import (
 )
 from prism_api.schemas.spec import resolve_spec
 from prism_api.services.boot_summary import build_boot_summary
+from prism_api.services.run_provenance import recover_provenance
 from prism_api.storage import ObjectStorage, build_storage
 from prism_api.worker.tasks import run_ingest
 
@@ -99,6 +100,11 @@ async def upload_run(
         status=RunStatus.PENDING,
         created_by=current.id,
     )
+    run.started_at = meta.started_at
+    run.ci = meta.ci.model_dump(exclude_unset=True) if meta.ci is not None else None
+    run.hardware = (
+        meta.hardware.model_dump(exclude_unset=True) if meta.hardware is not None else None
+    )
     for k, v in meta.tags.items():
         runs.add_tag(run.id, k, v)
     AuditRepo(session).record(
@@ -132,6 +138,8 @@ async def upload_run(
         finished_at=run.finished_at,
         junit_artifact_id=run.junit_artifact_id,
         tags=[RunTagOut(key=t.key, value=t.value) for t in tags],
+        ci=run.ci,
+        hardware=run.hardware,
     )
 
 
@@ -319,6 +327,9 @@ def get_run(
     project = ProjectRepo(session).get_by_id(run.project_id)
     cal = runs.get_by_id(run.calibration_run_id) if run.calibration_run_id else None
     boot = build_boot_summary(LogRepo(session), run.id, settings, run.project_id)
+    ci, hardware = recover_provenance(
+        run, session=session, storage=build_storage(settings), tags={t.key: t.value for t in tags}
+    )
     return RunDetail(
         id=run.id,
         project_id=run.project_id,
@@ -333,6 +344,8 @@ def get_run(
         tags=tags,
         suites=suites,
         boot=boot,
+        ci=ci,
+        hardware=hardware,
     )
 
 

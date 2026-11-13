@@ -3,9 +3,12 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import JSON
 
 from prism_api.models.base import Base, TimestampMixin
 
@@ -37,6 +40,12 @@ class TestRun(Base, TimestampMixin):
     )
     calibration_run_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("test_runs.id", ondelete="SET NULL"), nullable=True
+    )
+    ci: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), nullable=True
+    )
+    hardware: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"), nullable=True
     )
 
 

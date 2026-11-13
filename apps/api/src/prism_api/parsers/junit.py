@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from io import BytesIO
 
-from junitparser import Error, Failure, JUnitXml, Properties, Skipped
+from junitparser import Error, Failure, JUnitXml, Properties, Skipped, SystemErr, SystemOut
 from junitparser import TestCase as JTCase
 
 
@@ -27,6 +27,8 @@ class ParsedCase:
     failure_message: str | None = None
     failure_trace: str | None = None
     measurements: list[ParsedMeasurement] = field(default_factory=list)
+    stdout: str | None = None
+    stderr: str | None = None
 
 
 @dataclass
@@ -108,16 +110,35 @@ def parse_junit_xml(data: bytes) -> list[ParsedSuite]:
             if not isinstance(c, JTCase):
                 continue
             status, msg, trace = _case_status(c)
+            if not c.name:
+                status = "error"
+                msg = "Test session ended before pytest reported the test identity or outcome"
             duration_ms = int((c.time or 0) * 1000)
+            stdout = (
+                "".join(
+                    output.text or ""
+                    for output in c.iterchildren(SystemOut)  # type: ignore[no-untyped-call]
+                )
+                or None
+            )
+            stderr = (
+                "".join(
+                    output.text or ""
+                    for output in c.iterchildren(SystemErr)  # type: ignore[no-untyped-call]
+                )
+                or None
+            )
             parsed.cases.append(
                 ParsedCase(
                     classname=c.classname or "",
-                    name=c.name,
+                    name=c.name or f"incomplete-test-{len(parsed.cases) + 1}",
                     status=status,
                     duration_ms=duration_ms,
                     failure_message=msg,
                     failure_trace=trace,
                     measurements=_case_measurements(c),
+                    stdout=stdout,
+                    stderr=stderr,
                 )
             )
             if status == "pass":

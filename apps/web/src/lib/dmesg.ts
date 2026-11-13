@@ -69,6 +69,18 @@ export function isTerminalLog(source: string): boolean {
     lowered.includes('terminal') ||
     lowered.includes('console') ||
     lowered.includes('stdout') ||
-    lowered.includes('stderr')
+    lowered.includes('stderr') ||
+    isCapturedOutput({ filename: source })
+  );
+}
+
+export function isCapturedOutput(artifact: { filename: string }): boolean {
+  const filename = artifact.filename.toLowerCase().replaceAll('\\', '/');
+  const basename = filename.split('/').pop() ?? '';
+  const label = basename.split('__').pop() ?? basename;
+  return (
+    (filename.startsWith('captured/') && filename.endsWith('.log')) ||
+    /^pytest_.*\.log$/.test(label) ||
+    /^system-(out|err)\.log$/.test(label)
   );
 }

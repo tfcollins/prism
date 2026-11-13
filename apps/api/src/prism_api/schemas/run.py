@@ -1,9 +1,9 @@
 """Run request/response schemas."""
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from prism_api.schemas.log import BootSummary
 
@@ -25,6 +25,32 @@ class RunTagUpdate(BaseModel):
     value: TagValue
 
 
+class CIMetadata(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    provider: str | None = None
+    repository: str | None = None
+    workflow: str | None = None
+    run_id: str | None = None
+    attempt: str | None = None
+    job_name: str | None = None
+    matrix: dict[str, Any] | None = None
+    run_url: str | None = None
+    job_url: str | None = None
+    collection_errors: list[str] = Field(default_factory=list)
+
+
+class HardwareMetadata(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    place: str | None = None
+    board: str | None = None
+    carrier: str | None = None
+    exporters: list[str] = Field(default_factory=list)
+    tags: dict[str, str] = Field(default_factory=dict)
+    metadata_status: str | None = None
+    metadata_error: str | None = None
+    collection_errors: list[str] = Field(default_factory=list)
+
+
 class RunOut(BaseModel):
     id: str
     project_id: str
@@ -34,6 +60,8 @@ class RunOut(BaseModel):
     finished_at: datetime | None
     junit_artifact_id: str | None
     tags: list[RunTagOut] = Field(default_factory=list)
+    ci: dict[str, Any] | None = None
+    hardware: dict[str, Any] | None = None
 
 
 class CreateRunMetadata(BaseModel):
@@ -41,6 +69,8 @@ class CreateRunMetadata(BaseModel):
     name: str
     tags: dict[str, str] = Field(default_factory=dict)
     started_at: datetime | None = None
+    ci: CIMetadata | None = None
+    hardware: HardwareMetadata | None = None
 
 
 class SuiteSummary(BaseModel):

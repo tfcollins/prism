@@ -4,14 +4,21 @@
 // report; expanding an item lazily fetches the full raw dmesg and lets the user
 // filter it (Errors / Warnings / All) and download it.
 import { Accordion, Badge, Box, Button, Flex, Text } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useArtifactRaw, useRunLogs } from '../api/queries';
-import type { LogReport } from '../api/types';
-import { classifyLines, isTerminalLog, type LogFilter, matchesFilter } from '../lib/dmesg';
+import type { CaseArtifact, LogReport } from '../api/types';
+import {
+  classifyLines,
+  isCapturedOutput,
+  isTerminalLog,
+  type LogFilter,
+  matchesFilter,
+} from '../lib/dmesg';
 import { severityColor } from '../lib/logFindings';
 
-const MAX_LINES = 5000;
+const LINE_BATCH = 5000;
+type LogSource = Pick<LogReport, 'source' | 'artifact_id'> & Partial<LogReport>;
 const FILTERS: { value: LogFilter; label: string }[] = [
   { value: 'errors', label: 'Errors' },
   { value: 'warnings', label: 'Warnings' },
@@ -47,9 +54,14 @@ function FilterControl({
  * a download link. `open` gates the raw fetch so closed accordion items don't
  * pull large logs. Exported for unit testing.
  */
-export function BootLogBody({ report, open }: { report: LogReport; open: boolean }) {
+export function BootLogBody({ report, open }: { report: LogSource; open: boolean }) {
   const [filter, setFilter] = useState<LogFilter>('all');
+  const [visibleLines, setVisibleLines] = useState(LINE_BATCH);
   const raw = useArtifactRaw(report.artifact_id, open);
+  const lines = useMemo(
+    () => classifyLines(raw.data ?? '').filter((line) => matchesFilter(line.severity, filter)),
+    [raw.data, filter],
+  );
 
   const download = report.artifact_id ? (
     <a
@@ -62,7 +74,9 @@ export function BootLogBody({ report, open }: { report: LogReport; open: boolean
   ) : null;
 
   let content;
-  if (!report.artifact_id) {
+  if (!open) {
+    content = null;
+  } else if (!report.artifact_id) {
     content = (
       <Text fontSize="xs" color="var(--prism-text-faint)">
         Raw log unavailable.
@@ -77,9 +91,7 @@ export function BootLogBody({ report, open }: { report: LogReport; open: boolean
       </Text>
     );
   } else {
-    const all = classifyLines(raw.data);
-    const lines = all.filter((l) => matchesFilter(l.severity, filter));
-    const shown = lines.slice(0, MAX_LINES);
+    const shown = lines.slice(0, visibleLines);
     content =
       lines.length === 0 ? (
         <Text fontSize="xs" color="var(--prism-text-faint)">
@@ -98,19 +110,37 @@ export function BootLogBody({ report, open }: { report: LogReport; open: boolean
           p={2}
         >
           {shown.map((l) => (
-            <Flex key={l.lineNo} gap={2} whiteSpace="pre-wrap">
-              <Text as="span" color="var(--prism-text-faint)" minW="44px" textAlign="right">
+            <div key={l.lineNo} style={{ display: 'flex', gap: 8, whiteSpace: 'pre-wrap' }}>
+              <span
+                style={{
+                  color: 'var(--prism-text-faint)',
+                  minWidth: 44,
+                  textAlign: 'right',
+                  flexShrink: 0,
+                }}
+              >
                 {l.lineNo}
-              </Text>
-              <Text as="span" color={l.severity ? severityColor(l.severity) : 'var(--prism-text)'}>
+              </span>
+              <span
+                style={{
+                  color: l.severity ? severityColor(l.severity) : 'var(--prism-text)',
+                  overflowWrap: 'anywhere',
+                  minWidth: 0,
+                }}
+              >
                 {l.text}
-              </Text>
-            </Flex>
+              </span>
+            </div>
           ))}
-          {lines.length > MAX_LINES && (
-            <Text mt={1} color="var(--prism-text-faint)">
-              … {lines.length - MAX_LINES} more lines truncated — download for the full log.
-            </Text>
+          {lines.length > visibleLines && (
+            <Button
+              mt={2}
+              size="xs"
+              variant="outline"
+              onClick={() => setVisibleLines((count) => count + LINE_BATCH)}
+            >
+              Show more lines ({lines.length - visibleLines} remaining)
+            </Button>
           )}
         </Box>
       );
@@ -119,7 +149,13 @@ export function BootLogBody({ report, open }: { report: LogReport; open: boolean
   return (
     <Box>
       <Flex align="center" justify="space-between" mb={2} gap={2}>
-        <FilterControl value={filter} onChange={setFilter} />
+        <FilterControl
+          value={filter}
+          onChange={(next) => {
+            setFilter(next);
+            setVisibleLines(LINE_BATCH);
+          }}
+        />
         {download}
       </Flex>
       {content}
@@ -127,7 +163,7 @@ export function BootLogBody({ report, open }: { report: LogReport; open: boolean
   );
 }
 
-function ItemHeader({ report }: { report: LogReport }) {
+function ItemHeader({ report }: { report: LogSource }) {
   return (
     <Flex align="center" gap={2} flex="1" textAlign="left">
       <Text fontFamily="mono" fontSize="sm">
@@ -138,9 +174,11 @@ function ItemHeader({ report }: { report: LogReport }) {
           panic
         </Badge>
       )}
-      <Text fontSize="xs" color="var(--prism-text-subtle)">
-        {report.error_count} errors · {report.warn_count} warnings
-      </Text>
+      {report.error_count != null && (
+        <Text fontSize="xs" color="var(--prism-text-subtle)">
+          {report.error_count} errors · {report.warn_count} warnings
+        </Text>
+      )}
     </Flex>
   );
 }
@@ -153,11 +191,19 @@ interface GenericLogViewerProps {
 
 export function GenericLogViewer({ runId, title, filterFn }: GenericLogViewerProps) {
   const logs = useRunLogs(runId);
-  const [openItems, setOpenItems] = useState<string[]>([]);
-
   const reports = (logs.data ?? []).filter((report) => filterFn(report.source));
-  if (reports.length === 0) return null;
+  if (logs.isLoading) return <Text fontSize="xs">Loading {title}…</Text>;
+  if (logs.isError)
+    return (
+      <Text fontSize="xs" color="var(--prism-status-fail-fg)">
+        Failed to load {title}.
+      </Text>
+    );
+  return <LogAccordion title={title} reports={reports} />;
+}
 
+function LogAccordion({ title, reports }: { title: string; reports: LogSource[] }) {
+  const [openItems, setOpenItems] = useState<string[]>([]);
   return (
     <Box mb={6}>
       <Text
@@ -169,14 +215,19 @@ export function GenericLogViewer({ runId, title, filterFn }: GenericLogViewerPro
       >
         {title}
       </Text>
+      {reports.length === 0 && (
+        <Text fontSize="xs" color="var(--prism-text-faint)">
+          {title} unavailable.
+        </Text>
+      )}
       <Accordion.Root
         multiple
         value={openItems}
         onValueChange={(e) => setOpenItems(e.value)}
         variant="outline"
       >
-        {reports.map((report, i) => {
-          const value = String(i);
+        {reports.map((report) => {
+          const value = report.artifact_id ?? report.source;
           return (
             <Accordion.Item key={value} value={value}>
               <Accordion.ItemTrigger>
@@ -185,7 +236,7 @@ export function GenericLogViewer({ runId, title, filterFn }: GenericLogViewerPro
               </Accordion.ItemTrigger>
               <Accordion.ItemContent>
                 <Accordion.ItemBody>
-                  <BootLogBody report={report} open={openItems.includes(value)} />
+                  {openItems.includes(value) && <BootLogBody key={value} report={report} open />}
                 </Accordion.ItemBody>
               </Accordion.ItemContent>
             </Accordion.Item>
@@ -198,11 +249,7 @@ export function GenericLogViewer({ runId, title, filterFn }: GenericLogViewerPro
 
 export function BootLogViewer({ runId }: { runId: string }) {
   return (
-    <GenericLogViewer
-      runId={runId}
-      title="Boot log"
-      filterFn={(source) => !isTerminalLog(source)}
-    />
+    <GenericLogViewer runId={runId} title="dmesg" filterFn={(source) => !isTerminalLog(source)} />
   );
 }
 
@@ -210,8 +257,16 @@ export function TerminalLogViewer({ runId }: { runId: string }) {
   return (
     <GenericLogViewer
       runId={runId}
-      title="Terminal log"
+      title="Pytest output"
       filterFn={(source) => isTerminalLog(source)}
     />
   );
+}
+
+export function CapturedOutputViewer({ artifacts }: { artifacts: CaseArtifact[] }) {
+  const reports = artifacts.filter(isCapturedOutput).map((artifact) => ({
+    source: artifact.filename,
+    artifact_id: artifact.id,
+  }));
+  return <LogAccordion title="Captured output" reports={reports} />;
 }

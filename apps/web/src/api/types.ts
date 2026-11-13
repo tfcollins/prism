@@ -145,6 +145,33 @@ export interface LogReport {
   findings: LogFinding[];
 }
 
+export interface CIContext {
+  provider?: string;
+  repository?: string;
+  workflow?: string;
+  run_id?: string;
+  attempt?: string;
+  job_name?: string;
+  matrix?: Record<string, unknown>;
+  run_url?: string;
+  job_url?: string;
+  collection_errors?: string[];
+}
+
+export interface HardwareContext {
+  place?: string;
+  board?: string;
+  carrier?: string;
+  exporters?: string[];
+  tags?: Record<string, string>;
+  metadata_status?: string;
+  metadata_error?: string;
+  collection_errors?: string[];
+  dmesg?: Record<string, unknown>;
+  dmesg_pre_error?: string;
+  dmesg_post_error?: string;
+}
+
 export interface RunDetail {
   id: string;
   project_id: string;
@@ -159,6 +186,8 @@ export interface RunDetail {
   tags: RunTag[];
   suites: SuiteSummary[];
   boot: BootSummary | null;
+  ci?: CIContext | null;
+  hardware?: HardwareContext | null;
 }
 
 export type CaseStatus = 'pass' | 'fail' | 'error' | 'skip';
