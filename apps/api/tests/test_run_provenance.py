@@ -198,3 +198,44 @@ def test_incomplete_junit_preserves_archive_and_marks_error(client, seed_admin, 
     artifacts = client.get(f"/api/v1/runs/{run['id']}/artifacts").json()
     terminal = next(a for a in artifacts if a["filename"] == "terminal.log")
     assert client.get(f"/api/v1/artifacts/{terminal['id']}/raw").content == b"KeyboardInterrupt\n"
+
+
+def test_hw_test_upload_keeps_ci_link_boot_and_terminal_logs(client, seed_admin, patch_ingest):
+    """The shape cse-bsps hw-test-template uploads: extra CI fields, serial and pytest logs."""
+    sha = "d9382d8a0123456789abcdef0123456789abcdef"
+    ci = {
+        "provider": "github",
+        "repository": "org/cse-bsps",
+        "run_id": "44473740498",
+        "attempt": "1",
+        "run_number": "89",
+        "job_name": "hw_test (uc61)",
+        "event": "pull_request",
+        "sha": sha,
+        "branch": "dev/washington/feature",
+        "runner": "adsy1100-hw-1",
+        "run_url": "https://github.com/org/cse-bsps/actions/runs/44473740498/attempts/1",
+        "job_url": "https://github.com/org/cse-bsps/actions/runs/44473740498/job/135395215459",
+        "commit_url": f"https://github.com/org/cse-bsps/commit/{sha}",
+    }
+    serial = b"U-Boot 2023.01\n[    0.000000] Linux version 6.6.0\n[    1.3] ad9084: probe failed\n"
+    run = upload(
+        client,
+        metadata={"ci": ci, "hardware": {"place": "cluj-revb-1", "runner": "adsy1100-hw-1"}},
+        archive={
+            "boot/main-serial.log": serial,
+            "terminal.log": b"test_iio.py::test_ctx PASSED\n",
+            "testhtml/report.html": b"<html></html>",
+        },
+    )
+    detail = client.get(f"/api/v1/runs/{run['id']}").json()
+    assert detail["ci"] == ci
+    assert detail["hardware"]["place"] == "cluj-revb-1"
+    logs = {
+        report["source"]: report for report in client.get(f"/api/v1/runs/{run['id']}/logs").json()
+    }
+    assert {"main-serial.log", "terminal.log"} <= logs.keys()
+    assert "report.html" not in logs
+    assert logs["main-serial.log"]["kernel_version"] == "6.6.0"
+    raw = client.get(f"/api/v1/artifacts/{logs['main-serial.log']['artifact_id']}/raw")
+    assert raw.content == serial
