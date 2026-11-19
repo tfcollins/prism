@@ -289,7 +289,9 @@ def ingest_run(
                 if (
                     kind == ArtifactKind.LOG_TEXT
                     and owner_type == "run"
-                    and not name.lower().endswith(".json")
+                    # Text-sniffed structured files (metadata, pytest-html
+                    # reports) are artifacts, not logs.
+                    and not name.lower().endswith((".json", ".html", ".htm"))
                 ):
                     try:
                         parsed = parse_log(

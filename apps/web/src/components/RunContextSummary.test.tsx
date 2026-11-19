@@ -48,6 +48,49 @@ describe('RunContextSummary', () => {
     expect(screen.getByText(/revision/)).toBeInTheDocument();
   });
 
+  it('shows the tested commit, branch and runner from hw-test uploads', () => {
+    const sha = 'd9382d8a0123456789abcdef0123456789abcdef';
+    render(
+      <ChakraProvider value={system}>
+        <RunContextSummary
+          ci={{
+            provider: 'github',
+            run_id: '44473740498',
+            run_number: '89',
+            branch: 'dev/washington/feature',
+            event: 'pull_request',
+            runner: 'adsy1100-hw-1',
+            sha,
+            commit_url: `https://github.com/org/repo/commit/${sha}`,
+            job_url: 'https://github.com/org/repo/actions/runs/44473740498/job/135395215459',
+          }}
+        />
+      </ChakraProvider>,
+    );
+    expect(screen.getByText('44473740498 (#89)')).toBeInTheDocument();
+    expect(screen.getByText('dev/washington/feature')).toBeInTheDocument();
+    expect(screen.getByText('adsy1100-hw-1')).toBeInTheDocument();
+    expect(screen.getByText('pull_request')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'd9382d8a0123' })).toHaveAttribute(
+      'href',
+      `https://github.com/org/repo/commit/${sha}`,
+    );
+    expect(screen.getByRole('link', { name: /open ci job/i })).toHaveAttribute(
+      'href',
+      'https://github.com/org/repo/actions/runs/44473740498/job/135395215459',
+    );
+  });
+
+  it('shows an unlinked commit when its URL is missing or unsafe', () => {
+    render(
+      <ChakraProvider value={system}>
+        <RunContextSummary ci={{ sha: 'abc1234', commit_url: 'javascript:alert(1)' }} />
+      </ChakraProvider>,
+    );
+    expect(screen.getByText('abc1234')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
+  });
+
   it('states missing context for old uploads', () => {
     render(
       <ChakraProvider value={system}>

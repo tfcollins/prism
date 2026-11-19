@@ -1,4 +1,5 @@
 import { Box, Flex, Grid, Heading, Stack, Text } from '@chakra-ui/react';
+import { isValidElement } from 'react';
 
 import type { CIContext, HardwareContext } from '../api/types';
 
@@ -13,11 +14,38 @@ function ContextFields({ values }: { values: Record<string, unknown> }) {
               {label}
             </Text>
             <Text as="dd" overflowWrap="anywhere" fontFamily="mono">
-              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+              {isValidElement(value)
+                ? value
+                : typeof value === 'object'
+                  ? JSON.stringify(value)
+                  : String(value)}
             </Text>
           </Flex>
         ))}
     </Box>
+  );
+}
+
+function safeUrl(url?: string): string | undefined {
+  return url && /^https?:\/\//i.test(url) ? url : undefined;
+}
+
+function Commit({ sha, url }: { sha?: string; url?: string }) {
+  if (!sha) return null;
+  const label = /^[0-9a-f]{12,}$/i.test(sha) ? sha.slice(0, 12) : sha;
+  const href = safeUrl(url);
+  return href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={sha}
+      style={{ color: 'var(--prism-link)' }}
+    >
+      {label}
+    </a>
+  ) : (
+    <span title={sha}>{label}</span>
   );
 }
 
@@ -42,8 +70,8 @@ export function RunContextSummary({
   hardware?: HardwareContext | null;
   inherited?: boolean;
 }) {
-  const runUrl = ci?.run_url && /^https?:\/\//i.test(ci.run_url) ? ci.run_url : undefined;
-  const jobUrl = ci?.job_url && /^https?:\/\//i.test(ci.job_url) ? ci.job_url : undefined;
+  const runUrl = safeUrl(ci?.run_url);
+  const jobUrl = safeUrl(ci?.job_url);
   const hardwareErrors = [
     ...(hardware?.collection_errors ?? []),
     hardware?.metadata_error,
@@ -77,9 +105,13 @@ export function RunContextSummary({
                   Provider: ci.provider,
                   Repository: ci.repository,
                   Workflow: ci.workflow,
-                  Run: ci.run_id,
+                  Run: ci.run_number ? `${ci.run_id} (#${ci.run_number})` : ci.run_id,
                   Attempt: ci.attempt,
                   Job: ci.job_name,
+                  Event: ci.event,
+                  Branch: ci.branch,
+                  Commit: ci.sha ? <Commit sha={ci.sha} url={ci.commit_url} /> : undefined,
+                  Runner: ci.runner,
                   Matrix: ci.matrix,
                 }}
               />

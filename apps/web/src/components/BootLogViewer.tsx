@@ -1,6 +1,6 @@
 // apps/web/src/components/BootLogViewer.tsx
 //
-// Full-width, collapsible boot-log viewer. One accordion item per parsed log
+// Full-width, collapsible boot-log viewer (dmesg and serial console captures). One accordion item per parsed log
 // report; expanding an item lazily fetches the full raw dmesg and lets the user
 // filter it (Errors / Warnings / All) and download it.
 import { Accordion, Badge, Box, Button, Flex, Text } from '@chakra-ui/react';
@@ -249,7 +249,11 @@ function LogAccordion({ title, reports }: { title: string; reports: LogSource[] 
 
 export function BootLogViewer({ runId }: { runId: string }) {
   return (
-    <GenericLogViewer runId={runId} title="dmesg" filterFn={(source) => !isTerminalLog(source)} />
+    <GenericLogViewer
+      runId={runId}
+      title="Boot & console logs"
+      filterFn={(source) => !isTerminalLog(source)}
+    />
   );
 }
 
