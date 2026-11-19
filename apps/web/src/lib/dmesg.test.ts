@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyLine,
   classifyLines,
+  isBootLog,
   isCapturedOutput,
   isTerminalLog,
   matchesFilter,
@@ -105,4 +106,31 @@ describe('captured output filenames', () => {
       expect(isTerminalLog(filename)).toBe(false);
     },
   );
+});
+
+describe('serial console boot logs', () => {
+  it.each([
+    'main-serial.log',
+    'boot/main-serial.log',
+    'main_aux-serial.log',
+    'serial.log',
+    'console_main',
+    'console_main.log',
+    'labgrid/console_main_uart1.log',
+  ])('files %s with the boot logs', (source) => {
+    expect(isBootLog(source)).toBe(true);
+    expect(isTerminalLog(source)).toBe(false);
+  });
+
+  it.each(['terminal.log', 'console.log', 'serial_numbers.csv', 'system-out.log', 'dmesg_pre.log'])(
+    'does not treat %s as a serial capture',
+    (source) => {
+      expect(isBootLog(source)).toBe(false);
+    },
+  );
+
+  it('still files terminal and pytest output as terminal logs', () => {
+    expect(isTerminalLog('terminal.log')).toBe(true);
+    expect(isTerminalLog('console.log')).toBe(true);
+  });
 });

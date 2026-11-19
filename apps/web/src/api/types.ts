@@ -155,6 +155,12 @@ export interface CIContext {
   matrix?: Record<string, unknown>;
   run_url?: string;
   job_url?: string;
+  run_number?: string;
+  event?: string;
+  sha?: string;
+  branch?: string;
+  runner?: string;
+  commit_url?: string;
   collection_errors?: string[];
 }
 

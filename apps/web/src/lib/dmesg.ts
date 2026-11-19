@@ -62,8 +62,19 @@ export function matchesFilter(severity: Severity | null, filter: LogFilter): boo
   return WARN_SEVERITIES.includes(severity);
 }
 
+/**
+ * Whether a log is a serial-console capture of the board: cse-bsps hw-test
+ * `<target>-serial.log`, or labgrid `--lg-log` output `console_<target>[.log]`.
+ * These belong with the boot logs even though their names may say "console".
+ */
+export function isBootLog(source: string): boolean {
+  const basename = source.toLowerCase().replaceAll('\\', '/').split('/').pop() ?? '';
+  return /(^|[-_.])serial\.log$/.test(basename) || /^console_[^/]+$/.test(basename);
+}
+
 /** Whether a log's source filename indicates a terminal log. */
 export function isTerminalLog(source: string): boolean {
+  if (isBootLog(source)) return false;
   const lowered = source.toLowerCase();
   return (
     lowered.includes('terminal') ||
