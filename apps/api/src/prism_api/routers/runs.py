@@ -115,7 +115,10 @@ async def upload_run(
         target_id=run.id,
         detail={"name": meta.name},
     )
-    session.flush()
+    # Commit before dispatching: the Celery worker runs in another process and
+    # must see the run row, otherwise ingest races the request's commit and the
+    # run is stranded as "pending".
+    session.commit()
 
     # 4) Read payloads
     junit_bytes = await junit.read()
