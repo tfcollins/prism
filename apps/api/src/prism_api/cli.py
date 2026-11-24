@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from prism_api.bootstrap import ensure_bootstrap_admin
 from prism_api.config import Settings, get_settings
 from prism_api.models.artifact import Artifact, ArtifactKind
+from prism_api.models.run import RunStatus, TestRun
 from prism_api.models.suite import TestCase, TestSuite
 from prism_api.parsers.logs import parse_log
 from prism_api.repos.logs import LogRepo
@@ -125,10 +126,50 @@ def prune_cli(
     )
 
 
+def fail_stale_pending(*, session: Session, cutoff: datetime, dry_run: bool = False) -> list[str]:
+    """Mark PENDING runs created before *cutoff* as ERROR. Returns the affected run ids.
+
+    A run stays PENDING only while its ingest task is in flight; one still pending
+    long after upload had its ingest crash and will never finish on its own.
+    """
+    stale = list(
+        session.execute(
+            select(TestRun).where(TestRun.status == RunStatus.PENDING, TestRun.created_at < cutoff)
+        ).scalars()
+    )
+    if not dry_run:
+        for run in stale:
+            run.status = RunStatus.ERROR
+    return [r.id for r in stale]
+
+
+def fail_stale_pending_cli(
+    settings: Settings | None = None, *, older_than_minutes: int = 60, dry_run: bool = False
+) -> None:
+    """CLI wrapper: mark runs stuck in PENDING for over --older-than-minutes as ERROR."""
+    s = settings or get_settings()
+    cutoff = datetime.now(UTC) - timedelta(minutes=older_than_minutes)
+    engine = create_engine(s.database_url)
+    try:
+        with sessionmaker(bind=engine)() as session:
+            ids = fail_stale_pending(session=session, cutoff=cutoff, dry_run=dry_run)
+            if dry_run:
+                for run_id in ids:
+                    print(run_id)
+            else:
+                session.commit()
+    finally:
+        engine.dispose()
+    verb = "would mark" if dry_run else "marked"
+    print(f"{verb} {len(ids)} stale pending run(s) as error (older than {older_than_minutes}m)")
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(
-            "usage: prism-api <bootstrap-admin|ensure-bucket|reparse-logs|prune>", file=sys.stderr
+            "usage: prism-api"
+            " <bootstrap-admin|ensure-bucket|reparse-logs|prune|fail-stale-pending>",
+            file=sys.stderr,
         )
         return 2
     cmd = sys.argv[1]
@@ -147,6 +188,13 @@ def main() -> int:
         if "--days" in args:
             days = int(args[args.index("--days") + 1])
         prune_cli(days=days, dry_run="--dry-run" in args)
+        return 0
+    if cmd == "fail-stale-pending":
+        args = sys.argv[2:]
+        minutes = 60
+        if "--older-than-minutes" in args:
+            minutes = int(args[args.index("--older-than-minutes") + 1])
+        fail_stale_pending_cli(older_than_minutes=minutes, dry_run="--dry-run" in args)
         return 0
     print(f"unknown command: {cmd}", file=sys.stderr)
     return 2
