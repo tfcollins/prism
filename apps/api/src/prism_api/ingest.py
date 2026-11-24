@@ -300,12 +300,16 @@ def ingest_run(
                             hdl_pattern=hdl_pattern,
                             findings_cap=findings_cap,
                         )
-                        log_repo.create_report(
-                            run_id=inputs.run_id,
-                            artifact_id=created.id,
-                            source=bare,
-                            parsed=parsed,
-                        )
+                        # Savepoint: a failed insert must roll back only the
+                        # log report, not leave the ingest session in a failed
+                        # state (which strands the run as "pending").
+                        with session.begin_nested():
+                            log_repo.create_report(
+                                run_id=inputs.run_id,
+                                artifact_id=created.id,
+                                source=bare,
+                                parsed=parsed,
+                            )
                     except Exception as exc:  # best-effort; never fail ingest
                         logger.warning("log parse failed for %s: %s", name, exc)
 

@@ -42,3 +42,10 @@ def test_missing_commits_is_not_fatal() -> None:
     )
     assert p.kernel_commit is None and p.hdl_commit is None
     assert p.error_count == 0 and p.has_panic is False
+
+
+def test_nul_bytes_are_stripped() -> None:
+    data = b"<3> EDAC MC0: error Ro\x00w 65520 Bank 0\n"
+    p = parse_log(data, kernel_pattern=None, hdl_pattern=None, findings_cap=200)
+    assert p.findings
+    assert all("\x00" not in f.text for f in p.findings)

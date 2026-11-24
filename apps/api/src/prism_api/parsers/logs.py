@@ -75,7 +75,8 @@ def parse_log(
     hdl_pattern: str | None,
     findings_cap: int,
 ) -> ParsedLog:
-    text = data.decode("utf-8", errors="replace")
+    # Postgres text columns reject NUL; garbled consoles (e.g. EDAC dumps) contain them.
+    text = data.decode("utf-8", errors="replace").replace("\x00", "")
     kp = re.compile(kernel_pattern) if kernel_pattern else None
     hp = re.compile(hdl_pattern) if hdl_pattern else re.compile(DEFAULT_HDL_PATTERN)
     out = ParsedLog()
